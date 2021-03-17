@@ -17,6 +17,7 @@
 */
 
 #include "Reader.h"
+#include "Diagnostics.h"
 
 #include <memory>
 #include <vector>
@@ -46,6 +47,7 @@ private:
 	bool _tryHarder;
 	bool _tryRotate;
 	bool _isPure;
+	bool _enableDiagnostics;
 };
 
 } // OneD

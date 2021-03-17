@@ -46,6 +46,7 @@ static const int TEXT_COMPACTION_MODE_LATCH = 900;
 static const int BYTE_COMPACTION_MODE_LATCH = 901;
 static const int NUMERIC_COMPACTION_MODE_LATCH = 902;
 static const int BYTE_COMPACTION_MODE_LATCH_6 = 924;
+static const int READER_INIT = 921;
 static const int ECI_USER_DEFINED = 925;
 static const int ECI_GENERAL_PURPOSE = 926;
 static const int ECI_CHARSET = 927;
@@ -94,7 +95,7 @@ static const int NUMBER_OF_SEQUENCE_CODEWORDS = 2;
 * @param length             The size of the text compaction and byte compaction data.
 * @param result             The decoded data is appended to the result.
 */
-static void DecodeTextCompaction(const std::vector<int>& textCompactionData, const std::vector<int>& byteCompactionData, int length, std::string& result) {
+static void DecodeTextCompaction(const std::vector<int>& textCompactionData, const std::vector<int>& byteCompactionData, int length, std::string& result, Diagnostics& diagnostics) {
 	// Beginning from an initial state of the Alpha sub-mode
 	// The default compaction mode for PDF417 in effect at the start of each symbol shall always be Text
 	// Compaction mode Alpha sub-mode (uppercase alphabetic). A latch codeword from another mode to the Text
@@ -118,20 +119,25 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 				}
 				else if (subModeCh == LL) {
 					subMode = Mode::LOWER;
+					diagnostics.put("LOW");
 				}
 				else if (subModeCh == ML) {
 					subMode = Mode::MIXED;
+					diagnostics.put("MIX");
 				}
 				else if (subModeCh == PS) {
 					// Shift to punctuation
 					priorToShiftMode = subMode;
 					subMode = Mode::PUNCT_SHIFT;
+					diagnostics.put("PSh");
 				}
 				else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
 					result.push_back((char)byteCompactionData[i]);
+					diagnostics.put("BYTE1"); diagnostics.chr(byteCompactionData[i], "B", true /*appendHex*/);
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -149,21 +155,26 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 					// Shift to alpha
 					priorToShiftMode = subMode;
 					subMode = Mode::ALPHA_SHIFT;
+					diagnostics.put("ASh");
 				}
 				else if (subModeCh == ML) {
 					subMode = Mode::MIXED;
+					diagnostics.put("MIX");
 				}
 				else if (subModeCh == PS) {
 					// Shift to punctuation
 					priorToShiftMode = subMode;
 					subMode = Mode::PUNCT_SHIFT;
+					diagnostics.put("PSh");
 				}
 				else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
 					// TODO Does this need to use the current character encoding? See other occurrences below
 					result.push_back((char)byteCompactionData[i]);
+					diagnostics.put("BYTE1"); diagnostics.chr(byteCompactionData[i], "B", true /*appendHex*/);
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -176,26 +187,32 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 			else {
 				if (subModeCh == PL) {
 					subMode = Mode::PUNCT;
+					diagnostics.put("PUNC");
 				}
 				else if (subModeCh == 26) {
 					ch = ' ';
 				}
 				else if (subModeCh == LL) {
 					subMode = Mode::LOWER;
+					diagnostics.put("LOW");
 				}
 				else if (subModeCh == AL) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 				else if (subModeCh == PS) {
 					// Shift to punctuation
 					priorToShiftMode = subMode;
 					subMode = Mode::PUNCT_SHIFT;
+					diagnostics.put("PSh");
 				}
 				else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
 					result.push_back((char)byteCompactionData[i]);
+					diagnostics.put("BYTE1"); diagnostics.chr(byteCompactionData[i], "B", true /*appendHex*/);
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -208,12 +225,15 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 			else {
 				if (subModeCh == PAL) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 				else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
 					result.push_back((char)byteCompactionData[i]);
+					diagnostics.put("BYTE1"); diagnostics.chr(byteCompactionData[i], "B", true /*appendHex*/);
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -230,6 +250,7 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -243,14 +264,17 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 			else {
 				if (subModeCh == PAL) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 				else if (subModeCh == MODE_SHIFT_TO_BYTE_COMPACTION_MODE) {
 					// PS before Shift-to-Byte is used as a padding character, 
 					// see 5.4.2.4 of the specification
 					result.push_back((char)byteCompactionData[i]);
+					diagnostics.put("BYTE1"); diagnostics.chr(byteCompactionData[i], "B", true /*appendHex*/);
 				}
 				else if (subModeCh == TEXT_COMPACTION_MODE_LATCH) {
 					subMode = Mode::ALPHA;
+					diagnostics.put("ALPH");
 				}
 			}
 			break;
@@ -258,6 +282,7 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 		if (ch != 0) {
 			// Append decoded character to result
 			result.push_back(ch);
+			diagnostics.chr(ch, "A");
 		}
 		i++;
 	}
@@ -273,7 +298,7 @@ static void DecodeTextCompaction(const std::vector<int>& textCompactionData, con
 * @param result    The decoded data is appended to the result.
 * @return The next index into the codeword array.
 */
-static int TextCompaction(const std::vector<int>& codewords, int codeIndex, std::string& result)
+static int TextCompaction(const std::vector<int>& codewords, int codeIndex, std::string& result, Diagnostics& diagnostics)
 {
 	// 2 character per codeword
 	std::vector<int> textCompactionData((codewords[0] - codeIndex) * 2, 0);
@@ -319,7 +344,7 @@ static int TextCompaction(const std::vector<int>& codewords, int codeIndex, std:
 			}
 		}
 	}
-	DecodeTextCompaction(textCompactionData, byteCompactionData, index, result);
+	DecodeTextCompaction(textCompactionData, byteCompactionData, index, result, diagnostics);
 	return codeIndex;
 }
 
@@ -336,7 +361,7 @@ static int TextCompaction(const std::vector<int>& codewords, int codeIndex, std:
 * @param result    The decoded data is appended to the result.
 * @return The next index into the codeword array.
 */
-static int ByteCompaction(int mode, const std::vector<int>& codewords, CharacterSet encoding, int codeIndex, std::wstring& result)
+static int ByteCompaction(int mode, const std::vector<int>& codewords, CharacterSet encoding, int codeIndex, std::wstring& result, Diagnostics& diagnostics)
 {
 	ByteArray decodedBytes;
 	if (mode == BYTE_COMPACTION_MODE_LATCH) {
@@ -369,6 +394,7 @@ static int ByteCompaction(int mode, const std::vector<int>& codewords, Character
 					// Convert to Base 256
 					for (int j = 0; j < 6; ++j) {
 						decodedBytes.push_back((uint8_t)(value >> (8 * (5 - j))));
+						diagnostics.chr(decodedBytes.back(), "B", true /*appendHex*/);
 					}
 					value = 0;
 					count = 0;
@@ -386,6 +412,7 @@ static int ByteCompaction(int mode, const std::vector<int>& codewords, Character
 		// as one byte per codeword, without compaction.
 		for (int i = 0; i < count; i++) {
 			decodedBytes.push_back((uint8_t)byteCompactedCodewords[i]);
+			diagnostics.chr(decodedBytes.back(), "B", true /*appendHex*/);
 		}
 
 	}
@@ -419,6 +446,7 @@ static int ByteCompaction(int mode, const std::vector<int>& codewords, Character
 				// Convert to Base 256
 				for (int j = 0; j < 6; ++j) {
 					decodedBytes.push_back((uint8_t)(value >> (8 * (5 - j))));
+					diagnostics.chr(decodedBytes.back(), "B", true /*appendHex*/);
 				}
 				value = 0;
 				count = 0;
@@ -507,7 +535,7 @@ static DecodeStatus DecodeBase900toBase10(const std::vector<int>& codewords, int
 * @param result    The decoded data is appended to the result.
 * @return The next index into the codeword array.
 */
-static DecodeStatus NumericCompaction(const std::vector<int>& codewords, int codeIndex, std::string& result, int& next)
+static DecodeStatus NumericCompaction(const std::vector<int>& codewords, int codeIndex, std::string& result, int& next, Diagnostics& diagnostics)
 {
 	int count = 0;
 	bool end = false;
@@ -547,6 +575,7 @@ static DecodeStatus NumericCompaction(const std::vector<int>& codewords, int cod
 				}
 				result += tmp;
 				count = 0;
+				diagnostics.put(tmp.c_str());
 			}
 		}
 	}
@@ -555,7 +584,7 @@ static DecodeStatus NumericCompaction(const std::vector<int>& codewords, int cod
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata, int& next)
+DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata, int& next, Diagnostics& diagnostics)
 {
 	if (codeIndex + NUMBER_OF_SEQUENCE_CODEWORDS > codewords[0]) {
 		// we must have at least two bytes left for the segment index
@@ -573,10 +602,12 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 	}
 
 	resultMetadata.setSegmentIndex(std::stoi(strBuf));
+	diagnostics.fmt("SegIdx(%s)", strBuf.c_str());
 
 	std::string fileId;
-	codeIndex = TextCompaction(codewords, codeIndex, fileId);
+	codeIndex = TextCompaction(codewords, codeIndex, fileId, diagnostics);
 	resultMetadata.setFileId(fileId);
+	diagnostics.fmt("FileId(%s)", fileId.c_str());
 
 	int optionalFieldsStart = -1;
 	if (codewords[codeIndex] == BEGIN_MACRO_PDF417_OPTIONAL_FIELD) {
@@ -590,48 +621,56 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 				switch (codewords[codeIndex]) {
 					case MACRO_PDF417_OPTIONAL_FIELD_FILE_NAME: {
 						std::string fileName;
-						codeIndex = TextCompaction(codewords, codeIndex + 1, fileName);
+						codeIndex = TextCompaction(codewords, codeIndex + 1, fileName, diagnostics);
 						resultMetadata.setFileName(fileName);
+						diagnostics.fmt("FileName(%s)", fileName.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_SENDER: {
 						std::string sender;
-						codeIndex = TextCompaction(codewords, codeIndex + 1, sender);
+						codeIndex = TextCompaction(codewords, codeIndex + 1, sender, diagnostics);
 						resultMetadata.setSender(sender);
+						diagnostics.fmt("Sender(%s)", sender.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_ADDRESSEE: {
 						std::string addressee;
-						codeIndex = TextCompaction(codewords, codeIndex + 1, addressee);
+						codeIndex = TextCompaction(codewords, codeIndex + 1, addressee, diagnostics);
 						resultMetadata.setAddressee(addressee);
+						diagnostics.fmt("Addressee(%s)", addressee.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_SEGMENT_COUNT: {
 						std::string segmentCount;
-						status = NumericCompaction(codewords, codeIndex + 1, segmentCount, codeIndex);
+						status = NumericCompaction(codewords, codeIndex + 1, segmentCount, codeIndex, diagnostics);
 						resultMetadata.setSegmentCount(std::stoi(segmentCount));
+						diagnostics.fmt("segCount(%s)", segmentCount.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
 						std::string timestamp;
-						status = NumericCompaction(codewords, codeIndex + 1, timestamp, codeIndex);
+						status = NumericCompaction(codewords, codeIndex + 1, timestamp, codeIndex, diagnostics);
 						resultMetadata.setTimestamp(std::stoll(timestamp));
+						diagnostics.fmt("TimeStamp(%s)", timestamp.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
 						std::string checksum;
-						status = NumericCompaction(codewords, codeIndex + 1, checksum, codeIndex);
+						status = NumericCompaction(codewords, codeIndex + 1, checksum, codeIndex, diagnostics);
 						resultMetadata.setChecksum(std::stoi(checksum));
+						diagnostics.fmt("Checksum(%s)", checksum.c_str());
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_FILE_SIZE: {
 						std::string fileSize;
-						status = NumericCompaction(codewords, codeIndex + 1, fileSize, codeIndex);
+						status = NumericCompaction(codewords, codeIndex + 1, fileSize, codeIndex, diagnostics);
 						resultMetadata.setFileSize(std::stoll(fileSize));
+						diagnostics.fmt("FileSize(%s)", fileSize.c_str());
 						break;
 					}
 					default: {
 						status = DecodeStatus::FormatError;
+						diagnostics.put("MACROError");
 						break;
 					}
 				}
@@ -640,10 +679,12 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 			case MACRO_PDF417_TERMINATOR: {
 				codeIndex++;
 				resultMetadata.setLastSegment(true);
+				diagnostics.put("MACROTerm");
 				break;
 			}
 			default: {
 				status = DecodeStatus::FormatError;
+				diagnostics.put("MACROError");
 				break;
 			}
 		}
@@ -667,65 +708,92 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 }
 
 DecoderResult
-DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
+DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel, Diagnostics& diagnostics)
 {
+	diagnostics.fmt("  Codewords:  (%d)", codewords.size()); diagnostics.put(codewords, "\n");
 	std::wstring resultString;
 	auto encoding = DEFAULT_ENCODING;
 	// Get compaction mode
 	int codeIndex = 1;
 	int code = codewords[codeIndex++];
 	auto resultMetadata = std::make_shared<DecoderResultExtra>();
+	bool readerInit = false;
+	int eci = 0;
 	DecodeStatus status = DecodeStatus::NoError;
+	diagnostics.put("  Decode:     ");
 	while (codeIndex < codewords[0] && status == DecodeStatus::NoError) {
 		switch (code) {
 		case TEXT_COMPACTION_MODE_LATCH:
 		{
+			diagnostics.put("TEXT");
 			std::string buf;
-			codeIndex = TextCompaction(codewords, codeIndex, buf);
+			codeIndex = TextCompaction(codewords, codeIndex, buf, diagnostics);
 			TextDecoder::AppendLatin1(resultString, buf);
 			break;
 		}
 		case BYTE_COMPACTION_MODE_LATCH:
 		case BYTE_COMPACTION_MODE_LATCH_6:
-			codeIndex = ByteCompaction(code, codewords, encoding, codeIndex, resultString);
+			diagnostics.put(code == BYTE_COMPACTION_MODE_LATCH ? "BYTE" : "BYTE6");
+			codeIndex = ByteCompaction(code, codewords, encoding, codeIndex, resultString, diagnostics);
 			break;
 		case MODE_SHIFT_TO_BYTE_COMPACTION_MODE:
 			resultString.push_back((wchar_t)codewords[codeIndex++]);
+			diagnostics.put("BYTE1"); diagnostics.chr(codewords[codeIndex - 1], "B", true /*appendHex*/);
 			break;
 		case NUMERIC_COMPACTION_MODE_LATCH:
 		{
+			diagnostics.put("NUM");
 			std::string buf;
-			status = NumericCompaction(codewords, codeIndex, buf, codeIndex);
+			status = NumericCompaction(codewords, codeIndex, buf, codeIndex, diagnostics);
 			TextDecoder::AppendLatin1(resultString, buf);
 			break;
 		}
+		case READER_INIT:
+			if (codeIndex != 2) { // Must be second codeword
+				status = DecodeStatus::FormatError;
+				diagnostics.put("RInitError");
+			}
+			else {
+				readerInit = true;
+				diagnostics.put("RInit");
+			}
+			break;
 		case ECI_CHARSET:
-			encoding = CharacterSetECI::CharsetFromValue(codewords[codeIndex++]);
+			eci = codewords[codeIndex++];
+			encoding = CharacterSetECI::CharsetFromValue(eci);
+			diagnostics.fmt("ECI(%d)", eci);
 			break;
 		case ECI_GENERAL_PURPOSE:
 			// Can't do anything with generic ECI; skip its 2 characters
+			eci = (codewords[codeIndex] + 1) * 900 + codewords[codeIndex + 1];
 			codeIndex += 2;
+			diagnostics.fmt("ECI(%d)", eci);
 			break;
 		case ECI_USER_DEFINED:
 			// Can't do anything with user ECI; skip its 1 character
+			eci = codewords[codeIndex] + 810900;
 			codeIndex++;
+			diagnostics.fmt("ECI(%d)", eci);
 			break;
 		case BEGIN_MACRO_PDF417_CONTROL_BLOCK:
-			status = DecodeMacroBlock(codewords, codeIndex, *resultMetadata, codeIndex);
+			diagnostics.put("MACRO");
+			status = DecodeMacroBlock(codewords, codeIndex, *resultMetadata, codeIndex, diagnostics);
 			break;
 		case BEGIN_MACRO_PDF417_OPTIONAL_FIELD:
 		case MACRO_PDF417_TERMINATOR:
 			// Should not see these outside a macro block
 			status = DecodeStatus::FormatError;
+			diagnostics.put("MACROError");
 			break;
 		default:
 		{
+			diagnostics.put("ASC");
 			// Default to text compaction. During testing numerous barcodes
 			// appeared to be missing the starting mode. In these cases defaulting
 			// to text compaction seems to work.
 			codeIndex--;
 			std::string buf;
-			codeIndex = TextCompaction(codewords, codeIndex, buf);
+			codeIndex = TextCompaction(codewords, codeIndex, buf, diagnostics);
 			TextDecoder::AppendLatin1(resultString, buf);
 			break;
 		}
@@ -743,9 +811,27 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 	if (StatusIsError(status))
 		return status;
 
-	return DecoderResult(ByteArray(), std::move(resultString))
-		.setEcLevel(std::to_wstring(ecLevel))
-		.setExtra(resultMetadata);
+	DecoderResult decoderResult(ByteArray(), std::move(resultString));
+	decoderResult.setEcLevel(std::to_wstring(ecLevel));
+	decoderResult.setExtra(resultMetadata);
+
+	if (resultMetadata->segmentIndex() != -1) {
+		decoderResult.setStructuredAppendSequenceNumber(resultMetadata->segmentIndex());
+	}
+	if (resultMetadata->segmentCount() != -1) {
+		decoderResult.setStructuredAppendCodeCount(resultMetadata->segmentCount());
+	}
+	if (!resultMetadata->fileId().empty()) {
+		decoderResult.setStructuredAppendId(resultMetadata->fileId());
+	}
+	if (eci) {
+		decoderResult.setStructuredAppendECI(eci);
+	}
+	if (readerInit) {
+		decoderResult.setReaderInit(true);
+	}
+
+	return decoderResult;
 }
 
 } // namespace ZXing::Pdf417

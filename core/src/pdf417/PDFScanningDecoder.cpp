@@ -581,7 +581,7 @@ static bool VerifyCodewordCount(std::vector<int>& codewords, int numECCodewords)
 	return true;
 }
 
-DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures)
+DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures, Diagnostics& diagnostics)
 {
 	if (codewords.empty()) {
 		return DecodeStatus::FormatError;
@@ -596,10 +596,11 @@ DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const st
 		return DecodeStatus::FormatError;
 
 	// Decode the codewords
-	auto result = DecodedBitStreamParser::Decode(codewords, ecLevel);
+	auto result = DecodedBitStreamParser::Decode(codewords, ecLevel, diagnostics);
 	if (result.isValid()) {
 		result.setErrorsCorrected(correctedErrorsCount);
 		result.setErasures(Size(erasures));
+		result.setDiagnostics(std::move(diagnostics.get()));
 	}
 	return result;
 }
@@ -618,7 +619,7 @@ DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const st
 * @param ambiguousIndexValues two dimensional array that contains the ambiguous values. The first dimension must
 * be the same length as the ambiguousIndexes array
 */
-static DecoderResult CreateDecoderResultFromAmbiguousValues(int ecLevel, std::vector<int>& codewords, const std::vector<int>& erasureArray, const std::vector<int>& ambiguousIndexes, const std::vector<std::vector<int>>& ambiguousIndexValues)
+static DecoderResult CreateDecoderResultFromAmbiguousValues(int ecLevel, std::vector<int>& codewords, const std::vector<int>& erasureArray, const std::vector<int>& ambiguousIndexes, const std::vector<std::vector<int>>& ambiguousIndexValues, Diagnostics& diagnostics)
 {
 	std::vector<int> ambiguousIndexCount(ambiguousIndexes.size(), 0);
 
@@ -627,7 +628,7 @@ static DecoderResult CreateDecoderResultFromAmbiguousValues(int ecLevel, std::ve
 		for (size_t i = 0; i < ambiguousIndexCount.size(); i++) {
 			codewords[ambiguousIndexes[i]] = ambiguousIndexValues[i][ambiguousIndexCount[i]];
 		}
-		auto result = DecodeCodewords(codewords, ecLevel, erasureArray);
+		auto result = DecodeCodewords(codewords, ecLevel, erasureArray, diagnostics);
 		if (result.errorCode() != DecodeStatus::ChecksumError) {
 			return result;
 		}
@@ -652,7 +653,7 @@ static DecoderResult CreateDecoderResultFromAmbiguousValues(int ecLevel, std::ve
 }
 
 
-static DecoderResult CreateDecoderResult(DetectionResult& detectionResult)
+static DecoderResult CreateDecoderResult(DetectionResult& detectionResult, const bool enableDiagnostics)
 {
 	auto barcodeMatrix = CreateBarcodeMatrix(detectionResult);
 	if (!AdjustCodewordCount(detectionResult, barcodeMatrix)) {
@@ -678,7 +679,9 @@ static DecoderResult CreateDecoderResult(DetectionResult& detectionResult)
 			}
 		}
 	}
-	return CreateDecoderResultFromAmbiguousValues(detectionResult.barcodeECLevel(), codewords, erasures, ambiguousIndexesList, ambiguousIndexValues);
+	Diagnostics diagnostics(enableDiagnostics);
+	diagnostics.fmt("  Dimensions: %dx%d (RowsxColumns)\n", detectionResult.barcodeRowCount(), detectionResult.barcodeColumnCount());
+	return CreateDecoderResultFromAmbiguousValues(detectionResult.barcodeECLevel(), codewords, erasures, ambiguousIndexesList, ambiguousIndexValues, diagnostics);
 }
 
 
@@ -689,7 +692,7 @@ static DecoderResult CreateDecoderResult(DetectionResult& detectionResult)
 DecoderResult
 ScanningDecoder::Decode(const BitMatrix& image, const Nullable<ResultPoint>& imageTopLeft, const Nullable<ResultPoint>& imageBottomLeft,
 	const Nullable<ResultPoint>& imageTopRight, const Nullable<ResultPoint>& imageBottomRight,
-	int minCodewordWidth, int maxCodewordWidth)
+	int minCodewordWidth, int maxCodewordWidth, const bool enableDiagnostics)
 {
 	BoundingBox boundingBox;
 	if (!BoundingBox::Create(image.width(), image.height(), imageTopLeft, imageBottomLeft, imageTopRight, imageBottomRight, boundingBox)) {
@@ -750,7 +753,7 @@ ScanningDecoder::Decode(const BitMatrix& image, const Nullable<ResultPoint>& ima
 			}
 		}
 	}
-	return CreateDecoderResult(detectionResult);
+	return CreateDecoderResult(detectionResult, enableDiagnostics);
 }
 
 } // Pdf417

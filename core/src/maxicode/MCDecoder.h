@@ -32,7 +32,7 @@ namespace MaxiCode {
 class Decoder
 {
 public:
-	static DecoderResult Decode(const BitMatrix& bits);
+	static DecoderResult Decode(const BitMatrix& bits, const bool enableDiagnostics);
 };
 
 } // MaxiCode

@@ -32,7 +32,7 @@ class CustomData;
 class ResultMetadata
 {
 public:
-	
+
 	/**
 	* Represents some type of metadata about the result of the decoding that the decoder
 	* wishes to communicate back to the caller.
@@ -115,26 +115,63 @@ public:
 		*/
 		STRUCTURED_APPEND_PARITY,
 
+		/**
+		* If the code format supports structured append and the current scanned code is part of one then the
+		* id identifies the sequence it belongs to.
+		*/
+		STRUCTURED_APPEND_ID,
+
+		/**
+		* If the code format supports structured append and the current scanned code is part of one then the
+		* ECI is the one in force at the end of the current symbol.
+		*/
+		STRUCTURED_APPEND_ECI,
+
+		/**
+		* Symbology identifier of the form "]cm" where 'c' denotes the symbology, 'm' denotes mode within
+		* the symbology.
+		*/
+		SYMBOLOGY_IDENTIFIER,
+
+		/**
+		* Reader Initialisation/Programming boolean flag.
+		*/
+		READER_INIT,
+
+		/**
+		* Decode diagnostics.
+		*/
+		DIAGNOSTICS,
+
 	};
 
 	int getInt(Key key, int fallbackValue = 0) const;
+	bool getBool(Key key) const;
+	std::string getNString(Key key) const;
 	std::wstring getString(Key key) const;
 	std::list<ByteArray> getByteArrayList(Key key) const;
 	std::shared_ptr<CustomData> getCustomData(Key key) const;
+	std::list<std::string> getStringList(Key key) const;
 	
 	void put(Key key, int value);
+	void put(Key key, bool value);
+	void put(Key key, const std::string& value);
 	void put(Key key, const std::wstring& value);
 	void put(Key key, const std::list<ByteArray>& value);
 	void put(Key key, const std::shared_ptr<CustomData>& value);
+	void put(Key key, const std::list<std::string>& value);
 
 	void putAll(const ResultMetadata& other);
 
 private:
 	struct Value;
 	struct IntegerValue;
+	struct BoolValue;
+	struct NStringValue;
 	struct StringValue;
 	struct ByteArrayListValue;
 	struct CustomDataValue;
+	struct StringListValue;
 
 	std::map<Key, std::shared_ptr<Value>> _contents;
 };

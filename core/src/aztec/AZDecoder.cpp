@@ -22,6 +22,7 @@
 #include "BitMatrix.h"
 #include "DecodeStatus.h"
 #include "DecoderResult.h"
+#include "Diagnostics.h"
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
 #include "TextDecoder.h"
@@ -62,7 +63,7 @@ static const char* MIXED_TABLE[] = {
 };
 
 static const char* PUNCT_TABLE[] = {
-	"", "\r", "\r\n", ". ", ", ", ": ", "!", "\"", "#", "$", "%", "&", "'", "(", ")",
+	"FLGN", "\r", "\r\n", ". ", ", ", ": ", "!", "\"", "#", "$", "%", "&", "'", "(", ")",
 	"*", "+", ",", "-", ".", "/", ":", ";", "<", "=", ">", "?", "[", "]", "{", "}", "CTRL_UL"
 };
 
@@ -274,7 +275,7 @@ static const char* GetCharacter(Table table, int code)
 * @return the decoded string
 */
 ZXING_EXPORT_TEST_ONLY
-std::string GetEncodedData(const std::vector<bool>& correctedBits)
+std::string GetEncodedData(const std::vector<bool>& correctedBits, Diagnostics& diagnostics)
 {
 	int endIndex = Size(correctedBits);
 	Table latchTable = Table::UPPER; // table most recently latched to
@@ -326,11 +327,33 @@ std::string GetEncodedData(const std::vector<bool>& correctedBits)
 				if (str[6] == 'L') {
 					latchTable = shiftTable;
 				}
+				diagnostics.fmt("%c%c", str[5], str[6]);
+			}
+			else if (std::strcmp(str, "FLGN") == 0) {
+				if (endIndex - index < 3) {
+					break;
+				}
+				bool first = index == 5;
+				int flg = ReadCode(correctedBits, index, 3);
+				index += 3;
+				if (flg == 0) {
+					diagnostics.put(first ? "FLG0(GS1)" : "FLG0(FNC1)");
+				} else {
+					int eci = 0;
+					for (int i = 0; i < flg && endIndex - index >= 4; i++) {
+						eci *= 10;
+						eci += ReadCode(correctedBits, index, 4) - 2;
+						index += 4;
+					}
+					diagnostics.fmt("FLG%d(ECI(%d))", flg, eci);
+				}
+				shiftTable = latchTable;
 			}
 			else {
 				result.append(str);
 				// Go back to whatever mode we had been in
 				shiftTable = latchTable;
+				diagnostics.chr(*str);
 			}
 		}
 	}
@@ -361,14 +384,21 @@ static ByteArray ConvertBoolArrayToByteArray(const std::vector<bool>& boolArr)
 	return byteArr;
 }
 
-DecoderResult Decoder::Decode(const DetectorResult& detectorResult)
+DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const bool enableDiagnostics)
 {
 	std::vector<bool> rawbits = ExtractBits(detectorResult);
 	std::vector<bool> correctedBits;
+	Diagnostics diagnostics(enableDiagnostics);
+
+	diagnostics.put("  Decode:   ");
 	if (CorrectBits(detectorResult, rawbits, correctedBits)) {
-		return DecoderResult(ConvertBoolArrayToByteArray(correctedBits),
-							 TextDecoder::FromLatin1(GetEncodedData(correctedBits)))
-		        .setNumBits(Size(correctedBits));
+		DecoderResult decoderResult(ConvertBoolArrayToByteArray(correctedBits),
+							 TextDecoder::FromLatin1(GetEncodedData(correctedBits, diagnostics)));
+		decoderResult.setNumBits(Size(correctedBits));
+		if (diagnostics.enabled()) {
+			decoderResult.setDiagnostics(std::move(diagnostics.get()));
+		}
+		return decoderResult;
 	}
 	else {
 		return DecodeStatus::FormatError;

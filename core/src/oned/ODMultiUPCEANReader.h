@@ -36,7 +36,7 @@ public:
 	explicit MultiUPCEANReader(const DecodeHints& hints);
 	~MultiUPCEANReader() override;
 
-	Result decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const override;
+	Result decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&, Diagnostics& diagnostics) const override;
 
 private:
 	bool _canReturnUPCA = false;

@@ -16,13 +16,14 @@
 */
 
 #include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "pdf417/PDFDecodedBitStreamParser.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 
 #include "gtest/gtest.h"
 
 namespace ZXing { namespace Pdf417 {
-	DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata, int& next);
+	DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata, int& next, Diagnostics& diagnostics);
 }}
 
 using namespace ZXing;
@@ -39,7 +40,8 @@ TEST(PDF417DecoderTest, StandardSample1)
 
 	int next = 0;
 	DecoderResultExtra resultMetadata;
-	auto status = DecodeMacroBlock(sampleCodes, 2, resultMetadata, next);
+	Diagnostics diagnostics(false);
+	auto status = DecodeMacroBlock(sampleCodes, 2, resultMetadata, next, diagnostics);
 
 	EXPECT_EQ(0, resultMetadata.segmentIndex());
 	EXPECT_EQ("ARBX", resultMetadata.fileId());
@@ -64,7 +66,8 @@ TEST(PDF417DecoderTest, StandardSample2)
 
 	int next = 0;
 	DecoderResultExtra resultMetadata;
-	auto status = DecodeMacroBlock(sampleCodes, 2, resultMetadata, next);
+	Diagnostics diagnostics(false);
+	auto status = DecodeMacroBlock(sampleCodes, 2, resultMetadata, next, diagnostics);
 
 	EXPECT_EQ(3, resultMetadata.segmentIndex());
 	EXPECT_EQ("ARBX", resultMetadata.fileId());
@@ -86,7 +89,8 @@ TEST(PDF417DecoderTest, SampleWithFilename)
 
 	int next = 0;
 	DecoderResultExtra resultMetadata;
-	auto status = DecodeMacroBlock(sampleCodes, 3, resultMetadata, next);
+	Diagnostics diagnostics(false);
+	auto status = DecodeMacroBlock(sampleCodes, 3, resultMetadata, next, diagnostics);
 
 	EXPECT_EQ(0, resultMetadata.segmentIndex());
 	EXPECT_EQ("AAIMAVC ", resultMetadata.fileId());
@@ -103,7 +107,8 @@ TEST(PDF417DecoderTest, SampleWithNumericValues)
 
 	int next = 0;
 	DecoderResultExtra resultMetadata;
-	auto status = DecodeMacroBlock(sampleCodes, 3, resultMetadata, next);
+	Diagnostics diagnostics(false);
+	auto status = DecodeMacroBlock(sampleCodes, 3, resultMetadata, next, diagnostics);
 
 	EXPECT_EQ(0, resultMetadata.segmentIndex());
 	EXPECT_EQ("AAIMAVC ", resultMetadata.fileId());

@@ -94,7 +94,7 @@ Code39Reader::Code39Reader(const DecodeHints& hints) :
 {
 }
 
-Result Code39Reader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<RowReader::DecodingState>&) const
+Result Code39Reader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<RowReader::DecodingState>&, Diagnostics&) const
 {
 	// minimal number of characters that must be present (including start, stop and checksum characters)
 	int minCharCount = _usingCheckDigit ? 4 : 3;

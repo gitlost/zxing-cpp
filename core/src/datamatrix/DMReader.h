@@ -32,7 +32,7 @@ namespace DataMatrix {
 */
 class Reader : public ZXing::Reader
 {
-	bool _tryRotate, _tryHarder, _isPure;
+	bool _tryRotate, _tryHarder, _isPure, _enableDiagnostics;
 	std::string _characterSet;
 public:
 	explicit Reader(const DecodeHints& hints);

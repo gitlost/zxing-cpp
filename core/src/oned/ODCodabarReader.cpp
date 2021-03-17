@@ -65,7 +65,7 @@ bool IsLeftGuard(const PatternView& view, int spaceInPixel)
 }
 
 Result
-CodabarReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const
+CodabarReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&, Diagnostics&) const
 {
 	// minimal number of characters that must be present (including start, stop and checksum characters)
 	// absolute minimum would be 2 (meaning 0 'content'). everything below 4 produces too many false

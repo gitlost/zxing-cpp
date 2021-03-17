@@ -48,6 +48,7 @@ class DecodeHints
 	bool _assumeGS1 : 1;
 	bool _returnCodabarStartEnd : 1;
 	bool _requireEanAddOnSymbol : 1;
+    bool _enableDiagnostics : 1;
 	Binarizer _binarizer : 2;
 
 	BarcodeFormats _formats = BarcodeFormat::None;
@@ -58,7 +59,8 @@ public:
 	// bitfields don't get default initialized to 0.
 	DecodeHints()
 		: _tryHarder(1), _tryRotate(1), _isPure(0), _tryCode39ExtendedMode(0), _assumeCode39CheckDigit(0),
-		  _assumeGS1(0), _returnCodabarStartEnd(0), _requireEanAddOnSymbol(0), _binarizer(Binarizer::LocalAverage)
+		  _assumeGS1(0), _returnCodabarStartEnd(0), _requireEanAddOnSymbol(0), _enableDiagnostics(0),
+          _binarizer(Binarizer::LocalAverage)
 	{}
 
 #define ZX_PROPERTY(TYPE, GETTER, SETTER) \
@@ -110,6 +112,11 @@ public:
 	* symbol.
 	*/
 	ZX_PROPERTY(bool, requireEanAddOnSymbol, setRequireEanAddOnSymbol)
+
+	/**
+	* Enable diagnostics.
+	*/
+	ZX_PROPERTY(bool, enableDiagnostics, setEnableDiagnostics)
 
 #undef ZX_PROPERTY
 

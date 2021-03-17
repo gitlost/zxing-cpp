@@ -69,6 +69,14 @@ public:
 	int readBits(int numBits);
 
 	/**
+	* @param numBits number of bits to look ahead
+	* @return int representing the bits looked at. The bits will appear as the least-significant
+	*         bits of the int
+	* @throws IllegalArgumentException if numBits isn't in [1,32] or more than is available
+	*/
+	int lookBits(int numBits);
+
+	/**
 	* @return number of bits that can be read successfully
 	*/
 	int available() const;

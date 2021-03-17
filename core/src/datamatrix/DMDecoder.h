@@ -31,11 +31,12 @@ namespace DataMatrix {
  *
  * @param bits booleans representing white/black Data Matrix Code modules
  * @param characterSet initial character encoding to use as a {@link CharacterSetECI} name string
+ * @param enableDiagnostics
  * @return text and bytes encoded within the Data Matrix Code
  * @throws FormatException if the Data Matrix Code cannot be decoded
  * @throws ChecksumException if error correction fails
  */
-DecoderResult Decode(const BitMatrix& bits, const std::string& characterSet = "");
+DecoderResult Decode(const BitMatrix& bits, const std::string& characterSet = "", const bool enableDiagnostics = false);
 
 } // DataMatrix
 } // ZXing

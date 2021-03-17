@@ -329,7 +329,7 @@ static bool Extension(PartialResult& res, PatternView begin, int digitCount)
 	return true;
 }
 
-Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<RowReader::DecodingState>&) const
+Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<RowReader::DecodingState>&, Diagnostics&) const
 {
 	const int minSize = 3 + 6*4 + 6; // UPC-E
 
@@ -359,7 +359,7 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, s
 
 	auto ext = res.end;
 	PartialResult extRes;
-	if (_hints.requireEanAddOnSymbol() && ext.skipSymbol() && ext.skipSingle(static_cast<int>(begin.sum() * 3.5)) &&
+	if (ext.skipSymbol() && ext.skipSingle(static_cast<int>(begin.sum() * 3.5)) &&
 		(Extension(extRes, ext, 5) || Extension(extRes, ext, 2))) {
 
 		//TODO: extend position in include extension

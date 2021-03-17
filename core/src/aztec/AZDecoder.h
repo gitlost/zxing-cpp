@@ -33,7 +33,7 @@ class DetectorResult;
 class Decoder
 {
 public:
-	static DecoderResult Decode(const DetectorResult& detectorResult);
+	static DecoderResult Decode(const DetectorResult& detectorResult, const bool enableDiagnostics);
 };
 
 } // Aztec

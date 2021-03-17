@@ -39,7 +39,8 @@ namespace ZXing::OneD {
 Reader::Reader(const DecodeHints& hints) :
 	_tryHarder(hints.tryHarder()),
 	_tryRotate(hints.tryRotate()),
-	_isPure(hints.isPure())
+	_isPure(hints.isPure()),
+	_enableDiagnostics(hints.enableDiagnostics())
 {
 	_readers.reserve(8);
 
@@ -81,7 +82,7 @@ Reader::~Reader() = default;
 * @throws NotFoundException Any spontaneous errors which occur
 */
 static Result
-DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBitmap& image, bool tryHarder, bool isPure)
+DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBitmap& image, bool tryHarder, bool isPure, Diagnostics& diagnostics)
 {
 	std::vector<std::unique_ptr<RowReader::DecodingState>> decodingState(readers.size());
 
@@ -126,7 +127,7 @@ DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBit
 			}
 			// Look for a barcode
 			for (size_t r = 0; r < readers.size(); ++r) {
-				Result result = readers[r]->decodePattern(rowNumber, bars, decodingState[r]);
+				Result result = readers[r]->decodePattern(rowNumber, bars, decodingState[r], diagnostics);
 				if (result.isValid()) {
 					if (upsideDown) {
 						// update position (flip horizontally).
@@ -151,11 +152,12 @@ DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBit
 Result
 Reader::decode(const BinaryBitmap& image) const
 {
-	Result result = DoDecode(_readers, image, _tryHarder, _isPure);
+    Diagnostics diagnostics(_enableDiagnostics);
+	Result result = DoDecode(_readers, image, _tryHarder, _isPure, diagnostics);
 
 	if (!result.isValid() && _tryRotate && image.canRotate()) {
 		auto rotatedImage = image.rotated(270);
-		result = DoDecode(_readers, *rotatedImage, _tryHarder, _isPure);
+		result = DoDecode(_readers, *rotatedImage, _tryHarder, _isPure, diagnostics);
 		if (result.isValid()) {
 			// Update position
 			auto points = result.position();
@@ -168,6 +170,7 @@ Reader::decode(const BinaryBitmap& image) const
 	}
 
 	result.metadata().put(ResultMetadata::ORIENTATION, result.orientation());
+	result.metadata().put(ResultMetadata::DIAGNOSTICS, std::move(diagnostics.get()));
 
 	return result;
 }

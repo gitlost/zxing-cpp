@@ -45,7 +45,7 @@ public:
 	*/
 	explicit Code39Reader(const DecodeHints& hints);
 	
-	Result decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const override;
+	Result decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&, Diagnostics& diagnostics) const override;
 
 private:
 	bool _extendedMode;

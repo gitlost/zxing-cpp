@@ -17,6 +17,7 @@
 
 #include "ByteArray.h"
 #include "DecoderResult.h"
+#include "Diagnostics.h"
 
 #include "gtest/gtest.h"
 #include <utility>
@@ -24,7 +25,7 @@
 namespace ZXing {
 	namespace DataMatrix {
 		namespace DecodedBitStreamParser {
-			DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet);
+			DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, Diagnostics& diagnostics, const bool isDMRE);
 		}
 	}
 }
@@ -33,16 +34,18 @@ using namespace ZXing;
 
 TEST(DMDecodedBitStreamParserTest, AsciiStandardDecode)
 {
+	Diagnostics diagnostics(false);
 	// ASCII characters 0-127 are encoded as the value + 1
 	ByteArray bytes = { 'a' + 1, 'b' + 1, 'c' + 1, 'A' + 1, 'B' + 1, 'C' + 1 };
-	auto decodedString = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "").text();
+	auto decodedString = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "", diagnostics, false).text();
 	EXPECT_EQ(decodedString, L"abcABC");
 }
 
 TEST(DMDecodedBitStreamParserTest, AsciiDoubleDigitDecode)
 {
+	Diagnostics diagnostics(false);
 	// ASCII double digit (00 - 99) Numeric Value + 130
 	ByteArray bytes = { 130 , 1 + 130, 98 + 130, 99 + 130 };
-	auto decodedString = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "").text();
+	auto decodedString = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "", diagnostics, false).text();
 	EXPECT_EQ(decodedString, L"00019899");
 }

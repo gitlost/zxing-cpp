@@ -34,6 +34,7 @@ namespace ZXing::Aztec {
 Reader::Reader(const DecodeHints& hints)
 {
 	_isPure = hints.isPure();
+	_enableDiagnostics = hints.enableDiagnostics();
 }
 
 Result
@@ -47,14 +48,14 @@ Reader::decode(const BinaryBitmap& image) const
 	DetectorResult detectResult = Detector::Detect(*binImg, false, _isPure);
 	DecoderResult decodeResult = DecodeStatus::NotFound;
 	if (detectResult.isValid()) {
-		decodeResult = Decoder::Decode(detectResult);
+		decodeResult = Decoder::Decode(detectResult, _enableDiagnostics);
 	}
 
 	//TODO: don't start detection all over again, just to swap 2 corner points
 	if (!decodeResult.isValid()) {
 		detectResult = Detector::Detect(*binImg, true, _isPure);
 		if (detectResult.isValid()) {
-			decodeResult = Decoder::Decode(detectResult);
+			decodeResult = Decoder::Decode(detectResult, _enableDiagnostics);
 		}
 	}
 

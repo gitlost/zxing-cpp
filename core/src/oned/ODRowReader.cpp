@@ -25,6 +25,7 @@ namespace ZXing::OneD {
 
 Result RowReader::decodeSingleRow(int rowNumber, const BitArray& row) const
 {
+    Diagnostics diagnostics(false);
 	std::unique_ptr<DecodingState> state;
 	PatternRow res;
 	auto li = row.begin();
@@ -39,7 +40,7 @@ Result RowReader::decodeSingleRow(int rowNumber, const BitArray& row) const
 	if (*(i-1))
 		res.push_back(0);
 
-	return decodePattern(rowNumber, res, state);
+	return decodePattern(rowNumber, res, state, diagnostics);
 }
 
 } // namespace ZXing::OneD

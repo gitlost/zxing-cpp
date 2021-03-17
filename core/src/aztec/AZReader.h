@@ -37,6 +37,7 @@ public:
 
 private:
 	bool _isPure;
+	bool _enableDiagnostics;
 };
 
 } // Aztec

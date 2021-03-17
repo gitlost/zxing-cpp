@@ -57,6 +57,7 @@ class Raw2TxtDecoder
 {
 	int codeSet = 0;
 	bool _convertFNC1 = false;
+	bool _readerInit = false;
 	std::string txt;
 	size_t lastTxtSize = 0;
 
@@ -64,17 +65,19 @@ class Raw2TxtDecoder
 	bool fnc4Next = false;
 	bool shift = false;
 
-	void fnc1()
+	void fnc1(Diagnostics& diagnostics)
 	{
 		if (_convertFNC1) {
 			if (txt.empty()) {
 				// GS1 specification 5.4.3.7. and 5.4.6.4. If the first char after the start code
 				// is FNC1 then this is GS1-128. We add the symbology identifier.
 				txt.append("]C1");
+				diagnostics.put("FNC1(GS1)");
 			}
 			else {
 				// GS1 specification 5.4.7.5. Every subsequent FNC1 is returned as ASCII 29 (GS)
 				txt.push_back((char)29);
+				diagnostics.put("FNC1(29)");
 			}
 		}
 	};
@@ -85,7 +88,7 @@ public:
 		txt.reserve(20);
 	}
 
-	bool decode(int code)
+	bool decode(int code, Diagnostics& diagnostics)
 	{
 		lastTxtSize = txt.size();
 
@@ -94,25 +97,34 @@ public:
 				if (code < 10)
 					txt.push_back('0');
 				txt.append(std::to_string(code));
+				diagnostics.fmt("%02d", code);
 			} else if (code == CODE_FNC_1) {
-				fnc1();
+				fnc1(diagnostics);
 			} else {
 				codeSet = code; // CODE_A / CODE_B
+				diagnostics.fmt("CODE%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 			}
 		} else { // codeSet A or B
 			bool unshift = shift;
 
 			switch (code) {
-			case CODE_FNC_1: fnc1(); break;
+			case CODE_FNC_1: fnc1(diagnostics); break;
 			case CODE_FNC_2:
-			case CODE_FNC_3:
 				// do nothing?
+				diagnostics.put("FNC2");
+				break;
+			case CODE_FNC_3:
+				_readerInit = true;
+				diagnostics.put("RInit");
 				break;
 			case CODE_SHIFT:
-				if (shift)
+				if (shift) {
+					diagnostics.put("2ShiftsError");
 					return false; // two shifts in a row make no sense
+				}
 				shift = true;
 				codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
+				diagnostics.fmt("Sh%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 				break;
 			case CODE_CODE_A:
 			case CODE_CODE_B:
@@ -121,11 +133,15 @@ public:
 					if (fnc4Next)
 						fnc4All = !fnc4All;
 					fnc4Next = !fnc4Next;
+					diagnostics.put("FNC4");
 				} else {
 					codeSet = code;
+					diagnostics.fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 				}
 				break;
-			case CODE_CODE_C: codeSet = CODE_CODE_C; break;
+			case CODE_CODE_C: codeSet = CODE_CODE_C;
+				diagnostics.put("CodeC");
+				break;
 
 			default: {
 				// code < 96 at this point
@@ -136,6 +152,7 @@ public:
 					offset = fnc4All == fnc4Next ? ' ' : ' ' + 128;
 				txt.push_back((char)(code + offset));
 				fnc4Next = false;
+				diagnostics.chr(txt.back());
 				break;
 			}
 			}
@@ -156,6 +173,8 @@ public:
 		// be a printable character).
 		return txt.substr(0, lastTxtSize);
 	}
+
+	bool readerInit() const { return _readerInit; }
 };
 
 template <typename C>
@@ -174,7 +193,7 @@ static int DetectStartCode(const C& c)
 }
 
 Code128Reader::Code128Reader(const DecodeHints& hints) :
-	_convertFNC1(hints.assumeGS1())
+	_convertFNC1(hints.assumeGS1()), _enableDiagnostics(hints.enableDiagnostics())
 {
 }
 
@@ -212,7 +231,7 @@ constexpr int CHARACTER_ENCODINGS[] = {
 };
 #endif
 
-Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const
+Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&, Diagnostics& diagnostics) const
 {
 	int minCharCount = 4; // start + payload + checksum + stop
 	auto decodePattern = [](const PatternView& view, bool start = false) {
@@ -240,6 +259,7 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 	ByteArray rawCodes;
 	rawCodes.reserve(20);
 	rawCodes.push_back(static_cast<uint8_t>(startCode));
+	diagnostics.fmt("    Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
 
 	Raw2TxtDecoder raw2txt(startCode, _convertFNC1);
 
@@ -255,7 +275,7 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 			break;
 		if (code >= CODE_START_A)
 			return Result(DecodeStatus::FormatError);
-		if (!raw2txt.decode(code))
+		if (!raw2txt.decode(code, diagnostics))
 			return Result(DecodeStatus::FormatError);
 
 		rawCodes.push_back(static_cast<uint8_t>(code));
@@ -274,11 +294,17 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 	for (int i = 1; i < Size(rawCodes) - 1; ++i)
 		checksum += i * rawCodes[i];
 	// the second last code is the checksum (last one is the stop code):
-	if (checksum % 103 != rawCodes.back())
+	checksum %= 103;
+	diagnostics.fmt("CSum(%c)", checksum + ' ');
+	if (checksum != rawCodes.back())
 		return Result(DecodeStatus::ChecksumError);
 
 	int xStop = next.pixelsTillEnd();
-	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes));
+	Result result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes));
+	if (raw2txt.readerInit()) {
+		result.metadata().put(ResultMetadata::READER_INIT, true);
+	}
+	return result;
 }
 
 } // namespace ZXing::OneD

@@ -38,7 +38,7 @@ public:
 	Result decode(const BinaryBitmap& image) const override;
 
 private:
-	bool _tryHarder, _isPure;
+	bool _tryHarder, _isPure, _enableDiagnostics;
 	std::string _charset;
 };
 

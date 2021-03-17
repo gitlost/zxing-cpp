@@ -49,7 +49,12 @@ class DecoderResult
 	int _structuredAppendSequenceNumber = 0;
 	int _structuredAppendCodeCount = 0;
 	int _structuredAppendParity = 0;
+	std::string _structuredAppendId;
+	int _structuredAppendECI = 0;
+	std::string _symbologyIdentifier;
 	std::shared_ptr<CustomData> _extra;
+	bool _readerInit = false;
+	std::list<std::string> _diagnostics;
 
 	DecoderResult(const DecoderResult &) = delete;
 	DecoderResult& operator=(const DecoderResult &) = delete;
@@ -93,13 +98,18 @@ public:
 	ZX_PROPERTY(int, errorsCorrected, setErrorsCorrected)
 	ZX_PROPERTY(int, erasures, setErasures)
 	ZX_PROPERTY(int, structuredAppendParity, setStructuredAppendParity)
+	ZX_PROPERTY(std::string, structuredAppendId, setStructuredAppendId)
 	ZX_PROPERTY(int, structuredAppendSequenceNumber, setStructuredAppendSequenceNumber)
 	ZX_PROPERTY(int, structuredAppendCodeCount, setStructuredAppendCodeCount)
+	ZX_PROPERTY(int, structuredAppendECI, setStructuredAppendECI)
+	ZX_PROPERTY(std::string, symbologyIdentifier, setSymbologyIdentifier)
 	ZX_PROPERTY(std::shared_ptr<CustomData>, extra, setExtra)
+	ZX_PROPERTY(bool, readerInit, setReaderInit)
+	ZX_PROPERTY(std::list<std::string>, diagnostics, setDiagnostics)
 
 #undef ZX_PROPERTY
 
-	bool hasStructuredAppend() const { return _structuredAppendParity >= 0 && _structuredAppendSequenceNumber >= 0; }
+	bool hasStructuredAppend() const { return _structuredAppendCodeCount >= 1; }
 };
 
 } // ZXing

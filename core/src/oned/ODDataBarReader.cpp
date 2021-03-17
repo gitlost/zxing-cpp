@@ -164,7 +164,7 @@ struct State : public RowReader::DecodingState
 };
 
 Result DataBarReader::decodePattern(int rowNumber, const PatternView& view,
-									std::unique_ptr<RowReader::DecodingState>& state) const
+									std::unique_ptr<RowReader::DecodingState>& state, Diagnostics&) const
 {
 #if 0 // non-stacked version
 	auto next = view.subView(-1, FULL_PAIR_SIZE + 2);

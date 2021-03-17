@@ -27,6 +27,7 @@ namespace MaxiCode {
 class Reader : public ZXing::Reader
 {
 	bool _isPure;
+	bool _enableDiagnostics;
 
 public:
 	explicit Reader(const DecodeHints& hints);

@@ -55,6 +55,19 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 		metadata().put(ResultMetadata::STRUCTURED_APPEND_SEQUENCE, decodeResult.structuredAppendSequenceNumber());
 		metadata().put(ResultMetadata::STRUCTURED_APPEND_CODE_COUNT, decodeResult.structuredAppendCodeCount());
 		metadata().put(ResultMetadata::STRUCTURED_APPEND_PARITY, decodeResult.structuredAppendParity());
+		metadata().put(ResultMetadata::STRUCTURED_APPEND_ID, decodeResult.structuredAppendId());
+		metadata().put(ResultMetadata::STRUCTURED_APPEND_ECI, decodeResult.structuredAppendECI());
+	}
+	const auto& symbologyIdentifier = decodeResult.symbologyIdentifier();
+    if (!symbologyIdentifier.empty()) {
+		metadata().put(ResultMetadata::SYMBOLOGY_IDENTIFIER, symbologyIdentifier);
+    }
+    if (decodeResult.readerInit()) {
+		metadata().put(ResultMetadata::READER_INIT, decodeResult.readerInit());
+    }
+	const auto& diagnostics = decodeResult.diagnostics();
+	if (!diagnostics.empty()) {
+		metadata().put(ResultMetadata::DIAGNOSTICS, diagnostics);
 	}
 	//TODO: what about the other optional data in DecoderResult?
 }

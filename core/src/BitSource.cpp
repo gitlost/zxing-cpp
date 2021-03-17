@@ -74,4 +74,18 @@ BitSource::readBits(int numBits)
 	return result;
 }
 
+int
+BitSource::lookBits(int numBits)
+{
+	int byteOffset = _byteOffset;
+	int bitOffset = _bitOffset;
+
+	int result = readBits(numBits);
+
+	_byteOffset = byteOffset;
+	_bitOffset = bitOffset;
+
+	return result;
+}
+
 } // ZXing

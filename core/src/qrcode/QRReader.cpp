@@ -33,7 +33,7 @@
 namespace ZXing::QRCode {
 
 Reader::Reader(const DecodeHints& hints)
-	: _tryHarder(hints.tryHarder()), _isPure(hints.isPure()), _charset(hints.characterSet())
+	: _tryHarder(hints.tryHarder()), _isPure(hints.isPure()), _enableDiagnostics(hints.enableDiagnostics()), _charset(hints.characterSet())
 {
 }
 
@@ -49,7 +49,7 @@ Reader::decode(const BinaryBitmap& image) const
 	if (!detectorResult.isValid())
 		return Result(DecodeStatus::NotFound);
 
-	auto decoderResult = Decode(detectorResult.bits(), _charset);
+	auto decoderResult = Decode(detectorResult.bits(), _charset, _enableDiagnostics);
 	auto position = detectorResult.position();
 
 	// TODO: report the information that the symbol was mirrored back to the caller

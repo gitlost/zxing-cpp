@@ -32,7 +32,7 @@ namespace Pdf417 {
 */
 class Reader : public ZXing::Reader
 {
-	bool _isPure;
+	bool _isPure, _enableDiagnostics;
 
 public:
 	explicit Reader(const DecodeHints& hints);

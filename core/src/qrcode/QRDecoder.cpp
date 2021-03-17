@@ -23,6 +23,7 @@
 #include "CharacterSetECI.h"
 #include "DecodeStatus.h"
 #include "DecoderResult.h"
+#include "Diagnostics.h"
 #include "GenericGF.h"
 #include "QRBitMatrixParser.h"
 #include "QRCodecMode.h"
@@ -105,8 +106,9 @@ DecodeHanziSegment(BitSource& bits, int count, std::wstring& result)
 }
 
 static DecodeStatus
-DecodeKanjiSegment(BitSource& bits, int count, std::wstring& result)
+DecodeKanjiSegment(BitSource& bits, int count, std::wstring& result, Diagnostics& diagnostics)
 {
+	diagnostics.put("KAN");
 	// Don't crash trying to read more bits than we have available.
 	if (count * 13 > bits.available()) {
 		return DecodeStatus::FormatError;
@@ -138,8 +140,9 @@ DecodeKanjiSegment(BitSource& bits, int count, std::wstring& result)
 }
 
 static DecodeStatus
-DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const std::string& hintedCharset, std::wstring& result, std::list<ByteArray>& byteSegments)
+DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const std::string& hintedCharset, std::wstring& result, std::list<ByteArray>& byteSegments, Diagnostics& diagnostics)
 {
+	diagnostics.fmt("BYTE(%d)", count);
 	// Don't crash trying to read more bits than we have available.
 	if (8 * count > bits.available()) {
 		return DecodeStatus::FormatError;
@@ -189,8 +192,9 @@ ToAlphaNumericChar(int value)
 }
 
 static DecodeStatus
-DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wstring& result)
+DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wstring& result, Diagnostics& diagnostics)
 {
+	diagnostics.put("ANUM");
 	// Read two characters at a time
 	std::string buffer;
 	while (count > 1) {
@@ -225,13 +229,15 @@ DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wst
 			}
 		}
 	}
+	diagnostics.put(buffer);
 	TextDecoder::AppendLatin1(result, buffer);
 	return DecodeStatus::NoError;
 }
 
 static DecodeStatus
-DecodeNumericSegment(BitSource& bits, int count, std::wstring& result)
+DecodeNumericSegment(BitSource& bits, int count, std::wstring& result, Diagnostics& diagnostics)
 {
+	diagnostics.put("NUM");
 	// Read three digits at a time
 	std::string buffer;
 	while (count >= 3) {
@@ -272,6 +278,7 @@ DecodeNumericSegment(BitSource& bits, int count, std::wstring& result)
 		buffer += ToAlphaNumericChar(digitBits);
 	}
 
+	diagnostics.put(buffer);
 	TextDecoder::AppendLatin1(result, buffer);
 	return DecodeStatus::NoError;
 }
@@ -307,7 +314,7 @@ ParseECIValue(BitSource& bits, int &outValue)
 * <p>See ISO 18004:2006, 6.4.3 - 6.4.7</p>
 */
 ZXING_EXPORT_TEST_ONLY DecoderResult
-DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel, const std::string& hintedCharset)
+DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel, const std::string& hintedCharset, Diagnostics& diagnostics)
 {
 	BitSource bits(bytes);
 	std::wstring result;
@@ -333,11 +340,13 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 			}
 			switch (mode) {
 			case CodecMode::TERMINATOR:
+				diagnostics.put("TERM");
 				break;
 			case CodecMode::FNC1_FIRST_POSITION:
 			case CodecMode::FNC1_SECOND_POSITION:
 				// We do little with FNC1 except alter the parsed result a bit according to the spec
 				fc1InEffect = true;
+				diagnostics.put("FNC1");
 				break;
 			case CodecMode::STRUCTURED_APPEND:
 				if (bits.available() < 16) {
@@ -351,8 +360,9 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 				break;
 			case CodecMode::ECI: {
 				// Count doesn't apply to ECI
-				int value;
+				int value = 0;
 				auto status = ParseECIValue(bits, value);
+                diagnostics.fmt("ECI(%d)", value);
 				if (StatusIsError(status)) {
 					return status;
 				}
@@ -382,18 +392,19 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 				DecodeStatus status;
 				switch (mode) {
 				case CodecMode::NUMERIC:
-					status = DecodeNumericSegment(bits, count, result);
+					status = DecodeNumericSegment(bits, count, result, diagnostics);
 					break;
 				case CodecMode::ALPHANUMERIC:
-					status = DecodeAlphanumericSegment(bits, count, fc1InEffect, result);
+					status = DecodeAlphanumericSegment(bits, count, fc1InEffect, result, diagnostics);
 					break;
 				case CodecMode::BYTE:
-					status = DecodeByteSegment(bits, count, currentCharset, hintedCharset, result, byteSegments);
+					status = DecodeByteSegment(bits, count, currentCharset, hintedCharset, result, byteSegments, diagnostics);
 					break;
 				case CodecMode::KANJI:
-					status = DecodeKanjiSegment(bits, count, result);
+					status = DecodeKanjiSegment(bits, count, result, diagnostics);
 					break;
 				default:
+					diagnostics.put("FormatError");
 					status = DecodeStatus::FormatError;
 				}
 				if (StatusIsError(status)) {
@@ -414,16 +425,20 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 		.setByteSegments(std::move(byteSegments))
 		.setEcLevel(ToString(ecLevel))
 		.setStructuredAppendParity(parityData)
+		.setStructuredAppendId(std::to_string(parityData))
 		.setStructuredAppendSequenceNumber(codeSequence)
-		.setStructuredAppendCodeCount(codeCount);
+		.setStructuredAppendCodeCount(codeCount)
+		.setDiagnostics(std::move(diagnostics.get()));
 }
 
 static DecoderResult
-DoDecode(const BitMatrix& bits, const Version& version, const std::string& hintedCharset, bool mirrored)
+DoDecode(const BitMatrix& bits, const Version& version, const std::string& hintedCharset, bool mirrored, const bool enableDiagnostics)
 {
+    Diagnostics diagnostics(enableDiagnostics);
 	auto formatInfo = ReadFormatInformation(bits, mirrored);
 	if (!formatInfo.isValid())
 		return DecodeStatus::FormatError;
+	diagnostics.fmt("  Dimensions: %dx%d (HxW)\n", bits.height(), bits.width());
 
 	// Read codewords
 	ByteArray codewords = ReadCodewords(bits, version, formatInfo.dataMask(), mirrored);
@@ -456,20 +471,21 @@ DoDecode(const BitMatrix& bits, const Version& version, const std::string& hinte
 	}
 
 	// Decode the contents of that stream of bytes
-	return DecodeBitStream(std::move(resultBytes), version, formatInfo.errorCorrectionLevel(), hintedCharset);
+	diagnostics.put("  Decode:     ");
+	return DecodeBitStream(std::move(resultBytes), version, formatInfo.errorCorrectionLevel(), hintedCharset, diagnostics);
 }
 
-DecoderResult Decode(const BitMatrix& bits, const std::string& hintedCharset)
+DecoderResult Decode(const BitMatrix& bits, const std::string& hintedCharset, const bool enableDiagnostics)
 {
 	const Version* version = ReadVersion(bits);
 	if (!version)
 		return DecodeStatus::FormatError;
 
-	auto res = DoDecode(bits, *version, hintedCharset, false);
+	auto res = DoDecode(bits, *version, hintedCharset, false, enableDiagnostics);
 	if (res.isValid())
 		return res;
 
-	if (auto resMirrored = DoDecode(bits, *version, hintedCharset, true); resMirrored.isValid()) {
+	if (auto resMirrored = DoDecode(bits, *version, hintedCharset, true, enableDiagnostics); resMirrored.isValid()) {
 		resMirrored.setExtra(std::make_shared<DecoderMetadata>(true));
 		return resMirrored;
 	}

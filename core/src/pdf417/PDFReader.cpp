@@ -17,24 +17,28 @@
 */
 
 #include "PDFReader.h"
-#include "PDFDetector.h"
-#include "PDFScanningDecoder.h"
-#include "PDFCodewordDecoder.h"
-#include "DecodeHints.h"
-#include "DecoderResult.h"
-#include "Result.h"
 
 #include "BitMatrixCursor.h"
+#include "BitMatrixIO.h"
 #include "BinaryBitmap.h"
 #include "BitArray.h"
+#include "DecodeHints.h"
+#include "DecoderResult.h"
 #include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "Pattern.h"
+#include "PDFCodewordDecoder.h"
+#include "PDFDecodedBitStreamParser.h"
+#include "PDFDecoderResultExtra.h"
+#include "PDFDetector.h"
+#include "PDFScanningDecoder.h"
+#include "Result.h"
 
-#include <vector>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
 #include <limits>
 #include <utility>
+#include <vector>
 
 #ifdef PRINT_DEBUG
 #include "PDFDecoderResultExtra.h"
@@ -93,6 +97,9 @@ DecodeStatus DoDecode(const BinaryBitmap& image, bool multiple, std::list<Result
 		if (decoderResult.isValid()) {
 			auto point = [&](int i) { return points[i].value(); };
 			Result result(std::move(decoderResult), {point(0), point(2), point(3), point(1)}, BarcodeFormat::PDF417);
+            if (auto extra = decoderResult.extra()) {
+                result.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
+            }
 			results.push_back(result);
 			if (!multiple) {
 				return DecodeStatus::NoError;
@@ -312,6 +319,7 @@ static Result DecodePure(const BinaryBitmap& image_, const std::string& characte
 			erasures.push_back(i);
 		}
 
+	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", info.nRows, info.nCols);
 	auto res = DecodeCodewords(codeWords, info.ecLevel, erasures, characterSet);
 
 	return Result(std::move(res), {{left, top}, {right, top}, {right, bottom}, {left, bottom}}, BarcodeFormat::PDF417);

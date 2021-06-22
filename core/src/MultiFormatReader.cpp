@@ -19,6 +19,7 @@
 
 #include "BarcodeFormat.h"
 #include "DecodeHints.h"
+#include "Diagnostics.h"
 #include "Result.h"
 #include "aztec/AZReader.h"
 #include "datamatrix/DMReader.h"
@@ -55,6 +56,8 @@ MultiFormatReader::MultiFormatReader(const DecodeHints& hints)
 	if (formats.testFlags(BarcodeFormat::OneDCodes) && tryHarder) {
 		_readers.emplace_back(new OneD::Reader(hints));
 	}
+
+	Diagnostics::setEnabled(hints.enableDiagnostics());
 }
 
 MultiFormatReader::~MultiFormatReader() = default;

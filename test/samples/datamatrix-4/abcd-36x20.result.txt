@@ -1,0 +1,6 @@
+symbologyIdentifier=]d7
+ecLevel=
+sequenceSize=-1
+sequenceIndex=-1
+sequenceId=
+readerInit=false

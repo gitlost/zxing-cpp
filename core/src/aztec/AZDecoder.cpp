@@ -23,6 +23,7 @@
 #include "CharacterSetECI.h"
 #include "DecoderResult.h"
 #include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
 #include "TextDecoder.h"
@@ -273,8 +274,9 @@ static const char* GetCharacter(Table table, int code)
 /**
 * See ISO/IEC 24778:2008 Section 10.1
 */
-static int ParseECIValue(const std::vector<bool>& correctedBits, const int flg, const int endIndex, int& index)
+static int ParseECIValue(const std::vector<bool>& correctedBits, const int flg, int& index)
 {
+	int endIndex = Size(correctedBits);
 	int eci = 0;
 	for (int i = 0; i < flg && endIndex - index >= 4; i++) {
 		eci *= 10;
@@ -295,6 +297,7 @@ static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendI
 	if (resultEncoded[0] == ' ') { // Space-delimited id
 		std::string::size_type sp = resultEncoded.find(' ', 1);
 		if (sp == std::string::npos) {
+			Diagnostics::put("SAIError(NoSp)");
 			return;
 		}
 		id = resultEncoded.substr(1, sp - 1); // Strip space delimiters
@@ -302,6 +305,7 @@ static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendI
 	}
 	if (i + 1 >= (int)resultEncoded.size() || resultEncoded[i] < 'A' || resultEncoded[i] > 'Z'
 			|| resultEncoded[i + 1] < 'A' || resultEncoded[i + 1] > 'Z') {
+		Diagnostics::put("SAIError");
 		return;
 	}
 	sai.index = resultEncoded[i] - 'A';
@@ -309,12 +313,13 @@ static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendI
 
 	if (sai.count == 1 || sai.count <= sai.index) { // If info doesn't make sense
 		sai.count = 0; // Choose to mark count as unknown
+		Diagnostics::put("SAIError(BadCount)");
 	}
 
 	if (!id.empty()) {
 		TextUtfEncoding::ToUtf8(id, sai.id);
 	}
-
+	Diagnostics::fmt("SAI(%d,%d,%s)", sai.index, sai.count, sai.id.c_str());
 	resultEncoded.erase(0, i + 2); // Remove
 }
 
@@ -325,20 +330,22 @@ static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendI
 */
 ZXING_EXPORT_TEST_ONLY
 std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::string& characterSet,
-							StructuredAppendInfo& sai)
+							std::string& symbologyIdentifier, StructuredAppendInfo& sai)
 {
-	int endIndex = Size(correctedBits);
+	const int endIndex = Size(correctedBits);
 	Table latchTable = Table::UPPER; // table most recently latched to
 	Table shiftTable = Table::UPPER; // table to use for the next read
 	std::string result;
 	result.reserve(20);
 	std::wstring resultEncoded;
 	int index = 0;
+	int symbologyIdModifier = 0;
 	CharacterSet encoding = CharacterSetECI::InitEncoding(characterSet);
 
 	// Check for Structured Append - need 4 5-bit words, beginning with ML UL, ending with index and count
 	bool haveStructuredAppend = endIndex > 20 && ReadCode(correctedBits, 0, 5) == 29 // ML (UPPER table)
 									&& ReadCode(correctedBits, 5, 5) == 29; // UL (MIXED table)
+	bool haveFNC1 = false;
 
 	while (index < endIndex) {
 		if (shiftTable == Table::BINARY) {
@@ -384,6 +391,7 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				if (str[6] == 'L') {
 					latchTable = shiftTable;
 				}
+				Diagnostics::fmt("%c%c", str[5], str[6]);
 			}
 			else if (std::strcmp(str, "FLGN") == 0) {
 				if (endIndex - index < 3) {
@@ -391,16 +399,19 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				}
 				int flg = ReadCode(correctedBits, index, 3);
 				index += 3;
-				if (flg == 0) {
-					// TODO: Handle FNC1
+				if (flg == 0) { // FNC1
+					haveFNC1 = true; // Will process first/second FNC1 at end after any Structured Append
+					result.push_back((char)29);
 				}
 				else if (flg <= 6) {
 					// FLG(1) to FLG(6) ECI
-					encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(correctedBits, flg, endIndex, index),
+					Diagnostics::fmt("FLG%d", flg);
+					encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(correctedBits, flg, index),
 																	resultEncoded, result, encoding);
 				}
 				else {
 					// FLG(7) is invalid
+					Diagnostics::put("FLG7Warn");
 				}
 				shiftTable = latchTable;
 			}
@@ -408,14 +419,43 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				result.append(str);
 				// Go back to whatever mode we had been in
 				shiftTable = latchTable;
+				Diagnostics::chr(*str);
 			}
 		}
 	}
 	TextDecoder::Append(resultEncoded, reinterpret_cast<const uint8_t*>(result.data()), result.size(), encoding);
 
-	if (haveStructuredAppend && !resultEncoded.empty()) {
-		ParseStructuredAppend(resultEncoded, sai);
+	if (!resultEncoded.empty()) {
+		if (haveStructuredAppend) {
+			ParseStructuredAppend(resultEncoded, sai);
+		}
+		if (haveFNC1) {
+			// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
+			// modifiers that indicate ECI protocol (ISO/IEC 24778:2008 Annex F Table F.1)
+			if (resultEncoded.front() == 29) {
+				symbologyIdModifier = 1; // GS1
+				resultEncoded.erase(0, 1); // Remove FNC1
+				Diagnostics::put("FLG0(GS1)");
+			}
+			else if (resultEncoded.size() > 2 && resultEncoded[0] >= 'A' && resultEncoded[0] <= 'Z' && resultEncoded[1] == 29) {
+				// FNC1 following single uppercase letter (the AIM Application Indicator)
+				symbologyIdModifier = 2; // AIM
+				resultEncoded.erase(1, 1); // Remove FNC1
+				// The AIM Application Indicator character "A"-"Z" is left in the stream (ISO/IEC 24778:2008 16.2)
+				Diagnostics::fmt("FLG0(AIM %c)", resultEncoded[0]);
+			}
+			else if (resultEncoded.size() > 3 && resultEncoded[0] >= '0' && resultEncoded[0] <= '9'
+					&& resultEncoded[1] >= '0' && resultEncoded[1] <= '9' && resultEncoded[2] == 29) {
+				// FNC1 following 2 digits (the AIM Application Indicator)
+				symbologyIdModifier = 2; // AIM
+				resultEncoded.erase(2, 1); // Remove FNC1
+				// The AIM Application Indicator characters "00"-"99" are left in the stream (ISO/IEC 24778:2008 16.2)
+				Diagnostics::fmt("FLG0(AIM %c%c)", resultEncoded[0], resultEncoded[1]);
+			}
+		}
 	}
+
+	symbologyIdentifier = "]z" + std::to_string(symbologyIdModifier + (sai.index > -1 ? 6 : 0));
 
 	return resultEncoded;
 }
@@ -448,11 +488,19 @@ DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const std::s
 {
 	std::vector<bool> rawbits = ExtractBits(detectorResult);
 	std::vector<bool> correctedBits;
+	std::string symbologyIdentifier;
 	StructuredAppendInfo sai;
+
+    Diagnostics::fmt("  Dimensions: %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
+	Diagnostics::put("  Decode:     ");
 	if (CorrectBits(detectorResult, rawbits, correctedBits)) {
-		return DecoderResult(ConvertBoolArrayToByteArray(correctedBits),
-							 GetEncodedData(correctedBits, characterSet, sai))
-		        .setNumBits(Size(correctedBits))
+		std::wstring resultEncoded = GetEncodedData(correctedBits, characterSet, symbologyIdentifier, sai);
+		if (resultEncoded.empty()) {
+			return DecodeStatus::FormatError;
+		}
+		return DecoderResult(ConvertBoolArrayToByteArray(correctedBits), std::move(resultEncoded))
+				.setNumBits(Size(correctedBits))
+				.setSymbologyIdentifier(std::move(symbologyIdentifier))
 				.setStructuredAppend(sai)
 				.setReaderInit(detectorResult.readerInit());
 	}

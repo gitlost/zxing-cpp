@@ -368,11 +368,16 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, const PatternView& vi
 #endif
 
 	auto txt = DecodeExpandedBits(BuildBitArray(pairs));
-	if(txt.empty())
+	if (txt.empty()) {
+		//printf("DataBarExpandedReader::decodePattern %d txt.empty\n", rowNumber);
 		return Result(DecodeStatus::NotFound);
+	}
+
+	// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
+	std::string symbologyIdentifier("]e0");
 
 	return {TextDecoder::FromLatin1(txt), EstimatePosition(pairs.front(), pairs.back()),
-			BarcodeFormat::DataBarExpanded};
+			BarcodeFormat::DataBarExpanded, {}, symbologyIdentifier};
 }
 
 } // namespace ZXing::OneD

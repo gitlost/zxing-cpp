@@ -53,6 +53,18 @@ if (BUILD_UNIT_TESTS)
     endif()
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	option (BUILD_SANITIZE "Build with CXX sanitize flags" OFF)
+    if(ZINT_SANITIZE)
+        add_compile_options(-fsanitize=undefined -fsanitize=address)
+        link_libraries(-fsanitize=undefined -fsanitize=address)
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+            # Gives warning on MainWindow::setupUI() and retries (& takes forever) if var-tracking-assignments enabled
+            add_compile_options(-fno-var-tracking-assignments)
+        endif()
+    endif()
+endif()
+
 add_subdirectory (core)
 
 enable_testing()

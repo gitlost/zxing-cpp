@@ -213,6 +213,7 @@ static bool ExtractParameters(const BitMatrix& image, const std::array<ResultPoi
 			correctedData &= ~0x20;
 		}
 		nbDataBlocks = (correctedData & 0x3F) + 1;
+		//printf("nbLayers %d, correctedData 0x%X, nbDataBlocks 0x%X, readerInit %d\n", nbLayers, correctedData, nbDataBlocks, readerInit);
 	}
 	else {
 		// 16 bits:  5 bits layers and 11 bits data blocks
@@ -222,6 +223,7 @@ static bool ExtractParameters(const BitMatrix& image, const std::array<ResultPoi
 			correctedData &= ~0x400;
 		}
 		nbDataBlocks = (correctedData & 0x7FF) + 1;
+		//printf("nbLayers %d, correctedData 0x%X, nbDataBlocks 0x%X, readerInit %d\n", nbLayers, correctedData, nbDataBlocks, readerInit);
 	}
 	return true;
 }
@@ -483,7 +485,9 @@ static int GetDimension(bool compact, int nbLayers)
 * topLeft, topRight, bottomRight, and bottomLeft are the centers of the squares on the
 * diagonal just outside the bull's eye.
 */
-static ZXing::DetectorResult SampleGrid(const BitMatrix& image, const ResultPoint& topLeft, const ResultPoint& topRight, const ResultPoint& bottomRight, const ResultPoint& bottomLeft, bool compact, int nbLayers, int nbCenterLayers)
+static ZXing::DetectorResult SampleGrid(const BitMatrix& image, const ResultPoint& topLeft,
+										const ResultPoint& topRight, const ResultPoint& bottomRight,
+										const ResultPoint& bottomLeft, bool compact, int nbLayers, int nbCenterLayers)
 {
 	int dimension = GetDimension(compact, nbLayers);
 

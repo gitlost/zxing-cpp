@@ -1,0 +1,6 @@
+symbologyIdentifier=]Q1
+ecLevel=
+sequenceSize=4
+sequenceIndex=0
+sequenceId=95
+readerInit=false

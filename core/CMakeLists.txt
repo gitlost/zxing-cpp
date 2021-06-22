@@ -50,6 +50,8 @@ set (COMMON_FILES
     src/ConcentricFinder.h
     src/ConcentricFinder.cpp
     src/CustomData.h
+    src/Diagnostics.h
+    src/Diagnostics.cpp
     src/Flags.h
     src/GenericGF.h
     src/GenericGF.cpp

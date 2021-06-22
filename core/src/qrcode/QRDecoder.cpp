@@ -23,6 +23,7 @@
 #include "CharacterSetECI.h"
 #include "DecodeStatus.h"
 #include "DecoderResult.h"
+#include "Diagnostics.h"
 #include "GenericGF.h"
 #include "QRBitMatrixParser.h"
 #include "QRCodecMode.h"
@@ -71,8 +72,9 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 * See specification GBT 18284-2000
 */
 static DecodeStatus
-DecodeHanziSegment(BitSource& bits, int count, std::wstring& result)
+DecodeHanziSegment(BitSource& bits, int count, std::wstring& resultEncoded)
 {
+	Diagnostics::fmt("HAN(%d)", count);
 	// Don't crash trying to read more bits than we have available.
 	if (count * 13 > bits.available()) {
 		return DecodeStatus::FormatError;
@@ -99,13 +101,14 @@ DecodeHanziSegment(BitSource& bits, int count, std::wstring& result)
 		count--;
 	}
 
-	TextDecoder::Append(result, buffer.data(), Size(buffer), CharacterSet::GB2312);
+	TextDecoder::Append(resultEncoded, buffer.data(), Size(buffer), CharacterSet::GB2312);
 	return DecodeStatus::NoError;
 }
 
 static DecodeStatus
-DecodeKanjiSegment(BitSource& bits, int count, std::wstring& result)
+DecodeKanjiSegment(BitSource& bits, int count, CharacterSet currentCharset, std::wstring& resultEncoded)
 {
+	Diagnostics::fmt("KAN(%d)", count);
 	// Don't crash trying to read more bits than we have available.
 	if (count * 13 > bits.available()) {
 		return DecodeStatus::FormatError;
@@ -132,13 +135,17 @@ DecodeKanjiSegment(BitSource& bits, int count, std::wstring& result)
 		count--;
 	}
 
-	TextDecoder::Append(result, buffer.data(), Size(buffer), CharacterSet::Shift_JIS);
+	if (currentCharset == CharacterSet::Unknown) {
+		currentCharset = CharacterSet::Shift_JIS;
+	}
+	TextDecoder::Append(resultEncoded, buffer.data(), Size(buffer), currentCharset);
 	return DecodeStatus::NoError;
 }
 
 static DecodeStatus
-DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const std::string& hintedCharset, std::wstring& result)
+DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const std::string& hintedCharset, std::wstring& resultEncoded)
 {
+	Diagnostics::fmt("BYTE(%d)", count);
 	// Don't crash trying to read more bits than we have available.
 	if (8 * count > bits.available()) {
 		return DecodeStatus::FormatError;
@@ -157,13 +164,16 @@ DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const
 		if (!hintedCharset.empty())
 		{
 			currentCharset = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
+			Diagnostics::fmt("HINTENC(%d)", (int)currentCharset);
 		}
 		if (currentCharset == CharacterSet::Unknown)
 		{
 			currentCharset = TextDecoder::GuessEncoding(readBytes.data(), Size(readBytes));
+			Diagnostics::fmt("GUESSENC(%d)", (int)currentCharset);
 		}
 	}
-	TextDecoder::Append(result, readBytes.data(), Size(readBytes), currentCharset);
+	Diagnostics::put(readBytes);
+	TextDecoder::Append(resultEncoded, readBytes.data(), Size(readBytes), currentCharset);
 	return DecodeStatus::NoError;
 }
 
@@ -187,8 +197,9 @@ ToAlphaNumericChar(int value)
 }
 
 static DecodeStatus
-DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wstring& result)
+DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wstring& resultEncoded)
 {
+	Diagnostics::fmt("ANUM(%d)", count);
 	// Read two characters at a time
 	std::string buffer;
 	while (count > 1) {
@@ -223,13 +234,15 @@ DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wst
 			}
 		}
 	}
-	TextDecoder::AppendLatin1(result, buffer);
+	Diagnostics::put(buffer);
+	TextDecoder::AppendLatin1(resultEncoded, buffer);
 	return DecodeStatus::NoError;
 }
 
 static DecodeStatus
-DecodeNumericSegment(BitSource& bits, int count, std::wstring& result)
+DecodeNumericSegment(BitSource& bits, int count, std::wstring& resultEncoded)
 {
+	Diagnostics::fmt("NUM(%d)", count);
 	// Read three digits at a time
 	std::string buffer;
 	while (count >= 3) {
@@ -270,7 +283,8 @@ DecodeNumericSegment(BitSource& bits, int count, std::wstring& result)
 		buffer += ToAlphaNumericChar(digitBits);
 	}
 
-	TextDecoder::AppendLatin1(result, buffer);
+	Diagnostics::put(buffer);
+	TextDecoder::AppendLatin1(resultEncoded, buffer);
 	return DecodeStatus::NoError;
 }
 
@@ -308,7 +322,9 @@ ZXING_EXPORT_TEST_ONLY DecoderResult
 DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel, const std::string& hintedCharset)
 {
 	BitSource bits(bytes);
-	std::wstring result;
+	std::wstring resultEncoded;
+	int symbologyIdModifier = 1; // ISO/IEC 18004:2015 Annex F Table F.1
+	int appIndValue = -1; // ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position)
 	StructuredAppendInfo structuredAppend;
 	static const int GB2312_SUBSET = 1;
 
@@ -322,38 +338,50 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 			if (bits.available() < 4) {
 				// OK, assume we're done. Really, a TERMINATOR mode should have been recorded here
 				mode = CodecMode::TERMINATOR;
+				Diagnostics::put("AVAIL(<4)");
 			}
 			else {
 				mode = CodecModeForBits(bits.readBits(4)); // mode is encoded by 4 bits
 			}
 			switch (mode) {
 			case CodecMode::TERMINATOR:
+				Diagnostics::put("TERM");
 				break;
 			case CodecMode::FNC1_FIRST_POSITION:
+				fc1InEffect = true; // In Alphanumeric mode undouble doubled percents and treat single percent as <GS>
+				// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
+				// modifiers that indicate ECI protocol (ISO/IEC 18004:2015 Annex F Table F.1)
+				symbologyIdModifier = 3;
+				Diagnostics::put("FNC1(1st)");
+				break;
 			case CodecMode::FNC1_SECOND_POSITION:
-				// We do little with FNC1 except alter the parsed result a bit according to the spec
-				fc1InEffect = true;
+				fc1InEffect = true; // As above
+				symbologyIdModifier = 5; // As above
+				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator "00-99" or "A-Za-z"
+				appIndValue = bits.readBits(8); // Number 00-99 or ASCII value + 100; prefixed to data below
+				Diagnostics::fmt("FNC1(2nd,%d)", appIndValue);
 				break;
 			case CodecMode::STRUCTURED_APPEND:
-				if (bits.available() < 16) {
-					return DecodeStatus::FormatError;
-				}
 				// sequence number and parity is added later to the result metadata
 				// Read next 4 bits of index, 4 bits of symbol count, and 8 bits of parity data, then continue
 				structuredAppend.index = bits.readBits(4);
 				structuredAppend.count = bits.readBits(4) + 1;
 				structuredAppend.id = std::to_string(bits.readBits(8));
+				Diagnostics::fmt("SAI(%d,%d,%s)", structuredAppend.index, structuredAppend.count, structuredAppend.id.c_str());
 				break;
 			case CodecMode::ECI: {
 				// Count doesn't apply to ECI
-				int value;
+				int value = 0;
 				auto status = ParseECIValue(bits, value);
+                Diagnostics::fmt("ECI(%d)", value);
 				if (StatusIsError(status)) {
 					return status;
 				}
-				currentCharset = CharacterSetECI::CharsetFromValue(value);
-				if (currentCharset == CharacterSet::Unknown) {
-					return DecodeStatus::FormatError;
+				if (value >= 0 && value <= 899) { // Character set ECIs
+					currentCharset = CharacterSetECI::CharsetFromValue(value);
+					if (currentCharset == CharacterSet::Unknown) {
+						return DecodeStatus::FormatError;
+					}
 				}
 				break;
 			}
@@ -363,7 +391,7 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 				int subset = bits.readBits(4);
 				int countHanzi = bits.readBits(CharacterCountBits(mode, version));
 				if (subset == GB2312_SUBSET) {
-					auto status = DecodeHanziSegment(bits, countHanzi, result);
+					auto status = DecodeHanziSegment(bits, countHanzi, resultEncoded);
 					if (StatusIsError(status)) {
 						return status;
 					}
@@ -377,18 +405,19 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 				DecodeStatus status;
 				switch (mode) {
 				case CodecMode::NUMERIC:
-					status = DecodeNumericSegment(bits, count, result);
+					status = DecodeNumericSegment(bits, count, resultEncoded);
 					break;
 				case CodecMode::ALPHANUMERIC:
-					status = DecodeAlphanumericSegment(bits, count, fc1InEffect, result);
+					status = DecodeAlphanumericSegment(bits, count, fc1InEffect, resultEncoded);
 					break;
 				case CodecMode::BYTE:
-					status = DecodeByteSegment(bits, count, currentCharset, hintedCharset, result);
+					status = DecodeByteSegment(bits, count, currentCharset, hintedCharset, resultEncoded);
 					break;
 				case CodecMode::KANJI:
-					status = DecodeKanjiSegment(bits, count, result);
+					status = DecodeKanjiSegment(bits, count, currentCharset, resultEncoded);
 					break;
 				default:
+					Diagnostics::put("FormatError");
 					status = DecodeStatus::FormatError;
 				}
 				if (StatusIsError(status)) {
@@ -405,8 +434,27 @@ DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel 
 		return DecodeStatus::FormatError;
 	}
 
-	return DecoderResult(std::move(bytes), std::move(result))
+	if (appIndValue >= 0) {
+		if (appIndValue < 10) { // "00-09"
+			resultEncoded.insert(0, L'0' + std::to_wstring(appIndValue));
+		}
+		else if (appIndValue < 100) { // "10-99"
+			resultEncoded.insert(0, std::to_wstring(appIndValue));
+		}
+		else if ((appIndValue >= 165 && appIndValue <= 190) || (appIndValue >= 197 && appIndValue <= 222)) { // "A-Za-z"
+			resultEncoded.insert(0, 1, static_cast<wchar_t>(appIndValue - 100));
+		}
+		else {
+			Diagnostics::fmt("BadAppInd(%d)", appIndValue);
+			return DecodeStatus::FormatError;
+		}
+	}
+
+	std::string symbologyIdentifier("]Q" + std::to_string(symbologyIdModifier));
+
+	return DecoderResult(std::move(bytes), std::move(resultEncoded))
 		.setEcLevel(ToString(ecLevel))
+		.setSymbologyIdentifier(std::move(symbologyIdentifier))
 		.setStructuredAppend(structuredAppend);
 }
 
@@ -416,6 +464,8 @@ DoDecode(const BitMatrix& bits, const Version& version, const std::string& hinte
 	auto formatInfo = ReadFormatInformation(bits, mirrored);
 	if (!formatInfo.isValid())
 		return DecodeStatus::FormatError;
+	Diagnostics::fmt("  Dimensions: %dx%d (HxW)\n", bits.height(), bits.width());
+	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask());
 
 	// Read codewords
 	ByteArray codewords = ReadCodewords(bits, version, formatInfo.dataMask(), mirrored);
@@ -448,6 +498,7 @@ DoDecode(const BitMatrix& bits, const Version& version, const std::string& hinte
 	}
 
 	// Decode the contents of that stream of bytes
+	Diagnostics::put("  Decode:     ");
 	return DecodeBitStream(std::move(resultBytes), version, formatInfo.errorCorrectionLevel(), hintedCharset);
 }
 

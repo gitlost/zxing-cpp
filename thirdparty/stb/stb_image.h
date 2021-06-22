@@ -2171,7 +2171,7 @@ static int stbi__jpeg_decode_block_prog_dc(stbi__jpeg *j, short data[64], stbi__
 
       dc = j->img_comp[b].dc_pred + diff;
       j->img_comp[b].dc_pred = dc;
-      data[0] = (short) (dc << j->succ_low);
+      data[0] = (short) ((dc & 0xFFFF) << j->succ_low);
    } else {
       // refinement scan for DC coefficient
       if (stbi__jpeg_get_bit(j))
@@ -2208,7 +2208,7 @@ static int stbi__jpeg_decode_block_prog_ac(stbi__jpeg *j, short data[64], stbi__
             j->code_buffer <<= s;
             j->code_bits -= s;
             zig = stbi__jpeg_dezigzag[k++];
-            data[zig] = (short) ((r >> 8) << shift);
+            data[zig] = (short) (((r >> 8) & 0xFFFF) << shift);
          } else {
             int rs = stbi__jpeg_huff_decode(j, hac);
             if (rs < 0) return stbi__err("bad huffman code","Corrupt JPEG");
@@ -2226,7 +2226,7 @@ static int stbi__jpeg_decode_block_prog_ac(stbi__jpeg *j, short data[64], stbi__
             } else {
                k += r;
                zig = stbi__jpeg_dezigzag[k++];
-               data[zig] = (short) (stbi__extend_receive(j,s) << shift);
+               data[zig] = (short) ((stbi__extend_receive(j,s) & 0xFFFF) << shift);
             }
          }
       } while (k <= j->spec_end);

@@ -61,12 +61,14 @@ Reader::decode(const BinaryBitmap& image) const
 {
 	auto binImg = image.getBlackMatrix();
 	if (binImg == nullptr) {
+		//printf("fail binImg null\n");
 		return Result(DecodeStatus::NotFound);
 	}
 
 	//TODO: this only works with effectively 'pure' barcodes. Needs proper detector.
 	BitMatrix bits = ExtractPureBits(*binImg);
 	if (bits.empty()) {
+		//printf("fail bits.empty\n");
 		return Result(DecodeStatus::NotFound);
 	}
 

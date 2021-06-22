@@ -1,0 +1,4 @@
+symbologyIdentifier=]z0
+ecLevel=
+isPartOfSequence=false
+readerInit=false

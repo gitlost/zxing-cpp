@@ -19,6 +19,7 @@
 #include "ODDataBarReader.h"
 
 #include "BarcodeFormat.h"
+#include "Diagnostics.h"
 #include "GTIN.h"
 #include "ODDataBarCommon.h"
 #include "Result.h"
@@ -151,9 +152,11 @@ static std::string ConstructText(Pair leftPair, Pair rightPair)
 {
 	auto value = [](Pair p) { return 1597 * p.left.value + p.right.value; };
 	auto res = 4537077LL * value(leftPair) + value(rightPair);
+	Diagnostics::fmt("    LeftRight %lld", res);
 	std::ostringstream txt;
 	txt << std::setw(13) << std::setfill('0') << res;
 	txt << GTIN::ComputeCheckDigit(txt.str());
+	Diagnostics::fmt("CheckDigit(%c)", txt.str().back());
 	return txt.str();
 }
 
@@ -203,11 +206,15 @@ Result DataBarReader::decodePattern(int rowNumber, const PatternView& view,
 		}
 	}
 
+	// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
+	std::string symbologyIdentifier("]e0");
+
 	for (const auto& leftPair : prevState->leftPairs)
 		for (const auto& rightPair : prevState->rightPairs)
 			if (ChecksumIsValid(leftPair, rightPair))
 				return {TextDecoder::FromLatin1(ConstructText(leftPair, rightPair)),
-						EstimatePosition(leftPair, rightPair), BarcodeFormat::DataBar};
+						EstimatePosition(leftPair, rightPair), BarcodeFormat::DataBar,
+						{}, std::move(symbologyIdentifier)};
 #endif
 
 	return Result(DecodeStatus::NotFound);

@@ -21,6 +21,7 @@
 #include "CharacterSetECI.h"
 #include "DecoderResult.h"
 #include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "GenericGF.h"
 #include "MCBitMatrixParser.h"
 #include "ReedSolomonDecoder.h"
@@ -214,9 +215,13 @@ namespace DecodedBitStreamParser
 		const int byte = bytes[++i];
 		sai.index = (byte >> 3) & 0x07;
 		sai.count = (byte & 0x07) + 1;
+		if (sai.count == 1) {
+			Diagnostics::put("SAISizeError");
+		}
 		if (sai.count == 1 || sai.count <= sai.index) { // If info doesn't make sense
 			sai.count = 0; // Choose to mark count as unknown
 		}
+		Diagnostics::fmt("SA(%d,%d)", sai.index, sai.count);
 		// No id
 	}
 
@@ -236,10 +241,12 @@ namespace DecodedBitStreamParser
 			case LCHA:
 				set = 0;
 				shift = -1;
+				Diagnostics::put("LCHA");
 				break;
 			case LCHB:
 				set = 1;
 				shift = -1;
+				Diagnostics::put("LCHB");
 				break;
 			case SHI0:
 			case SHI1:
@@ -248,36 +255,44 @@ namespace DecodedBitStreamParser
 			case SHI4:
 				lastset = set;
 				set = c - SHI0;
+				Diagnostics::fmt("SH%c", 'A' + set);
 				shift = 1;
 				break;
 			case TWSA:
 				lastset = set;
 				set = 0;
 				shift = 2;
+				Diagnostics::put("2SHA");
 				break;
 			case TRSA:
 				lastset = set;
 				set = 0;
 				shift = 3;
+				Diagnostics::put("3SHA");
 				break;
 			case NS:
 				sb.append(ToString((bytes[i+1] << 24) + (bytes[i+2] << 18) + (bytes[i+3] << 12) + (bytes[i+4] << 6) + bytes[i+5], 9));
 				i += 5;
+				Diagnostics::fmt("NS %s", sb.substr(sb.size() - 9).c_str());
 				break;
 			case LOCK:
 				shift = -1;
+				Diagnostics::put("LOCK");
 				break;
 			case ECI:
-				encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bytes, i), sbEncoded, sb, encoding);
+				encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bytes, i), sbEncoded, sb, encoding, &sai.lastECI);
 				break;
 			case PAD:
 				if (i == start) {
 					ParseStructuredAppend(bytes, i, sai);
+				} else {
+					Diagnostics::put("PAD");
 				}
 				shift = -1;
 				break;
 			default:
 				sb.push_back((unsigned char) c);
+				Diagnostics::chr(sb.back(), "" /*prefixIfNonASCII*/, true /*appendHex*/);
 			}
 			if (shift-- == 0) {
 				set = lastset;
@@ -290,6 +305,7 @@ namespace DecodedBitStreamParser
 	ZXING_EXPORT_TEST_ONLY
 	DecoderResult Decode(ByteArray&& bytes, const int mode, const std::string& characterSet)
 	{
+		Diagnostics::fmt("MODE(%d)", mode);
 		std::wstring result;
 		result.reserve(144);
 		StructuredAppendInfo sai;
@@ -299,6 +315,7 @@ namespace DecodedBitStreamParser
 				auto postcode = mode == 2 ? ToString(GetPostCode2(bytes), GetPostCode2Length(bytes)) : GetPostCode3(bytes);
 				auto country = ToString(GetCountry(bytes), 3);
 				auto service = ToString(GetServiceClass(bytes), 3);
+				Diagnostics::fmt("SCM(%s,%s,%s)", postcode.c_str(), country.c_str(), service.c_str());
 				result.append(GetMessage(bytes, 10, 84, characterSet, sai));
 				if (result.size() >= 9 && result.compare(0, 7, L"[)>\u001E01\u001D") == 0) { // "[)>" + RS + "01" + GS
 					result.insert(9, TextDecoder::FromLatin1(postcode + GS + country + GS + service + GS));
@@ -316,8 +333,21 @@ namespace DecodedBitStreamParser
 				result.append(GetMessage(bytes, 1, 77, characterSet, sai));
 				break;
 		}
-		return DecoderResult(std::move(bytes), std::move(result))
+
+		// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using modifiers
+		// that indicate ECI protocol (ISO/IEC 16023:2000 Annexe E Table E1)
+		std::string symbologyIdentifier;
+		if (mode == 4 || mode == 5) {
+			symbologyIdentifier = "]U0";
+		}
+		else if (mode == 2 || mode == 3) {
+			symbologyIdentifier = "]U1";
+		}
+		// No identifier defined for mode 6
+
+        return DecoderResult(std::move(bytes), std::move(result))
 				.setEcLevel(std::to_wstring(mode))
+				.setSymbologyIdentifier(std::move(symbologyIdentifier))
 				.setStructuredAppend(sai)
 				.setReaderInit(mode == 6);
 	}
@@ -331,6 +361,8 @@ Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
 {
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits);
 
+	Diagnostics::fmt("  Codewords:  (%d)", codewords.size()); Diagnostics::dump(codewords, "\n");
+	Diagnostics::put("  Decode:     ");
 	if (!CorrectErrors(codewords, 0, 10, 10, ALL)) {
 		return DecodeStatus::ChecksumError;
 	}

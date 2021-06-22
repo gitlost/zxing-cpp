@@ -21,6 +21,7 @@ add_executable (UnitTest
     PseudoRandom.h
     BitHacksTest.cpp
     CharacterSetECITest.cpp
+    GTINTest.cpp
     ReedSolomonTest.cpp
     TextDecoderTest.cpp
     TextUtfEncodingTest.cpp
@@ -38,6 +39,7 @@ add_executable (UnitTest
     maxicode/MCDecoderTest.cpp
     oned/ODCodaBarWriterTest.cpp
     oned/ODCode39ExtendedModeTest.cpp
+    oned/ODCode39ReaderTest.cpp
     oned/ODCode39WriterTest.cpp
     oned/ODCode93ReaderTest.cpp
     oned/ODCode93WriterTest.cpp

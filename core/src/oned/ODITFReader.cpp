@@ -18,6 +18,7 @@
 #include "ODITFReader.h"
 
 #include "DecodeHints.h"
+#include "GTIN.h"
 #include "Result.h"
 #include "ZXContainerAlgorithms.h"
 
@@ -29,7 +30,8 @@ namespace ZXing::OneD {
 static const std::array<int, 5> DEFAULT_ALLOWED_LENGTHS = { 6, 8, 10, 12, 14 };
 
 ITFReader::ITFReader(const DecodeHints& hints) :
-	_allowedLengths(hints.allowedLengths())
+	_allowedLengths(hints.allowedLengths()),
+	_usingCheckDigit(hints.assumeITFCheckDigit())
 {
 	if (_allowedLengths.empty()) {
 		_allowedLengths.assign(DEFAULT_ALLOWED_LENGTHS.begin(), DEFAULT_ALLOWED_LENGTHS.end());
@@ -43,9 +45,9 @@ constexpr auto STOP_PATTERN_2 = FixedPattern<3, 5>{3, 1, 1};
 Result ITFReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const
 {
 	const int minCharCount = 6;
-	const int minQuiteZone = 10;
+	const int minQuietZone = 10;
 
-	auto next = FindLeftGuard(row, 4 + minCharCount/2 + 3, START_PATTERN_, minQuiteZone);
+	auto next = FindLeftGuard(row, 4 + minCharCount/2 + 3, START_PATTERN_, minQuietZone);
 	if (!next.isValid())
 		return Result(DecodeStatus::NotFound);
 
@@ -83,11 +85,21 @@ Result ITFReader::decodePattern(int rowNumber, const PatternView& row, std::uniq
 	if (Size(txt) < minCharCount)
 		return Result(DecodeStatus::NotFound);
 
-	if (!IsRightGuard(next, STOP_PATTERN_1, minQuiteZone) && !IsRightGuard(next, STOP_PATTERN_2, minQuiteZone))
+	if (!IsRightGuard(next, STOP_PATTERN_1, minQuietZone) && !IsRightGuard(next, STOP_PATTERN_2, minQuietZone))
 		return Result(DecodeStatus::NotFound);
 
+	// Symbology identifier ISO/IEC 16390:2007 Annex C Table C.1
+	// See also GS1 General Specifications 5.1.3 Figure 5.1.3-2
+	std::string symbologyIdentifier("]I0"); // No check character validation
+
+	if (_usingCheckDigit && !GTIN::IsCheckDigitValid(txt))
+		return Result(DecodeStatus::ChecksumError);
+
+	if (_usingCheckDigit || (txt.size() == 14 && GTIN::IsCheckDigitValid(txt))) // If no hint test if valid ITF-14
+		symbologyIdentifier = "]I1"; // Modulo 10 symbol check character validated and transmitted
+
 	int xStop = next.pixelsTillEnd();
-	return Result(txt, rowNumber, xStart, xStop, BarcodeFormat::ITF);
+	return Result(txt, rowNumber, xStart, xStop, BarcodeFormat::ITF, {}, std::move(symbologyIdentifier));
 }
 
 } // namespace ZXing::OneD

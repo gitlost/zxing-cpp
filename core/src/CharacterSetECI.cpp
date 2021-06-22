@@ -16,6 +16,7 @@
 */
 
 #include "CharacterSetECI.h"
+#include "Diagnostics.h"
 #include "TextDecoder.h"
 
 #include <cctype>
@@ -178,7 +179,8 @@ CharacterSet InitEncoding(const std::string& name, CharacterSet encodingDefault)
 	return encodingDefault;
 }
 
-CharacterSet OnChangeAppendReset(const int eci, std::wstring& encoded, std::string& data, CharacterSet encoding)
+CharacterSet OnChangeAppendReset(const int eci, std::wstring& encoded, std::string& data, CharacterSet encoding,
+								 int* eciChanged)
 {
 	// Character set ECIs only
 	if (eci >= 0 && eci <= 899) {
@@ -188,8 +190,12 @@ CharacterSet OnChangeAppendReset(const int eci, std::wstring& encoded, std::stri
 			TextDecoder::Append(encoded, reinterpret_cast<const uint8_t*>(data.data()), data.size(), encoding);
 			data.clear();
 			encoding = encodingNew;
+			if (eciChanged) {
+				*eciChanged = eci;
+			}
 		}
 	}
+	Diagnostics::fmt(eciChanged ? "ECI(%d,%d)" : "ECI(%d)", eci, eciChanged ? *eciChanged : -1, eci);
 
 	return encoding;
 }

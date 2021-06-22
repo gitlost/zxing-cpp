@@ -32,7 +32,7 @@ class CustomData;
 class ResultMetadata
 {
 public:
-	
+
 	/**
 	* Represents some type of metadata about the result of the decoding that the decoder
 	* wishes to communicate back to the caller.
@@ -95,7 +95,7 @@ public:
 		/**
 		* PDF417-specific metadata
 		*/
-		PDF417_EXTRA_METADATA [[deprecated]],
+		PDF417_EXTRA_METADATA,
 
 		/**
 		* If the code format supports structured append and the current scanned code is part of one then the

@@ -1,0 +1,4 @@
+symbologyIdentifier=]L2
+sequenceSize=1
+sequenceIndex=0
+sequenceId=099046122105112

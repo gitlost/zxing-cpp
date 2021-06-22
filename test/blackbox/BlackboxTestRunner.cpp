@@ -72,6 +72,64 @@ namespace {
 	};
 }
 
+// Helper for `compareResult()` - map `key` to Result property, converting value to std::string
+static std::string getResultValue(const Result& result, const std::string& key)
+{
+	if (key == "ecLevel")
+		return std::string(result.ecLevel().begin(), result.ecLevel().end());
+	if (key == "orientation")
+		return std::to_string(result.orientation());
+	if (key == "numBits")
+		return std::to_string(result.numBits());
+	if (key == "symbologyIdentifier")
+		return result.symbologyIdentifier();
+	if (key == "sequenceSize")
+		return std::to_string(result.sequenceSize());
+	if (key == "sequenceIndex")
+		return std::to_string(result.sequenceIndex());
+	if (key == "sequenceId")
+		return result.sequenceId();
+	if (key == "isLastInSequence")
+		return result.isLastInSequence() ? "true" : "false";
+	if (key == "isPartOfSequence")
+		return result.isPartOfSequence() ? "true" : "false";
+	if (key == "readerInit")
+		return result.readerInit() ? "true" : "false";
+
+	return fmt::format("***Unknown key '{}'***", key);
+}
+
+// Read ".result.txt" file contents `expected` with lines "key=value" and compare to `actual`
+static bool compareResult(const Result& result, const std::string& expected, std::string& actual)
+{
+	bool ret = true;
+
+	actual.clear();
+	actual.reserve(expected.size());
+
+	std::stringstream expectedLines(expected);
+	std::string expectedLine;
+	while (std::getline(expectedLines, expectedLine)) {
+		if (expectedLine.empty() || expectedLine[0] == '#')
+			continue;
+		auto equals = expectedLine.find('=');
+		if (equals == std::string::npos) {
+			actual += "***Bad format, missing equals***\n";
+			return false;
+		}
+		std::string key = expectedLine.substr(0, equals);
+		std::string expectedValue = expectedLine.substr(equals + 1);
+		std::string actualValue = getResultValue(result, key);
+		if (actualValue != expectedValue) {
+			ret = false;
+			actualValue += " ***Mismatch***";
+		}
+		actual += key + '=' + actualValue + '\n';
+	}
+	//printf("actual %s\n", actual.c_str());
+	return ret;
+}
+
 static std::string checkResult(const fs::path& imgPath, std::string_view expectedFormat, const Result& result)
 {
 	if (auto format = ToString(result.format()); expectedFormat != format)
@@ -81,6 +139,12 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 		std::ifstream ifs(fs::path(imgPath).replace_extension(ending), std::ios::binary);
 		return ifs ? std::optional(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>())) : std::nullopt;
 	};
+
+	if (auto expected = readFile(".result.txt")) {
+		std::string actual;
+		if (!compareResult(result, *expected, actual))
+			return fmt::format("Result mismatch: expected\n{} but got\n{}", *expected, actual);
+	}
 
 	if (auto expected = readFile(".txt")) {
 		auto utf8Result = TextUtfEncoding::ToUtf8(result.text());
@@ -217,7 +281,9 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, int rotation, 
 	for (const auto& r : allResults)
 		text.append(r.text());
 
-	return {std::move(text), {}, allResults.front().format()};
+	const auto& arf = allResults.front();
+	StructuredAppendInfo sai{arf.sequenceIndex(), arf.sequenceSize(), arf.sequenceId(), arf.sequenceLastECI()};
+	return Result(std::move(text), {}, arf.format(), {}, arf.symbologyIdentifier(), sai, arf.readerInit());
 }
 
 static void doRunStructuredAppendTest(
@@ -283,12 +349,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		auto startTime = std::chrono::steady_clock::now();
 
 		// clang-format off
-		runTests("aztec-1", "Aztec", 21, {
-			{ 20, 20, 0   },
-			{ 20, 20, 90  },
-			{ 20, 20, 180 },
-			{ 20, 20, 270 },
-			{ 21, 0, pure },
+		runTests("aztec-1", "Aztec", 22, {
+			{ 21, 21, 0   },
+			{ 21, 21, 90  },
+			{ 21, 21, 180 },
+			{ 21, 21, 270 },
+			{ 22, 0, pure },
 		});
 
 		runTests("aztec-2", "Aztec", 22, {
@@ -298,12 +364,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 3, 270 },
 		});
 
-		runTests("datamatrix-1", "DataMatrix", 25, {
-			{ 25, 25, 0   },
-			{  0, 25, 90  },
-			{  0, 25, 180 },
-			{  0, 25, 270 },
-			{ 24, 0, pure },
+		runTests("datamatrix-1", "DataMatrix", 26, {
+			{ 26, 26, 0   },
+			{  0, 26, 90  },
+			{  0, 26, 180 },
+			{  0, 26, 270 },
+			{ 25, 0, pure },
 		});
 
 		runTests("datamatrix-2", "DataMatrix", 13, {
@@ -320,12 +386,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{  0, 19, 270 },
 		});
 
-		runTests("datamatrix-4", "DataMatrix", 20, {
-			{ 20, 20, 0   },
-			{  0, 20, 90  },
-			{  0, 20, 180 },
-			{  0, 20, 270 },
-			{ 18, 0, pure },
+		runTests("datamatrix-4", "DataMatrix", 21, {
+			{ 21, 21, 0   },
+			{  0, 21, 90  },
+			{  0, 21, 180 },
+			{  0, 21, 270 },
+			{ 19, 0, pure },
 		});
 
 		runTests("codabar-1", "Codabar", 11, {
@@ -508,12 +574,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 16, 270 },
 		});
 
-		runTests("qrcode-2", "QRCode", 40, {
-			{ 38, 38, 0   },
-			{ 38, 38, 90  },
-			{ 38, 38, 180 },
-			{ 38, 38, 270 },
-			{ 20, 1, pure }, // the misread is the 'outer' symbol in 16.png
+		runTests("qrcode-2", "QRCode", 41, {
+			{ 39, 39, 0   },
+			{ 39, 39, 90  },
+			{ 39, 39, 180 },
+			{ 39, 39, 270 },
+			{ 21, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
 
 		runTests("qrcode-3", "QRCode", 28, {

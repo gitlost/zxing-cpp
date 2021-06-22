@@ -364,13 +364,24 @@ DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool isPure)
 
 	auto sets = GenerateFinderPatternSets(FindFinderPatterns(image, tryHarder));
 
-	if (sets.empty())
+	if (sets.empty()) {
+		if (tryHarder) {
+			return DetectPure(image);
+		}
 		return {};
+	}
 
 #ifdef PRINT_DEBUG
 	printf("size of sets: %d\n", Size(sets));
 #endif
 
+	if (tryHarder) {
+		auto result = SampleAtFinderPatternSet(image, sets[0]);
+		if (!result.isValid()) {
+			return DetectPure(image);
+		}
+		return result;
+	}
 	return SampleAtFinderPatternSet(image, sets[0]);
 }
 

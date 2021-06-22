@@ -16,24 +16,27 @@
 */
 
 #include "PDFScanningDecoder.h"
-#include "PDFBoundingBox.h"
-#include "PDFDetectionResultColumn.h"
-#include "PDFCodewordDecoder.h"
+
+#include "BitMatrix.h"
+#include "DecoderResult.h"
+#include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "PDFBarcodeMetadata.h"
-#include "PDFDetectionResult.h"
 #include "PDFBarcodeValue.h"
+#include "PDFBoundingBox.h"
+#include "PDFCodewordDecoder.h"
+#include "PDFDetectionResult.h"
+#include "PDFDetectionResultColumn.h"
 #include "PDFDecodedBitStreamParser.h"
 #include "PDFModulusGF.h"
 #include "ResultPoint.h"
 #include "ZXNullable.h"
-#include "BitMatrix.h"
-#include "DecodeStatus.h"
-#include "DecoderResult.h"
 #include "ZXTestSupport.h"
 
-#include <cstdlib>
-#include <array>
 #include <algorithm>
+#include <array>
+#include <cstdlib>
+#include <numeric>
 
 namespace ZXing {
 namespace Pdf417 {
@@ -680,6 +683,7 @@ static DecoderResult CreateDecoderResult(DetectionResult& detectionResult, const
 			}
 		}
 	}
+	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", detectionResult.barcodeRowCount(), detectionResult.barcodeColumnCount());
 	return CreateDecoderResultFromAmbiguousValues(detectionResult.barcodeECLevel(), codewords, erasures,
 												  ambiguousIndexesList, ambiguousIndexValues, characterSet);
 }

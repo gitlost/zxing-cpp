@@ -18,6 +18,7 @@
 #include "ODCode128Reader.h"
 
 #include "DecodeHints.h"
+#include "Diagnostics.h"
 #include "ODCode128Patterns.h"
 #include "Result.h"
 #include "ZXContainerAlgorithms.h"
@@ -53,7 +54,7 @@ static const int CODE_STOP = 106;
 class Raw2TxtDecoder
 {
 	int codeSet = 0;
-	bool _convertFNC1 = false;
+	std::string _symbologyIdentifier = "]C0"; // ISO/IEC 15417:2007 Annex C Table C.1
 	bool _readerInit = false;
 	std::string txt;
 	size_t lastTxtSize = 0;
@@ -62,23 +63,34 @@ class Raw2TxtDecoder
 	bool fnc4Next = false;
 	bool shift = false;
 
-	void fnc1()
+	void fnc1(const bool isCodeSetC)
 	{
-		if (_convertFNC1) {
-			if (txt.empty()) {
-				// GS1 specification 5.4.3.7. and 5.4.6.4. If the first char after the start code
-				// is FNC1 then this is GS1-128. We add the symbology identifier.
-				txt.append("]C1");
-			}
-			else {
-				// GS1 specification 5.4.7.5. Every subsequent FNC1 is returned as ASCII 29 (GS)
-				txt.push_back((char)29);
-			}
+		if (txt.empty()) {
+			// ISO/IEC 15417:2007 Annex B.1 and GS1 General Specifications 21.0.1 Section 5.4.3.7
+			// If the first char after the start code is FNC1 then this is GS1-128.
+			_symbologyIdentifier = "]C1";
+			// GS1 General Specifications Section 5.4.6.4
+			// "Transmitted data ... is prefixed by the symbology identifier ]C1, if used."
+			// Choosing not to use symbology identifier, i.e. to not prefix to data.
+			Diagnostics::put("FNC1(GS1)");
+		}
+		else if ((isCodeSetC && txt.size() == 2 && txt[0] >= '0' && txt[0] <= '9' && txt[1] >= '0' && txt[1] <= '9')
+				|| (!isCodeSetC && txt.size() == 1 && ((txt[0] >= 'A' && txt[0] <= 'Z')
+														|| (txt[0] >= 'a' && txt[0] <= 'z')))) {
+			// ISO/IEC 15417:2007 Annex B.2
+			// FNC1 in second position following Code Set C "00-99" or Code Set A/B "A-Za-z" - AIM
+			_symbologyIdentifier = "]C2";
+			Diagnostics::fmt("FNC1(AIM %s)", txt.c_str());
+		}
+		else {
+			// ISO/IEC 15417:2007 Annex B.3. Otherwise FNC1 is returned as ASCII 29 (GS)
+			txt.push_back((char)29);
+			Diagnostics::put("FNC1(29)");
 		}
 	};
 
 public:
-	Raw2TxtDecoder(int startCode, bool convertFNC1) : codeSet(204 - startCode), _convertFNC1(convertFNC1)
+	Raw2TxtDecoder(int startCode) : codeSet(204 - startCode)
 	{
 		txt.reserve(20);
 	}
@@ -92,27 +104,34 @@ public:
 				if (code < 10)
 					txt.push_back('0');
 				txt.append(std::to_string(code));
+				Diagnostics::fmt("%02d", code);
 			} else if (code == CODE_FNC_1) {
-				fnc1();
+				fnc1(true /*isCodeSetC*/);
 			} else {
 				codeSet = code; // CODE_A / CODE_B
+				Diagnostics::fmt("CODE%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 			}
 		} else { // codeSet A or B
 			bool unshift = shift;
 
 			switch (code) {
-			case CODE_FNC_1: fnc1(); break;
+			case CODE_FNC_1: fnc1(false /*isCodeSetC*/); break;
 			case CODE_FNC_2:
-				// do nothing?
+				// Message Append - do nothing?
+				Diagnostics::put("FNC2");
 				break;
 			case CODE_FNC_3:
 				_readerInit = true; // Can occur anywhere in the symbol (ISO/IEC 15417:2007 4.3.4.2 (c))
+				Diagnostics::put("RInit");
 				break;
 			case CODE_SHIFT:
-				if (shift)
+				if (shift) {
+					Diagnostics::put("2ShiftsError");
 					return false; // two shifts in a row make no sense
+				}
 				shift = true;
 				codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
+				Diagnostics::fmt("Sh%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 				break;
 			case CODE_CODE_A:
 			case CODE_CODE_B:
@@ -121,11 +140,15 @@ public:
 					if (fnc4Next)
 						fnc4All = !fnc4All;
 					fnc4Next = !fnc4Next;
+					Diagnostics::put("FNC4");
 				} else {
 					codeSet = code;
+					Diagnostics::fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 				}
 				break;
-			case CODE_CODE_C: codeSet = CODE_CODE_C; break;
+			case CODE_CODE_C: codeSet = CODE_CODE_C;
+				Diagnostics::put("CodeC");
+				break;
 
 			default: {
 				// code < 96 at this point
@@ -136,6 +159,7 @@ public:
 					offset = fnc4All == fnc4Next ? ' ' : ' ' + 128;
 				txt.push_back((char)(code + offset));
 				fnc4Next = false;
+				Diagnostics::chr(txt.back());
 				break;
 			}
 			}
@@ -157,6 +181,8 @@ public:
 		return txt.substr(0, lastTxtSize);
 	}
 
+	const std::string& symbologyIdentifier() const { return _symbologyIdentifier; }
+
 	bool readerInit() const { return _readerInit; }
 };
 
@@ -175,15 +201,10 @@ static int DetectStartCode(const C& c)
 	return bestVariance < MAX_AVG_VARIANCE ? bestCode : 0;
 }
 
-Code128Reader::Code128Reader(const DecodeHints& hints) :
-	_convertFNC1(hints.assumeGS1())
-{
-}
-
 // all 3 start patterns share the same 2-1-1 prefix
 constexpr auto START_PATTERN_PREFIX = FixedPattern<3, 4>{2, 1, 1};
 constexpr int CHAR_LEN = 6;
-constexpr float QUITE_ZONE = 8;	// quite zone spec is 10 modules
+constexpr float QUIET_ZONE = 8;	// quiet zone spec is 10 modules
 
 //#define USE_FAST_1_TO_4_BIT_PATTERN_DECODING
 #ifdef USE_FAST_1_TO_4_BIT_PATTERN_DECODING
@@ -229,7 +250,7 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 #endif
 	};
 
-	auto next = FindLeftGuard(row, minCharCount * CHAR_LEN, START_PATTERN_PREFIX, QUITE_ZONE);
+	auto next = FindLeftGuard(row, minCharCount * CHAR_LEN, START_PATTERN_PREFIX, QUIET_ZONE);
 	if (!next.isValid())
 		return Result(DecodeStatus::NotFound);
 
@@ -242,46 +263,66 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 	ByteArray rawCodes;
 	rawCodes.reserve(20);
 	rawCodes.push_back(static_cast<uint8_t>(startCode));
+	Diagnostics::fmt("    Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
 
-	Raw2TxtDecoder raw2txt(startCode, _convertFNC1);
+	Raw2TxtDecoder raw2txt(startCode);
 
 	while (true) {
-		if (!next.skipSymbol())
+		if (!next.skipSymbol()) {
+			Diagnostics::clear();
 			return Result(DecodeStatus::NotFound);
+		}
 
 		// Decode another code from image
 		int code = decodePattern(next);
-		if (code == -1)
+		if (code == -1) {
+			Diagnostics::clear();
 			return Result(DecodeStatus::NotFound);
-		if (code == CODE_STOP)
+		}
+		if (code == CODE_STOP) {
+			Diagnostics::put("Stop");
 			break;
-		if (code >= CODE_START_A)
+		}
+		if (code >= CODE_START_A) {
+			Diagnostics::fmt("BadCodeError(%d)", code);
 			return Result(DecodeStatus::FormatError);
-		if (!raw2txt.decode(code))
+		}
+		if (!raw2txt.decode(code)) {
+			Diagnostics::fmt("DecodeError(%d)", code);
 			return Result(DecodeStatus::FormatError);
+		}
 
 		rawCodes.push_back(static_cast<uint8_t>(code));
 	}
 
-	if (Size(rawCodes) < minCharCount - 1) // stop code is missing in rawCodes
+	if (Size(rawCodes) < minCharCount - 1) { // stop code is missing in rawCodes
+		Diagnostics::fmt("NotFound(minCharCount(%d))", minCharCount);
 		return Result(DecodeStatus::NotFound);
+	}
 
-	// check termination bar (is present and not wider than about 2 modules) and quite zone (next is now 13 modules
+	// check termination bar (is present and not wider than about 2 modules) and quiet zone (next is now 13 modules
 	// wide, require at least 8)
 	next = next.subView(0, CHAR_LEN + 1);
-	if (!next.isValid() || next[CHAR_LEN] > next.sum(CHAR_LEN) / 4 || !next.hasQuiteZoneAfter(QUITE_ZONE/13))
+	if (!next.isValid() || next[CHAR_LEN] > next.sum(CHAR_LEN) / 4 || !next.hasQuietZoneAfter(QUIET_ZONE/13)) {
+		Diagnostics::put("NotFound(QZ)");
 		return Result(DecodeStatus::NotFound);
+	}
 
 	int checksum = rawCodes.front();
 	for (int i = 1; i < Size(rawCodes) - 1; ++i)
 		checksum += i * rawCodes[i];
 	// the second last code is the checksum (last one is the stop code):
-	if (checksum % 103 != rawCodes.back())
+	checksum %= 103;
+	Diagnostics::fmt("CSum(%d)", checksum);
+	if (checksum != rawCodes.back()) {
+		Diagnostics::fmt("CSumError(%d)", rawCodes.back());
 		return Result(DecodeStatus::ChecksumError);
+	}
 
 	int xStop = next.pixelsTillEnd();
-	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes),
-				  raw2txt.readerInit());
+	Result result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes),
+					raw2txt.symbologyIdentifier(), raw2txt.readerInit());
+	return result;
 }
 
 } // namespace ZXing::OneD

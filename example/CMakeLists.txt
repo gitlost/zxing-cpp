@@ -9,6 +9,8 @@ if (BUILD_READERS)
     target_link_libraries (ZXingReader ZXing::ZXing)
 
     add_test(NAME ZXingReaderTest COMMAND ZXingReader -fast -format qrcode "${CMAKE_SOURCE_DIR}/test/samples/qrcode-1/1.png")
+
+    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/ZXingReader" DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME zxingcppreader)
 endif()
 
 if (BUILD_WRITERS)

@@ -16,6 +16,7 @@
 
 #include "BarcodeFormat.h"
 #include "BitMatrix.h"
+#include "CharacterSetECI.h"
 #include "MultiFormatWriter.h"
 #include "TextUtfEncoding.h"
 
@@ -57,7 +58,7 @@ static bool ParseSize(std::string str, int* width, int* height)
 	return false;
 }
 
-static bool ParseOptions(int argc, char* argv[], int* width, int* height, int* margin, int* eccLevel, BarcodeFormat* format, std::string* text, std::string* filePath)
+static bool ParseOptions(int argc, char* argv[], int* width, int* height, int* margin, int* eccLevel, CharacterSet* encoding, BarcodeFormat* format, std::string* text, std::string* filePath)
 {
 	int nonOptArgCount = 0;
 	for (int i = 1; i < argc; ++i) {
@@ -78,6 +79,11 @@ static bool ParseOptions(int argc, char* argv[], int* width, int* height, int* m
 			if (++i == argc)
 				return false;
 			*eccLevel = std::stoi(argv[i]);
+		}
+		else if (strcmp(argv[i], "-encoding") == 0) {
+			if (++i == argc)
+				return false;
+			*encoding = CharacterSetECI::CharsetFromName(argv[i]);
 		}
 		else if (nonOptArgCount == 0) {
 			*format = BarcodeFormatFromString(argv[i]);
@@ -118,16 +124,17 @@ int main(int argc, char* argv[])
 	int width = 100, height = 100;
 	int margin = 10;
 	int eccLevel = -1;
+	CharacterSet encoding = CharacterSet::Unknown;
 	std::string text, filePath;
 	BarcodeFormat format;
 
-	if (!ParseOptions(argc, argv, &width, &height, &margin, &eccLevel, &format, &text, &filePath)) {
+	if (!ParseOptions(argc, argv, &width, &height, &margin, &eccLevel, &encoding, &format, &text, &filePath)) {
 		PrintUsage(argv[0]);
 		return -1;
 	}
 
 	try {
-		auto writer = MultiFormatWriter(format).setMargin(margin).setEccLevel(eccLevel);
+		auto writer = MultiFormatWriter(format).setMargin(margin).setEccLevel(eccLevel).setEncoding(encoding);
 		auto bitmap = ToMatrix<uint8_t>(writer.encode(TextUtfEncoding::FromUtf8(text), width, height));
 
 		auto ext = GetExtension(filePath);

@@ -25,6 +25,7 @@
 #include "ResultPoint.h"
 #include "StructuredAppend.h"
 
+#include <list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -46,11 +47,11 @@ public:
 	explicit Result(DecodeStatus status) : _status(status) {}
 
 	Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes = {},
-		   const bool readerInit = false);
+		   std::string symbologyIdentifier = "", StructuredAppendInfo sai = {}, const bool readerInit = false);
 
 	// 1D convenience constructor
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, ByteArray&& rawBytes = {},
-		   const bool readerInit = false);
+		   std::string symbologyIdentifier = "", const bool readerInit = false);
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
@@ -71,6 +72,12 @@ public:
 		_format = format;
 	}
 
+	/**
+	 * @brief text Content of symbol.
+	 *
+	 * For UPC-A and UPC-E, the content is 12 and 8 digits respectively, i.e. is not expanded to 13 digits.
+	 * For EAN-13, UPC-A, UPC-E and EAN-8 with add-on, the add-on is appended separated by a space.
+	 */
 	const std::wstring& text() const {
 		return _text;
 	}
@@ -92,7 +99,7 @@ public:
 	const ByteArray& rawBytes() const {
 		return _rawBytes;
 	}
-	
+
 	int numBits() const {
 		return _numBits;
 	}
@@ -106,14 +113,19 @@ public:
 		return {position().begin(), position().end()};
 	}
 
-	[[deprecated]]
 	const ResultMetadata& metadata() const {
 		return _metadata;
 	}
 
-	[[deprecated]]
 	ResultMetadata& metadata() {
 		return _metadata;
+	}
+
+	/**
+	 * @brief symbologyIdentifier Symbology identifier "]cm" where "c" is symbology code character, "m" the modifier.
+	 */
+	const std::string& symbologyIdentifier() const {
+		return _symbologyIdentifier;
 	}
 
 	/**
@@ -139,6 +151,11 @@ public:
 	 */
 	const std::string& sequenceId() const { return _sai.id; }
 
+	/**
+	 * @brief sequenceLastECI Character set ECI in effect at end of symbol if part of a structured append sequence.
+	 */
+	int sequenceLastECI() const { return _sai.lastECI; }
+
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
 	bool isPartOfSequence() const { return sequenceSize() > -1; }
 
@@ -147,6 +164,10 @@ public:
 	 */
 	bool readerInit() const {
 		return _readerInit;
+	}
+
+	const std::list<std::string>& diagnostics() const {
+		return _diagnostics;
 	}
 
 private:
@@ -158,8 +179,10 @@ private:
 	int _numBits = 0;
 	std::wstring _ecLevel;
 	ResultMetadata _metadata;
+	std::string _symbologyIdentifier;
 	StructuredAppendInfo _sai;
 	bool _readerInit = false;
+	std::list<std::string> _diagnostics;
 };
 
 } // ZXing

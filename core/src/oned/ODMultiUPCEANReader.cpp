@@ -48,7 +48,7 @@ static const int FIRST_DIGIT_ENCODINGS[] = {
 	0x00, 0x0B, 0x0D, 0x0E, 0x13, 0x19, 0x1C, 0x15, 0x16, 0x1A
 };
 
-// The GS1 specification has the following to say about quite zones
+// The GS1 specification has the following to say about quiet zones
 // Type: EAN-13 | EAN-8 | UPC-A | UPC-E | EAN Add-on | UPC Add-on
 // QZ L:   11   |   7   |   9   |   9   |     7-12   |     9-12
 // QZ R:    7   |   7   |   9   |   7   |        5   |        5
@@ -57,7 +57,7 @@ constexpr float QUIET_ZONE_LEFT = 6;
 constexpr float QUIET_ZONE_RIGHT = 6;
 
 // There is a single sample (ean13-1/12.png) that fails to decode with these (new) settings because
-// it has a right-side quite zone of only about 4.5 modules, which is clearly out of spec.
+// it has a right-side quiet zone of only about 4.5 modules, which is clearly out of spec.
 
 static bool DecodeDigit(const PatternView& view, std::string& txt, int* lgPattern = nullptr)
 {
@@ -265,7 +265,7 @@ static bool AddOn(PartialResult& res, PatternView begin, int digitCount)
 		}
 	}
 
-	//TODO: check right quite zone
+	//TODO: check right quiet zone
 
 	if (digitCount == 2) {
 		CHECK(std::stoi(res.txt) % 4 == lgPattern);
@@ -303,19 +303,30 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, s
 		res.format = BarcodeFormat::UPCA;
 	}
 
+	// Symbology identifier modifiers ISO/IEC 15420:2009 Annex B Table B.1
+	// ISO/IEC 15420:2009 (& GS1 General Specifications 5.1.3) states that the content for "]E0" should be 13 digits,
+	// i.e. converted to EAN-13 if UPC-A/E, but not doing this here to maintain backward compatibility
+	std::string symbologyIdentifier(res.format == BarcodeFormat::EAN8 ? "]E4" : "]E0");
+
 	auto ext = res.end;
 	PartialResult addOnRes;
 	if (_hints.eanAddOnSymbol() != EanAddOnSymbol::Ignore && ext.skipSymbol() &&
 		ext.skipSingle(static_cast<int>(begin.sum() * 3.5)) && (AddOn(addOnRes, ext, 5) || AddOn(addOnRes, ext, 2))) {
 
+		// ISO/IEC 15420:2009 states that the content for "]E3" should be 15 or 18 digits, i.e. converted to EAN-13
+		// and extended with no separator, and that the content for "]E4" should be 8 digits, i.e. no add-on
 		//TODO: extend position in include extension
 		res.txt += " " + addOnRes.txt;
+
+		if (res.format != BarcodeFormat::EAN8) // Keeping EAN-8 with add-on as "]E4"
+			symbologyIdentifier = "]E3"; // Combined packet, EAN-13, UPC-A, UPC-E, with add-on
 	}
 
 	if (_hints.eanAddOnSymbol() == EanAddOnSymbol::Require && !addOnRes.isValid())
 		return Result(DecodeStatus::NotFound);
 
-	return {res.txt, rowNumber, begin.pixelsInFront(), res.end.pixelsTillEnd(), res.format};
+	return {res.txt, rowNumber, begin.pixelsInFront(), res.end.pixelsTillEnd(), res.format, {},
+			std::move(symbologyIdentifier)};
 }
 
 } // namespace ZXing::OneD

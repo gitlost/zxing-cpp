@@ -38,6 +38,7 @@ public:
 
 private:
 	bool _returnStartEnd;
+	bool _formatSpecified;
 };
 
 } // OneD

@@ -24,6 +24,7 @@ struct StructuredAppendInfo
 	int index = -1;
 	int count = -1;
 	std::string id;
+	int lastECI = -1; // Final ECI in effect
 };
 
 } // ZXing

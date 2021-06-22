@@ -43,6 +43,13 @@ class DecoderResultExtra : public CustomData
 
 public:
 
+	bool empty() const {
+		return _segmentIndex == -1 && _fileId.empty() && _optionalData.empty() && !_lastSegment && _segmentCount == -1
+				&& _sender.empty() && _addressee.empty() && _fileName.empty() && _fileSize == -1 && _timestamp == -1
+				&& _checksum == -1;
+	}
+
+	// -1 if not set
 	int segmentIndex() const {
 		return _segmentIndex;
 	}

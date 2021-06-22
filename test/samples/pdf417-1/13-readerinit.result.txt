@@ -1,0 +1,2 @@
+symbologyIdentifier=]L2
+readerInit=true

@@ -18,6 +18,7 @@
 #include "Result.h"
 
 #include "DecoderResult.h"
+#include "Diagnostics.h"
 #include "TextDecoder.h"
 
 #include <cmath>
@@ -26,32 +27,57 @@
 namespace ZXing {
 
 Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes,
-			   const bool readerInit)
+			   std::string symbologyIdentifier, StructuredAppendInfo sai, const bool readerInit)
 	: _format(format), _text(std::move(text)), _position(std::move(position)), _rawBytes(std::move(rawBytes)),
-	  _readerInit(readerInit)
+	  _symbologyIdentifier(symbologyIdentifier), _sai(sai), _readerInit(readerInit)
 {
 	_numBits = Size(_rawBytes) * 8;
+
+	if (Diagnostics::enabled()) {
+		Diagnostics::moveTo(_diagnostics);
+	}
 }
 
 Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, ByteArray&& rawBytes,
-			   const bool readerInit)
-	: Result(TextDecoder::FromLatin1(text), Line(y, xStart, xStop), format, std::move(rawBytes), readerInit)
+			   std::string symbologyIdentifier, const bool readerInit)
+	: Result(TextDecoder::FromLatin1(text), Line(y, xStart, xStop), format, std::move(rawBytes), symbologyIdentifier,
+			 {}, readerInit)
 {}
 
 Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format)
 	: _status(decodeResult.errorCode()), _format(format), _text(std::move(decodeResult).text()),
 	  _position(std::move(position)), _rawBytes(std::move(decodeResult).rawBytes()), _numBits(decodeResult.numBits()),
-	  _ecLevel(decodeResult.ecLevel()), _sai(decodeResult.structuredAppend()), _readerInit(decodeResult.readerInit())
+	  _ecLevel(decodeResult.ecLevel()), _symbologyIdentifier(decodeResult.symbologyIdentifier()),
+	  _sai(decodeResult.structuredAppend()), _readerInit(decodeResult.readerInit())
 {
 	// TODO: keep that for one release so people get the deprecation warning with a still intact functionality
-	if (isPartOfSequence()) {
-		_metadata.put(ResultMetadata::STRUCTURED_APPEND_SEQUENCE, sequenceIndex());
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+	if (sequenceSize() != -1) {
 		_metadata.put(ResultMetadata::STRUCTURED_APPEND_CODE_COUNT, sequenceSize());
-		if (_format == BarcodeFormat::QRCode)
-			_metadata.put(ResultMetadata::STRUCTURED_APPEND_PARITY, std::stoi(sequenceId()));
 	}
+	if (sequenceIndex() != -1) {
+		_metadata.put(ResultMetadata::STRUCTURED_APPEND_SEQUENCE, sequenceIndex());
+	}
+	if (_format == BarcodeFormat::QRCode && !sequenceId().empty()) {
+		_metadata.put(ResultMetadata::STRUCTURED_APPEND_PARITY, std::stoi(sequenceId()));
+	}
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 
 	// TODO: add type opaque and code specific 'extra data'? (see DecoderResult::extra())
+
+	if (Diagnostics::enabled()) {
+		Diagnostics::moveTo(_diagnostics);
+	}
 }
 
 int Result::orientation() const

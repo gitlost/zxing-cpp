@@ -21,6 +21,7 @@
 #include "ByteArray.h"
 #include "DecodeStatus.h"
 #include "Quadrilateral.h"
+#include "ResultMetadata.h"
 #include "StructuredAppend.h"
 
 #include <list>

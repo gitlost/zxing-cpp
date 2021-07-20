@@ -21,14 +21,10 @@
 #include "ByteArray.h"
 #include "DecodeStatus.h"
 #include "Quadrilateral.h"
-#include "ResultMetadata.h"
-#include "ResultPoint.h"
 #include "StructuredAppend.h"
 
 #include <list>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace ZXing {
 
@@ -67,11 +63,6 @@ public:
 		return _format;
 	}
 
-	[[deprecated]]
-	void setFormat(BarcodeFormat format) {
-		_format = format;
-	}
-
 	/**
 	 * @brief text Content of symbol.
 	 *
@@ -80,11 +71,6 @@ public:
 	 */
 	const std::wstring& text() const {
 		return _text;
-	}
-
-	[[deprecated]]
-	void setText(std::wstring&& text) {
-		_text = std::move(text);
 	}
 
 	const Position& position() const {
@@ -106,11 +92,6 @@ public:
 
 	const std::wstring& ecLevel() const {
 		return _ecLevel;
-	}
-
-	[[deprecated]]
-	std::vector<ResultPoint> resultPoints() const {
-		return {position().begin(), position().end()};
 	}
 
 	const ResultMetadata& metadata() const {

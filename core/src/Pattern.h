@@ -168,7 +168,7 @@ using FixedSparcePattern = FixedPattern<N, SUM, true>;
 
 template <bool RELAXED_THRESHOLD = false, int N, int SUM>
 float IsPattern(const PatternView& view, const FixedPattern<N, SUM, false>& pattern, int spaceInPixel = 0,
-				float minQuietZone = 0, float moduleSizeRef = 0.f)
+				float minQuietZone = 0, float moduleSizeRef = 0)
 {
 	int width = view.sum(N);
 	if (SUM > N && width < SUM)
@@ -195,7 +195,7 @@ float IsPattern(const PatternView& view, const FixedPattern<N, SUM, false>& patt
 
 template <bool RELAXED_THRESHOLD = false, int N, int SUM>
 float IsPattern(const PatternView& view, const FixedPattern<N, SUM, true>& pattern, int spaceInPixel = 0,
-				float minQuietZone = 0, float moduleSizeRef = 0.f)
+				float minQuietZone = 0, float moduleSizeRef = 0)
 {
 	// pattern contains the indices with the bars/spaces that need to be equally wide
 	int width = 0;

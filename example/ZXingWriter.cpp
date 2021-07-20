@@ -19,6 +19,7 @@
 #include "CharacterSetECI.h"
 #include "MultiFormatWriter.h"
 #include "TextUtfEncoding.h"
+#include "CharacterSetECI.h"
 
 #include <algorithm>
 #include <cctype>
@@ -58,7 +59,8 @@ static bool ParseSize(std::string str, int* width, int* height)
 	return false;
 }
 
-static bool ParseOptions(int argc, char* argv[], int* width, int* height, int* margin, int* eccLevel, CharacterSet* encoding, BarcodeFormat* format, std::string* text, std::string* filePath)
+static bool ParseOptions(int argc, char* argv[], int* width, int* height, int* margin, CharacterSet* encoding,
+						 int* eccLevel, BarcodeFormat* format, std::string* text, std::string* filePath)
 {
 	int nonOptArgCount = 0;
 	for (int i = 1; i < argc; ++i) {
@@ -128,13 +130,13 @@ int main(int argc, char* argv[])
 	std::string text, filePath;
 	BarcodeFormat format;
 
-	if (!ParseOptions(argc, argv, &width, &height, &margin, &eccLevel, &encoding, &format, &text, &filePath)) {
+	if (!ParseOptions(argc, argv, &width, &height, &margin, &encoding, &eccLevel, &format, &text, &filePath)) {
 		PrintUsage(argv[0]);
 		return -1;
 	}
 
 	try {
-		auto writer = MultiFormatWriter(format).setMargin(margin).setEccLevel(eccLevel).setEncoding(encoding);
+		auto writer = MultiFormatWriter(format).setMargin(margin).setEncoding(encoding).setEccLevel(eccLevel);
 		auto bitmap = ToMatrix<uint8_t>(writer.encode(TextUtfEncoding::FromUtf8(text), width, height));
 
 		auto ext = GetExtension(filePath);

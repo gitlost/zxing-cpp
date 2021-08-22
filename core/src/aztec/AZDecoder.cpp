@@ -361,6 +361,7 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				length = ReadCode(correctedBits, index, 11) + 31;
 				index += 11;
 			}
+			Diagnostics::fmt("(%d)", length);
 			for (int charCount = 0; charCount < length; charCount++) {
 				if (endIndex - index < 8) {
 					index = endIndex;  // Force outer loop to exit
@@ -368,6 +369,7 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				}
 				int code = ReadCode(correctedBits, index, 8);
 				result.push_back((char)code);
+				Diagnostics::chr((char)code, "B", true /*appendHex*/);
 				index += 8;
 			}
 			// Go back to whatever mode we had been in
@@ -419,10 +421,13 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				result.append(str);
 				// Go back to whatever mode we had been in
 				shiftTable = latchTable;
-				Diagnostics::chr(*str);
+				while (*str) {
+					Diagnostics::chr(*str++);
+				}
 			}
 		}
 	}
+	Diagnostics::put("EOD");
 	TextDecoder::Append(resultEncoded, reinterpret_cast<const uint8_t*>(result.data()), result.size(), encoding);
 
 	if (!resultEncoded.empty()) {
@@ -490,9 +495,14 @@ DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const std::s
 	std::vector<bool> correctedBits;
 	std::string symbologyIdentifier;
 	StructuredAppendInfo sai;
+	int layers = detectorResult.nbLayers();
+	int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
+	int numCodewords = Size(rawbits) / codewordSize;
 
-    Diagnostics::fmt("  Dimensions: %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
-	Diagnostics::put("  Decode:     ");
+    Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
+    Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
+    Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, detectorResult.nbDatablocks(), numCodewords - detectorResult.nbDatablocks());
+	Diagnostics::put("  Decode:      ");
 	if (CorrectBits(detectorResult, rawbits, correctedBits)) {
 		std::wstring resultEncoded = GetEncodedData(correctedBits, characterSet, symbologyIdentifier, sai);
 		if (resultEncoded.empty()) {

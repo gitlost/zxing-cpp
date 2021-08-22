@@ -109,7 +109,7 @@ public:
 				fnc1(true /*isCodeSetC*/);
 			} else {
 				codeSet = code; // CODE_A / CODE_B
-				Diagnostics::fmt("CODE%c", codeSet == CODE_CODE_A ? 'A' : 'B');
+				Diagnostics::fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 			}
 		} else { // codeSet A or B
 			bool unshift = shift;

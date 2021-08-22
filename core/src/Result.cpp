@@ -50,7 +50,6 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _ecLevel(decodeResult.ecLevel()), _symbologyIdentifier(decodeResult.symbologyIdentifier()),
 	  _sai(decodeResult.structuredAppend()), _readerInit(decodeResult.readerInit())
 {
-	// TODO: keep that for one release so people get the deprecation warning with a still intact functionality
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"

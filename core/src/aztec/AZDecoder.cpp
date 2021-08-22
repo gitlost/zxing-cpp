@@ -182,7 +182,6 @@ static bool CorrectBits(const DetectorResult& ddata, const std::vector<bool>& ra
 	int offset = rawbits.size() % codewordSize;
 	int numECCodewords = numCodewords - numDataCodewords;
 
-	
 	std::vector<int> dataWords(numCodewords);
 	for (int i = 0; i < numCodewords; i++, offset += codewordSize) {
 		dataWords[i] = ReadCode(rawbits, offset, codewordSize);

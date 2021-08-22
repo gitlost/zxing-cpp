@@ -167,22 +167,22 @@ int main(int argc, char* argv[])
 			ret |= static_cast<int>(result.status());
 
 			if (oneLine) {
-                std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-                          << " \"" << ToUtf8(result.text(), angleEscape) << "\" " << ToString(result.status());
-                if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
-                    bool haveDecode = false;
-                    for (std::string value : result.diagnostics()) {
-                        if (value.find("Decode:") != std::string::npos) {
-                            haveDecode = true;
-                            std::cout << " ";
-                        } else if (haveDecode) {
-                            std::cout << value;
-                            if (!std::isspace(value.back())) {
-                                std::cout << " ";
-                            }
-                        }
-                    }
-                }
+				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
+							<< " \"" << ToUtf8(result.text(), angleEscape) << "\" " << ToString(result.status());
+				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
+					bool haveDecode = false;
+					for (std::string value : result.diagnostics()) {
+						if (value.find("Decode:") != std::string::npos) {
+							haveDecode = true;
+							std::cout << " ";
+						} else if (haveDecode) {
+							std::cout << value;
+							if (!std::isspace(value.back())) {
+								std::cout << " ";
+							}
+						}
+					}
+				}
 				std::cout << "\n";
 				continue;
 			}
@@ -192,87 +192,87 @@ int main(int argc, char* argv[])
 				if (!firstFile)
 					std::cout << "\n";
 				if (filePaths.size() > 1)
-                    std::cout << "File:       " << filePath << "\n";
+					std::cout << "File:       " << filePath << "\n";
 				firstFile = false;
 			}
-            std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-                      << "Format:     " << ToString(result.format()) << "\n"
-                      << "Identifier: " << result.symbologyIdentifier() << "\n"
-                      << "Position:   " << result.position() << "\n"
-                      << "Rotation:   " << result.orientation() << " deg\n"
-                      << "No. Bits:   " << result.numBits() << "\n"
-                      << "Error:      " << ToString(result.status()) << "\n";
+			std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
+					  << "Format:     " << ToString(result.format()) << "\n"
+					  << "Identifier: " << result.symbologyIdentifier() << "\n"
+					  << "Position:   " << result.position() << "\n"
+					  << "Rotation:   " << result.orientation() << " deg\n"
+					  << "No. Bits:   " << result.numBits() << "\n"
+					  << "Error:      " << ToString(result.status()) << "\n";
 
-            auto printOptional = [](const char* key, const std::string& v) {
-                if (!v.empty())
-                    std::cout << key << v << "\n";
-            };
+			auto printOptional = [](const char* key, const std::string& v) {
+				if (!v.empty())
+					std::cout << key << v << "\n";
+			};
 
-            printOptional("EC Level:   ", ToUtf8(result.ecLevel()));
+			printOptional("EC Level:   ", ToUtf8(result.ecLevel()));
 
 			if (result.lineCount())
 				std::cout << "Lines:    " << result.lineCount() << "\n";
 
-            if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
-                    .testFlag(result.format())) {
-                printOptional("Country:    ", GTIN::LookupCountryIdentifier(ToUtf8(result.text()), result.format()));
-                printOptional("Add-On:     ", GTIN::EanAddOn(result));
-                printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
-                printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
-            }
+			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
+					.testFlag(result.format())) {
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(ToUtf8(result.text()), result.format()));
+				printOptional("Add-On:     ", GTIN::EanAddOn(result));
+				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
+				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
+			}
 
-            if (result.isPartOfSequence()) {
-                std::cout << "Structured Append\n";
-                if (result.sequenceSize() > 0)
-                    std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of " << result.sequenceSize() << "\n";
-                else
-                    std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
-                if (!result.sequenceId().empty())
-                    std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
-                if (result.sequenceLastECI() > -1)
-                    std::cout << "    Last ECI: " << result.sequenceLastECI() << "\n";
-            }
+			if (result.isPartOfSequence()) {
+				std::cout << "Structured Append\n";
+				if (result.sequenceSize() > 0)
+					std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of " << result.sequenceSize() << "\n";
+				else
+					std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
+				if (!result.sequenceId().empty())
+					std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
+				if (result.sequenceLastECI() > -1)
+					std::cout << "    Last ECI: " << result.sequenceLastECI() << "\n";
+			}
 
-            const auto& meta = result.metadata();
-            if (meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA)) {
-                const auto& extra = std::dynamic_pointer_cast<Pdf417::DecoderResultExtra>(meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA));
-                if (!extra->empty()) {
-                    std::cout << "PDF417 Macro";
-                    if (!extra->fileName().empty())
-                        std::cout << "\n  File Name:  " << extra->fileName();
-                    if (extra->timestamp() != -1)
-                        std::cout << "\n  Time Stamp: " << extra->timestamp();
-                    if (!extra->sender().empty())
-                        std::cout << "\n  Sender:     " << extra->sender();
-                    if (!extra->addressee().empty())
-                        std::cout << "\n  Addressee:  " << extra->addressee();
-                    if (extra->fileSize() != -1)
-                        std::cout << "\n  File Size:  " << extra->fileSize();
-                    if (extra->checksum() != -1)
-                        std::cout << "\n  Checksum:   " << extra->checksum();
-                    std::cout << "\n";
-                }
-            }
+			const auto& meta = result.metadata();
+			if (meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA)) {
+				const auto& extra = std::dynamic_pointer_cast<Pdf417::DecoderResultExtra>(meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA));
+				if (!extra->empty()) {
+					std::cout << "PDF417 Macro";
+					if (!extra->fileName().empty())
+						std::cout << "\n  File Name:  " << extra->fileName();
+					if (extra->timestamp() != -1)
+						std::cout << "\n  Time Stamp: " << extra->timestamp();
+					if (!extra->sender().empty())
+						std::cout << "\n  Sender:     " << extra->sender();
+					if (!extra->addressee().empty())
+						std::cout << "\n  Addressee:  " << extra->addressee();
+					if (extra->fileSize() != -1)
+						std::cout << "\n  File Size:  " << extra->fileSize();
+					if (extra->checksum() != -1)
+						std::cout << "\n  Checksum:   " << extra->checksum();
+					std::cout << "\n";
+				}
+			}
 
-            if (result.readerInit())
-                std::cout << "Reader Initialisation/Programming\n";
+			if (result.readerInit())
+				std::cout << "Reader Initialisation/Programming\n";
 
-            if (hints.enableDiagnostics()) {
-                std::cout << "Diagnostics";
-                const auto& diagnostics = result.diagnostics();
-                if (diagnostics.empty()) {
-                    std::cout << " (empty)\n";
-                } else {
-                    std::cout << "\n";
-                    for (std::string value : diagnostics) {
-                        std::cout << value;
-                        if (!std::isspace(value.back())) {
-                            std::cout << " ";
-                        }
-                    }
-                    std::cout << "\n";
-                }
-            }
+			if (hints.enableDiagnostics()) {
+				std::cout << "Diagnostics";
+				const auto& diagnostics = result.diagnostics();
+				if (diagnostics.empty()) {
+					std::cout << " (empty)\n";
+				} else {
+					std::cout << "\n";
+					for (std::string value : diagnostics) {
+						std::cout << value;
+						if (!std::isspace(value.back())) {
+							std::cout << " ";
+						}
+					}
+					std::cout << "\n";
+				}
+			}
 		}
 
 		if (Size(filePaths) == 1 && !outPath.empty())

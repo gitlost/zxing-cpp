@@ -165,7 +165,7 @@ public:
 
 	bool operator==(const Result& o) const {
 		return text() == o.text() && format() == o.format();
-    }
+	}
 
 private:
 	DecodeStatus _status = DecodeStatus::NoError;

@@ -101,6 +101,7 @@ Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
 	case Binarizer::FixedThreshold: return MultiFormatReader(hints).readMultiple(ThresholdBinarizer(iv, 127));
 	case Binarizer::GlobalHistogram: return MultiFormatReader(hints).readMultiple(GlobalHistogramBinarizer(iv));
 	case Binarizer::LocalAverage: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv));
+	default: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv)); /* Not reached */
 	}
 }
 

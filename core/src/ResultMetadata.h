@@ -121,7 +121,7 @@ public:
 	std::wstring getString(Key key) const;
 	std::list<ByteArray> getByteArrayList(Key key) const;
 	std::shared_ptr<CustomData> getCustomData(Key key) const;
-	
+
 	void put(Key key, int value);
 	void put(Key key, const std::wstring& value);
 	void put(Key key, const std::list<ByteArray>& value);

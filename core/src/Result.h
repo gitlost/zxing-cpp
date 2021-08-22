@@ -26,6 +26,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 namespace ZXing {
 
@@ -148,9 +149,23 @@ public:
 		return _readerInit;
 	}
 
+	/**
+	 * @brief How many lines have been detected with this code (applies only to 1D symbologies)
+	 */
+	int lineCount() const {
+		return _lineCount;
+	}
+	void incrementLineCount() {
+		++_lineCount;
+	}
+
 	const std::list<std::string>& diagnostics() const {
 		return _diagnostics;
 	}
+
+	bool operator==(const Result& o) const {
+		return text() == o.text() && format() == o.format();
+    }
 
 private:
 	DecodeStatus _status = DecodeStatus::NoError;
@@ -164,7 +179,10 @@ private:
 	std::string _symbologyIdentifier;
 	StructuredAppendInfo _sai;
 	bool _readerInit = false;
+	int _lineCount = 0;
 	std::list<std::string> _diagnostics;
 };
+
+using Results = std::vector<Result>;
 
 } // ZXing

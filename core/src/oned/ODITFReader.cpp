@@ -42,12 +42,12 @@ constexpr auto START_PATTERN_ = FixedPattern<4, 4>{1, 1, 1, 1};
 constexpr auto STOP_PATTERN_1 = FixedPattern<3, 4>{2, 1, 1};
 constexpr auto STOP_PATTERN_2 = FixedPattern<3, 5>{3, 1, 1};
 
-Result ITFReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const
+Result ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
 {
 	const int minCharCount = 6;
 	const int minQuietZone = 10;
 
-	auto next = FindLeftGuard(row, 4 + minCharCount/2 + 3, START_PATTERN_, minQuietZone);
+	next = FindLeftGuard(next, 4 + minCharCount/2 + 3, START_PATTERN_, minQuietZone);
 	if (!next.isValid())
 		return Result(DecodeStatus::NotFound);
 
@@ -58,7 +58,7 @@ Result ITFReader::decodePattern(int rowNumber, const PatternView& row, std::uniq
 	int xStart = next.pixelsInFront();
 	next = next.subView(4, 10);
 
-	while (next.index() < row.size() - (10 + 3)) {
+	while (next.isValid()) {
 		const auto threshold = NarrowWideThreshold(next);
 		if (!threshold.isValid())
 			break;
@@ -82,7 +82,7 @@ Result ITFReader::decodePattern(int rowNumber, const PatternView& row, std::uniq
 
 	next = next.subView(0, 3);
 
-	if (Size(txt) < minCharCount)
+	if (Size(txt) < minCharCount || !next.isValid())
 		return Result(DecodeStatus::NotFound);
 
 	if (!IsRightGuard(next, STOP_PATTERN_1, minQuietZone) && !IsRightGuard(next, STOP_PATTERN_2, minQuietZone))

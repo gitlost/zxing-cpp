@@ -34,7 +34,8 @@ static Result parse(PatternRow row, DecodeHints hints = {})
 	row.insert(row.end(), { 0, 1, 2, 1, 1, 2, 1, 2, 1, 1, 0 });
 
 	std::unique_ptr<RowReader::DecodingState> state;
-	return reader.decodePattern(0, row, state);
+	PatternView next(row);
+	return reader.decodePattern(0, next, state);
 }
 
 TEST(ODCode39ReaderTest, SymbologyIdentifier)

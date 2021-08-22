@@ -255,15 +255,12 @@ static void doRunTests(
 	}
 }
 
-static auto readPDF417s = [](const BinaryBitmap& image) { return Pdf417::Reader({}).decodeMultiple(image); };
-static auto readQRCodes = [](const BinaryBitmap& image) { return std::list{QRCode::Reader({}).decode(image)}; };
-
-template<typename READER>
-static Result readMultiple(const std::vector<fs::path>& imgPaths, int rotation, READER read)
+static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_view format)
 {
 	std::list<Result> allResults;
 	for (const auto& imgPath : imgPaths) {
-		auto results = read(ThresholdBinarizer(ImageLoader::load(imgPath), 127));
+		auto results =
+			ReadBarcodes(ImageLoader::load(imgPath), DecodeHints().setFormats(BarcodeFormatFromString(format.data())));
 		allResults.insert(allResults.end(), results.begin(), results.end());
 	}
 
@@ -309,8 +306,7 @@ static void doRunStructuredAppendTest(
 		auto startTime = std::chrono::steady_clock::now();
 
 		for (const auto& [testPath, testImgPaths] : imageGroups) {
-			auto result = format == "QRCode" ? readMultiple(testImgPaths, test.rotation, readQRCodes)
-											 : readMultiple(testImgPaths, test.rotation, readPDF417s);
+			auto result = readMultiple(testImgPaths, format);
 			if (result.isValid()) {
 				auto error = checkResult(testPath, format, result);
 				if (!error.empty())
@@ -450,8 +446,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("ean13-2", "EAN-13", 24, {
-			{ 7, 13, 0   },
-			{ 7, 13, 180 },
+			{ 7, 14, 0   },
+			{ 7, 14, 180 },
 		});
 
 		runTests("ean13-3", "EAN-13", 21, {
@@ -469,9 +465,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 5, 180 },
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
-		runTests("itf-1", "ITF", 10, {
-			{ 10, 10, 0   },
-			{ 10, 10, 180 },
+		runTests("itf-1", "ITF", 11, {
+			{ 10, 11, 0   },
+			{ 10, 11, 180 },
 		});
 
 		runTests("itf-2", "ITF", 6, {
@@ -493,8 +489,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("upca-2", "UPC-A", 36, {
-			{ 17, 22, 0   },
-			{ 18, 22, 180 },
+			{ 17, 23, 0   },
+			{ 18, 23, 180 },
 		});
 
 		runTests("upca-3", "UPC-A", 21, {
@@ -513,7 +509,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 		
 		runTests("upca-extension-1", "UPC-A", 6, {
-			{ 3, 6, 0 },
+			{ 4, 6, 0 },
 			{ 4, 6, 180 },
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 

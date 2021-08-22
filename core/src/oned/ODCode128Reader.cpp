@@ -204,7 +204,7 @@ static int DetectStartCode(const C& c)
 // all 3 start patterns share the same 2-1-1 prefix
 constexpr auto START_PATTERN_PREFIX = FixedPattern<3, 4>{2, 1, 1};
 constexpr int CHAR_LEN = 6;
-constexpr float QUIET_ZONE = 8;	// quiet zone spec is 10 modules
+constexpr float QUIET_ZONE = 5;	// quiet zone spec is 10 modules, real world examples ignore that, see #138
 
 //#define USE_FAST_1_TO_4_BIT_PATTERN_DECODING
 #ifdef USE_FAST_1_TO_4_BIT_PATTERN_DECODING
@@ -235,7 +235,7 @@ constexpr int CHARACTER_ENCODINGS[] = {
 };
 #endif
 
-Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<DecodingState>&) const
+Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
 {
 	int minCharCount = 4; // start + payload + checksum + stop
 	auto decodePattern = [](const PatternView& view, bool start = false) {
@@ -250,7 +250,7 @@ Result Code128Reader::decodePattern(int rowNumber, const PatternView& row, std::
 #endif
 	};
 
-	auto next = FindLeftGuard(row, minCharCount * CHAR_LEN, START_PATTERN_PREFIX, QUIET_ZONE);
+	next = FindLeftGuard(next, minCharCount * CHAR_LEN, START_PATTERN_PREFIX, QUIET_ZONE);
 	if (!next.isValid())
 		return Result(DecodeStatus::NotFound);
 

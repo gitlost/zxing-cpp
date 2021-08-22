@@ -16,8 +16,8 @@
 
 #include "oned/ODCode128Reader.h"
 
-#include "Result.h"
 #include "Diagnostics.h"
+#include "Result.h"
 
 #include "gtest/gtest.h"
 
@@ -37,7 +37,9 @@ static Result parse(const int startPattern, PatternRow row)
 	row.insert(row.end(), { 2, 3, 3, 1, 1, 1, 2, 0 }); // Stop pattern
 
 	std::unique_ptr<Code128Reader::DecodingState> state;
-	return Code128Reader().decodePattern(0, row, state);
+	Code128Reader reader;
+	PatternView next(row);
+	return reader.decodePattern(0, next, state);
 }
 
 TEST(ODCode128ReaderTest, SymbologyIdentifier)

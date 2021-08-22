@@ -65,6 +65,13 @@ Reader::Reader(const DecodeHints& hints) :
 
 Reader::~Reader() = default;
 
+static bool IsIntersecting(QuadrilateralI a, QuadrilateralI b)
+{
+	bool x = b.topRight().x < a.topLeft().x || b.topLeft().x > a.topRight().x;
+	bool y = b.bottomLeft().y < a.topLeft().y || b.topLeft().y > a.bottomLeft().y;
+	return !(x || y);
+}
+
 /**
 * We're going to examine rows from the middle outward, searching alternately above and below the
 * middle, and farther out each time. rowStep is the number of rows between each successive
@@ -74,9 +81,11 @@ Reader::~Reader() = default;
 * decided that moving up and down by about 1/16 of the image is pretty good; we try more of the
 * image if "trying harder".
 */
-static Result DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBitmap& image,
-					   bool tryHarder, bool rotate, bool isPure)
+static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, const BinaryBitmap& image,
+						bool tryHarder, bool rotate, bool isPure, int maxSymbols)
 {
+	Results res;
+
 	std::vector<std::unique_ptr<RowReader::DecodingState>> decodingState(readers.size());
 
 	int width = image.width();
@@ -86,13 +95,14 @@ static Result DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, c
 		std::swap(width, height);
 
 	int middle = height / 2;
-	int rowStep = std::max(1, height / (tryHarder ? 256 : 32));
+	// TODO: find a better heuristic/parameterization if maxSymbols != 1
+	int rowStep = std::max(1, height / (tryHarder ? (maxSymbols == 1 ? 256 : 512) : 32));
 	int maxLines = tryHarder ?
 		height :	// Look at the whole image, not just the center
 		15;			// 15 rows spaced 1/32 apart is roughly the middle half of the image
 
 	PatternRow bars;
-	bars.reserve(128); // e.g. EAN-13 has 96 bars
+	bars.reserve(128); // e.g. EAN-13 has 59 bars/spaces
 
 	for (int i = 0; i < maxLines; i++) {
 
@@ -123,18 +133,65 @@ static Result DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, c
 			}
 			// Look for a barcode
 			for (size_t r = 0; r < readers.size(); ++r) {
-				Result result = readers[r]->decodePattern(rowNumber, bars, decodingState[r]);
-				if (result.isValid()) {
-					if (upsideDown) {
-						// update position (flip horizontally).
-						auto points = result.position();
-						for (auto& p : points) {
-							p = {width - p.x - 1, p.y};
+				PatternView next(bars);
+				do {
+					Result result = readers[r]->decodePattern(rowNumber, next, decodingState[r]);
+					result.incrementLineCount();
+					if (result.isValid()) {
+						if (upsideDown) {
+							// update position (flip horizontally).
+							auto points = result.position();
+							for (auto& p : points) {
+								p = {width - p.x - 1, p.y};
+							}
+							result.setPosition(std::move(points));
 						}
-						result.setPosition(std::move(points));
+						if (rotate) {
+							auto points = result.position();
+							for (auto& p : points) {
+								p = {height - p.y - 1, p.x};
+							}
+							result.setPosition(std::move(points));
+						}
+
+						// check if we know this code already
+						for (auto& other : res) {
+							if (other == result) {
+								auto dTop = maxAbsComponent(other.position().topLeft() - result.position().topLeft());
+								auto dBot = maxAbsComponent(other.position().bottomLeft() - result.position().topLeft());
+								auto length = maxAbsComponent(other.position().topLeft() - other.position().bottomRight());
+								// if the new line is less than half the length of the existing result away from the
+								// latter, we consider it to belong to the same symbol
+								if (std::min(dTop, dBot) < length / 2) {
+									// if so, merge the position information
+									auto points = other.position();
+									if (dTop < dBot ||
+										(dTop == dBot && rotate ^ (sumAbsComponent(points[0]) >
+																   sumAbsComponent(result.position()[0])))) {
+										points[0] = result.position()[0];
+										points[1] = result.position()[1];
+									} else {
+										points[2] = result.position()[2];
+										points[3] = result.position()[3];
+									}
+									other.setPosition(points);
+									other.incrementLineCount();
+									// clear the result below, so we don't insert it again
+									result = Result(DecodeStatus::NotFound);
+								}
+							}
+						}
+
+						if (result.isValid()) {
+							res.push_back(std::move(result));
+							if (maxSymbols && Size(res) == maxSymbols)
+								goto out;
+						}
 					}
-					return result;
-				}
+					// make sure we make progress and we start the next try on a bar
+					next.shift(2 - (next.index() % 2));
+					next.extend();
+				} while (tryHarder && next.isValid());
 			}
 		}
 
@@ -142,28 +199,40 @@ static Result DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, c
 		if (isPure)
 			break;
 	}
-	return Result(DecodeStatus::NotFound);
+
+out:
+	// if symbols overlap, remove the one with a lower line count
+	for (auto a = res.begin(); a != res.end(); ++a)
+		for (auto b = std::next(a); b != res.end(); ++b)
+			if (IsIntersecting(a->position(), b->position()))
+				*(a->lineCount() < b->lineCount() ? a : b) = Result(DecodeStatus::NotFound);
+
+	//TODO: C++20 res.erase_if()
+	auto it = std::remove_if(res.begin(), res.end(), [](auto&& r) { return r.status() == DecodeStatus::NotFound; });
+	res.erase(it, res.end());
+
+	return res;
 }
 
 Result
 Reader::decode(const BinaryBitmap& image) const
 {
-	Result result = DoDecode(_readers, image, _tryHarder, false, _isPure);
+	auto result = DoDecode(_readers, image, _tryHarder, false, _isPure, 1);
 
-	if (!result.isValid() && _tryRotate) {
-		result = DoDecode(_readers, image, _tryHarder, true, _isPure);
-		if (result.isValid()) {
-			// Update position
-			auto points = result.position();
-			int height = image.width();
-			for (auto& p : points) {
-				p = {height - p.y - 1, p.x};
-			}
-			result.setPosition(std::move(points));
-		}
+	if (result.empty() && _tryRotate)
+		result = DoDecode(_readers, image, _tryHarder, true, _isPure, 1);
+
+	return result.empty() ? Result(DecodeStatus::NotFound) : result.front();
+}
+
+Results Reader::decode(const BinaryBitmap& image, int maxSymbols) const
+{
+	auto resH = DoDecode(_readers, image, _tryHarder, false, _isPure, maxSymbols);
+	if ((!maxSymbols || Size(resH) < maxSymbols) && _tryRotate) {
+		auto resV = DoDecode(_readers, image, _tryHarder, true, _isPure, maxSymbols);
+		resH.insert(resH.end(), resV.begin(), resV.end());
 	}
-
-	return result;
+	return resH;
 }
 
 } // namespace ZXing::OneD

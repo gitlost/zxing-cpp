@@ -78,4 +78,23 @@ MultiFormatReader::read(const BinaryBitmap& image) const
 	return Result(DecodeStatus::NotFound);
 }
 
+Results MultiFormatReader::readMultiple(const BinaryBitmap& image) const
+{
+	std::vector<Result> res;
+
+	for (const auto& reader : _readers) {
+		auto r = reader->decode(image, 0);
+		res.insert(res.end(), r.begin(), r.end());
+	}
+
+	// sort results based on their position on the image
+	std::sort(res.begin(), res.end(), [](const Result& l, const Result& r) {
+		auto lp = l.position().topLeft();
+		auto rp = r.position().topLeft();
+		return lp.y < rp.y || (lp.y == rp.y && lp.x <= rp.x);
+	});
+
+	return res;
+}
+
 } // ZXing

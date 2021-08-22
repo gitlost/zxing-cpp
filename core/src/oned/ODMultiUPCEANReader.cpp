@@ -55,6 +55,7 @@ static const int FIRST_DIGIT_ENCODINGS[] = {
 
 constexpr float QUIET_ZONE_LEFT = 6;
 constexpr float QUIET_ZONE_RIGHT = 6;
+constexpr float QUIET_ZONE_ADDON = 3;
 
 // There is a single sample (ean13-1/12.png) that fails to decode with these (new) settings because
 // it has a right-side quiet zone of only about 4.5 modules, which is clearly out of spec.
@@ -251,6 +252,8 @@ static bool AddOn(PartialResult& res, PatternView begin, int digitCount)
 	auto moduleSize = IsPattern(ext, EXT_START_PATTERN);
 	CHECK(moduleSize);
 
+	CHECK(ext.isAtLastBar() || *ext.end() > QUIET_ZONE_ADDON * moduleSize - 1);
+
 	res.end = ext;
 	ext = ext.subView(EXT_START_PATTERN.size(), CHAR_LEN);
 	int lgPattern = 0;
@@ -265,8 +268,6 @@ static bool AddOn(PartialResult& res, PatternView begin, int digitCount)
 		}
 	}
 
-	//TODO: check right quiet zone
-
 	if (digitCount == 2) {
 		CHECK(std::stoi(res.txt) % 4 == lgPattern);
 	} else {
@@ -277,15 +278,16 @@ static bool AddOn(PartialResult& res, PatternView begin, int digitCount)
 	return true;
 }
 
-Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, std::unique_ptr<RowReader::DecodingState>&) const
+Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
 {
 	const int minSize = 3 + 6*4 + 6; // UPC-E
 
-	auto begin = FindLeftGuard(row, minSize, END_PATTERN, QUIET_ZONE_LEFT);
-	if (!begin.isValid())
+	next = FindLeftGuard(next, minSize, END_PATTERN, QUIET_ZONE_LEFT);
+	if (!next.isValid())
 		return Result(DecodeStatus::NotFound);
 
 	PartialResult res;
+	auto begin = next;
 
 	if (!(((_hints.hasFormat(BarcodeFormat::EAN13 | BarcodeFormat::UPCA)) && EAN13(res, begin)) ||
 		  (_hints.hasFormat(BarcodeFormat::EAN8) && EAN8(res, begin)) ||
@@ -321,6 +323,8 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, const PatternView& row, s
 		if (res.format != BarcodeFormat::EAN8) // Keeping EAN-8 with add-on as "]E4"
 			symbologyIdentifier = "]E3"; // Combined packet, EAN-13, UPC-A, UPC-E, with add-on
 	}
+
+	next = res.end;
 
 	if (_hints.eanAddOnSymbol() == EanAddOnSymbol::Require && !addOnRes.isValid())
 		return Result(DecodeStatus::NotFound);

@@ -558,6 +558,7 @@ static DecodeStatus DecodeBase900toBase10(const std::vector<int>& codewords, int
 		result += EXP900[count - i - 1] * codewords[i];
 	}
 	resultString = result.toString();
+	printf("resultString %s\n", resultString.c_str());
 	if (!resultString.empty() && resultString.front() == '1') {
 		resultString = resultString.substr(1);
 		return DecodeStatus::NoError;
@@ -683,6 +684,7 @@ ZXING_EXPORT_TEST_ONLY
 DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata,
 							  int& next)
 {
+	printf("codeIndex %d, codewords[0] %d\n", codeIndex, codewords[0]);
 	if (codeIndex + NUMBER_OF_SEQUENCE_CODEWORDS > codewords[0]) {
 		// we must have at least two bytes left for the segment index
 		return DecodeStatus::FormatError;
@@ -699,6 +701,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 	}
 	resultMetadata.setSegmentIndex(std::stoi(strBuf));
 	Diagnostics::fmt("SegIdx(%s)", strBuf.c_str());
+	printf("SegIdx %s\n", strBuf.c_str());
 
 	// Decoding the fileId codewords as 0-899 numbers, each 0-filled to width 3. This follows the spec
 	// (See ISO/IEC 15438:2015 Annex H.6) and preserves all info, but some generators (e.g. TEC-IT) write
@@ -711,6 +714,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 	}
 	resultMetadata.setFileId(fileId.str());
 	Diagnostics::fmt("FileId(%s)", fileId.str().c_str());
+	printf("FileId %s, codeIndex %d\n", fileId.str().c_str(), codeIndex);
 
 	int optionalFieldsStart = -1;
 	if (codeIndex < codewords[0] && codewords[codeIndex] == BEGIN_MACRO_PDF417_OPTIONAL_FIELD) {
@@ -721,9 +725,12 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 		switch (codewords[codeIndex]) {
 			case BEGIN_MACRO_PDF417_OPTIONAL_FIELD: {
 				codeIndex++;
+				printf("BEGIN_MACRO_PDF417_OPTIONAL_FIELD codeIndex %d\n", codeIndex);
 				if (codeIndex >= codewords[0]) {
+					printf("End codeIndex %d\n", codeIndex);
 					break;
 				}
+				printf("codewords[%d] %d\n", codeIndex, codewords[codeIndex]);
 				switch (codewords[codeIndex]) {
 					case MACRO_PDF417_OPTIONAL_FIELD_FILE_NAME: {
 						std::string fileName;
@@ -773,6 +780,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 					default: {
 						status = DecodeStatus::FormatError;
 						Diagnostics::put("MACROError");
+						printf("MACROError inner\n");
 						break;
 					}
 				}
@@ -787,6 +795,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 			default: {
 				status = DecodeStatus::FormatError;
 				Diagnostics::put("MACROError");
+				printf("MACROError outer\n");
 				break;
 			}
 		}

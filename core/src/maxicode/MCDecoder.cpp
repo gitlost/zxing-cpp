@@ -364,6 +364,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
 	Diagnostics::fmt("  Codewords:  (%d)", codewords.size()); Diagnostics::dump(codewords, "\n");
 	Diagnostics::put("  Decode:     ");
 	if (!CorrectErrors(codewords, 0, 10, 10, ALL)) {
+		Diagnostics::put("ChecksumError(primary)");
 		return DecodeStatus::ChecksumError;
 	}
 	int mode = codewords[0] & 0x0F;
@@ -377,6 +378,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
 				datawords.resize(94, 0);
 			}
 			else {
+				Diagnostics::fmt("ChecksumError(secondary %d)", mode);
 				return DecodeStatus::ChecksumError;
 			}
 			break;
@@ -385,6 +387,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
 				datawords.resize(78, 0);
 			}
 			else {
+				Diagnostics::fmt("ChecksumError(secondary %d)", mode);
 				return DecodeStatus::ChecksumError;
 			}
 			break;

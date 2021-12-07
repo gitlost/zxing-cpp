@@ -37,15 +37,15 @@ GenericGFPoly::evaluateAt(int a) const
 
 	if (a == 1)
 		// Just the sum of the coefficients
-		return Reduce(_coefficients, 0, [](auto a, auto b) { return a ^ b; });
+		return Reduce(_coefficients, 0, [this](auto a, auto b) { return _field->add(a, b); });
 
 	int result = _coefficients[0];
 	for (size_t i = 1; i < _coefficients.size(); ++i)
-		result = _field->multiply(a, result) ^ _coefficients[i];
+		result = _field->add(_field->multiply(a, result), _coefficients[i]);
 	return result;
 }
 
-GenericGFPoly& GenericGFPoly::addOrSubtract(GenericGFPoly& other)
+GenericGFPoly& GenericGFPoly::subtract(GenericGFPoly& other)
 {
 	assert(_field == other._field); // "GenericGFPolys do not have same GenericGF field"
 	
@@ -66,7 +66,7 @@ GenericGFPoly& GenericGFPoly::addOrSubtract(GenericGFPoly& other)
 
 	// high-order terms only found in higher-degree polynomial's coefficients stay untouched
 	for (size_t i = lengthDiff; i < largerCoefs.size(); ++i)
-		largerCoefs[i] ^= smallerCoefs[i - lengthDiff];
+		largerCoefs[i] = _field->subtract(largerCoefs[i], smallerCoefs[i - lengthDiff]);
 
 	normalize();
 	return *this;
@@ -89,7 +89,7 @@ GenericGFPoly::multiply(const GenericGFPoly& other)
 	std::fill(_cache.begin(), _cache.end(), 0);
 	for (size_t i = 0; i < a.size(); ++i)
 		for (size_t j = 0; j < b.size(); ++j)
-			_cache[i + j] ^= _field->multiply(a[i], b[j]);
+			_cache[i + j] = _field->add(_cache[i + j], _field->multiply(a[i], b[j]));
 
 	_coefficients.swap(_cache);
 
@@ -145,7 +145,7 @@ GenericGFPoly::divide(const GenericGFPoly& other, GenericGFPoly& quotient)
 
 		// we always skip the first coefficient of the divisor, because it's only used to normalize the dividend coefficient
 		for (int j = 1; j < Size(divisor); ++j)
-			result[i + j] ^= _field->multiply(divisor[j], ci); // equivalent to: result[i + j] += -divisor[j] * ci
+			result[i + j] = _field->subtract(result[i + j], _field->multiply(divisor[j], ci));
 	}
 
 	// extract the normalized remainder from result

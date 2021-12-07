@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 3.10)
 
+#add_definitions(-DPRINT_DEBUG=1)
+
 if (NOT DEFINED BUILD_WRITERS)
     set (BUILD_WRITERS OFF)
 endif()
@@ -25,7 +27,7 @@ if (MSVC)
     )
 else()
     set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
-        -Wall -Wextra -Wno-missing-braces -Werror=undef)
+        -Wall -Wextra -Wno-missing-braces -Werror=undef -Werror=return-type)
 endif()
 
 
@@ -188,6 +190,26 @@ if (BUILD_WRITERS)
         src/datamatrix/DMSymbolShape.h
         src/datamatrix/DMWriter.h
         src/datamatrix/DMWriter.cpp
+    )
+endif()
+
+
+set (DOTCODE_FILES
+)
+if (BUILD_READERS)
+    set (DOTCODE_FILES ${DOTCODE_FILES}
+        src/dotcode/DCBitMatrixParser.h
+        src/dotcode/DCBitMatrixParser.cpp
+        src/dotcode/DCDataBlock.h
+        src/dotcode/DCDataBlock.cpp
+        src/dotcode/DCDecoder.h
+        src/dotcode/DCDecoder.cpp
+        src/dotcode/DCDetector.h
+        src/dotcode/DCDetector.cpp
+        src/dotcode/DCGField.h
+        src/dotcode/DCGField.cpp
+        src/dotcode/DCReader.h
+        src/dotcode/DCReader.cpp
     )
 endif()
 
@@ -398,6 +420,7 @@ endif()
 source_group (Sources FILES ${COMMON_FILES})
 source_group (Sources\\aztec FILES ${AZTEC_FILES})
 source_group (Sources\\datamatrix FILES ${DATAMATRIX_FILES})
+source_group (Sources\\dotcode FILES ${DOTCODE_FILES})
 source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
 source_group (Sources\\oned\\rss FILES ${ONED_RSS_FILES})
@@ -413,6 +436,7 @@ add_library (ZXing
     ${COMMON_FILES}
     ${AZTEC_FILES}
     ${DATAMATRIX_FILES}
+    ${DOTCODE_FILES}
     ${MAXICODE_FILES}
     ${ONED_FILES}
     ${ONED_RSS_FILES}
@@ -475,5 +499,6 @@ if(MSVC)
         COMPILE_PDB_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR})
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ZXing.pdb
             DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            CONFIGURATIONS Debug RelWithDebInfo)
+            CONFIGURATIONS Debug RelWithDebInfo 
+            OPTIONAL)
 endif()

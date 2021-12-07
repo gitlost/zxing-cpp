@@ -59,7 +59,7 @@ RunEuclideanAlgorithm(const GenericGF& field, std::vector<int>&& rCoefs, Generic
 		r.divide(rLast, q);
 
 		q.multiply(tLast);
-		q.addOrSubtract(t);
+		q.subtract(t);
 		swap(t, q); // t = q
 
 		if (r.degree() >= rLast.degree())
@@ -108,7 +108,7 @@ FindErrorMagnitudes(const GenericGF& field, const GenericGFPoly& errorEvaluator,
 		int denom = 1;
 		for (int j = 0; j < s; ++j)
 			if (i != j)
-				denom = field.multiply(denom, 1 ^ field.multiply(errorLocations[j], xiInverse));
+				denom = field.multiply(denom, field.subtract(1, field.multiply(errorLocations[j], xiInverse)));
 		res[i] = field.multiply(errorEvaluator.evaluateAt(xiInverse), field.inverse(denom));
 		if (field.generatorBase() != 0)
 			res[i] = field.multiply(res[i], xiInverse);
@@ -140,13 +140,16 @@ ReedSolomonDecode(const GenericGF& field, std::vector<int>& message, int numECCo
 
 	auto errorMagnitudes = FindErrorMagnitudes(field, omega, errorLocations);
 
+
 	int msgLen = Size(message);
 	for (int i = 0; i < Size(errorLocations); ++i) {
 		int position = msgLen - 1 - field.log(errorLocations[i]);
 		if (position < 0)
 			return false;
 
-		message[position] ^= errorMagnitudes[i];
+		// Using add rather than subtract as for GF(2**n) it's the same and for GF(q) where q prime then assuming
+		// that the complement of the message is sent (true for DotCode, PDF417), so adding removes the error
+		message[position] = field.add(message[position], errorMagnitudes[i]);
 	}
 	return true;
 }

@@ -25,8 +25,8 @@ enum class DecodeStatus;
 
 namespace OneD::DataBar {
 
-DecodeStatus DecodeAppIdGeneralPurposeField(const BitArray& bits, int pos, std::string& result);
-DecodeStatus DecodeAppIdAllCodes(const BitArray& bits, int initialPosition, std::string& result);
+DecodeStatus DecodeAppIdGeneralPurposeField(const BitArray& bits, int& position, int& remainingValue, std::string& result);
+DecodeStatus DecodeAppIdAllCodes(const BitArray& bits, int initialPosition, int remainingValue, std::string& result);
 
 } // namespace OneD::DataBar
 } // namespace ZXing

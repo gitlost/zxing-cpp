@@ -91,6 +91,8 @@ GenericGF::GenericGF(int primitive, int size, int b) :
 	_size(size),
 	_generatorBase(b)
 {
+	if (primitive == 0)
+		return;
 #ifdef ZX_REED_SOLOMON_USE_MORE_MEMORY_FOR_SPEED
 	_expTable.resize(size * 2, 0);
 #else

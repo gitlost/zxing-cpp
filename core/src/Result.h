@@ -42,7 +42,7 @@ using Position = QuadrilateralI;
 class Result
 {
 public:
-	explicit Result(DecodeStatus status) : _status(status) {}
+	explicit Result(DecodeStatus status);
 
 	Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes = {},
 		   std::string symbologyIdentifier = "", StructuredAppendInfo sai = {}, const bool readerInit = false);

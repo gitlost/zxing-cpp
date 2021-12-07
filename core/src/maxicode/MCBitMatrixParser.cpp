@@ -65,6 +65,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image)
 	ByteArray result(144);
 	int height = image.height();
 	int width = image.width();
+	//printf("image.height() %d, image.width() %d\n", image.height(), image.width());
 	for (int y = 0; y < height; y++) {
 		for (int x = 0; x < width; x++) {
 			int bit = BITNR[y][x];

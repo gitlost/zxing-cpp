@@ -78,11 +78,13 @@ public:
 			_log.set(static_cast<int>(p.x * _scale), static_cast<int>(p.y * _scale), color);
 	}
 
+	#if 0
 	template <>
 	void operator()(const PointT<int>& p, int color)
 	{
 		operator()(centered(p), color);
 	}
+	#endif
 
 	template <typename T>
 	void operator()(const std::vector<PointT<T>>& points, int color = 2)

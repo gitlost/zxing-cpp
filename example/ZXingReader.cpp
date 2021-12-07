@@ -37,22 +37,31 @@
 using namespace ZXing;
 using namespace TextUtfEncoding;
 
+static const char *binarizers[] = { "LocalAverage", "GlobalHistogram", "FixedThreshold", "BoolCast" };
+
 static void PrintUsage(const char* exePath)
 {
-	std::cout << "Usage: " << exePath << " [-fast] [-norotate] [-format <FORMAT[,...]>] [-pngout <png out path>] [-ispure] [-diagnostics] [-1] <png image path>...\n"
+	std::cout << "Usage: " << exePath << " [-fast] [-norotate] [-format <FORMAT[,...]>] [-pngout <png out path>] [-ispure] [-1] [-escape] [-diagnostics] <png image path>...\n"
 			  << "    -fast         Skip some lines/pixels during detection (faster)\n"
 			  << "    -norotate     Don't try rotated image during detection (faster)\n"
 			  << "    -format       Only detect given format(s) (faster)\n"
+			  << "    -pngout       Write a copy of the input image with barcodes outlined by a red line\n"
 			  << "    -ispure       Assume the image contains only a 'pure'/perfect code (faster)\n"
 			  << "    -1            Print only file name, format, identifier, text and status on one line per file\n"
 			  << "    -escape       Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
-			  << "    -pngout       Write a copy of the input image with barcodes outlined by a red line\n"
+			  << "    -binarizer    Use specific binarizer\n"
+			  << "    -diagnostics  Print diagnostics\n"
 			  << "\n"
 			  << "Supported formats are:\n";
 	for (auto f : BarcodeFormats::all()) {
 		std::cout << "    " << ToString(f) << "\n";
 	}
-	std::cout << "Formats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
+    std::cout << "Formats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
+
+	std::cout << "\n" << "Supported binarizers are:\n";
+	for (int j = 0; j < 4; j++) {
+		std::cout << "    " << binarizers[j] << "\n";
+	}
 }
 
 static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLine, bool& angleEscape,
@@ -76,6 +85,22 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				hints.setFormats(BarcodeFormatsFromString(argv[i]));
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << "\n";
+				return false;
+			}
+		}
+		else if (strcmp(argv[i], "-binarizer") == 0) {
+			if (++i == argc)
+				return false;
+			std::string binarizer(argv[i]);
+			int j;
+			for (j = 0; j < 4; j++) {
+				if (binarizer == binarizers[j]) {
+					hints.setBinarizer((Binarizer)j);
+					break;
+				}
+			}
+			if (j == 4) {
+				std::cerr << "Unknown binarizer '" << binarizer << "'\n";
 				return false;
 			}
 		}
@@ -156,8 +181,10 @@ int main(int argc, char* argv[])
 		auto results = ReadBarcodes(image, hints);
 
 		// if we did not find anything, insert a dummy to produce some output for each file
-		if (results.empty())
+		if (results.empty()) {
+			//printf("----results.empty dummy\n");
 			results.emplace_back(DecodeStatus::NotFound);
+		}
 
 		for (auto&& result : results) {
 

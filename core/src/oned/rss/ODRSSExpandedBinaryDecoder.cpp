@@ -119,7 +119,7 @@ DecodeAI01AndOtherAIs(const BitArray& bits)
 	buffer.append(std::to_string(firstGtinDigit));
 
 	AI01EncodeCompressedGtinWithoutAI(buffer, bits, HEADER_SIZE + 4, initialGtinPosition);
-	if (StatusIsOK(DecodeAppIdAllCodes(bits, HEADER_SIZE + 44, buffer))) {
+	if (StatusIsOK(DecodeAppIdAllCodes(bits, HEADER_SIZE + 44, -1, buffer))) {
 		return buffer;
 	}
 	return {};
@@ -130,7 +130,7 @@ DecodeAnyAI(const BitArray& bits)
 {
 	static const int HEADER_SIZE = 2 + 1 + 2;
 	std::string buffer;
-	if (StatusIsOK(DecodeAppIdAllCodes(bits, HEADER_SIZE, buffer))) {
+	if (StatusIsOK(DecodeAppIdAllCodes(bits, HEADER_SIZE, -1, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -196,7 +196,10 @@ DecodeAI01392x(const BitArray& bits)
 	buffer.append(std::to_string(lastAIdigit));
 	buffer.push_back(')');
 
-	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE, buffer))) {
+	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE;
+	int remainingValue = -1;
+	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
+			|| StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -231,7 +234,10 @@ DecodeAI01393x(const BitArray& bits)
 	}
 	buffer.append(std::to_string(firstThreeDigits));
 
-	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE + FIRST_THREE_DIGITS_SIZE, buffer))) {
+	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE + FIRST_THREE_DIGITS_SIZE;
+	int remainingValue = -1;
+	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
+			|| StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -296,7 +302,6 @@ DecodeAI013x0x1x(const BitArray& bits, const char* firstAIdigits, const char* da
 std::string
 DecodeExpandedBits(const BitArray& bits)
 {
-	//for (int i = 0; i < bits.size(); i++) { printf("%c", bits.get(i) ? '1' : '0'); } printf("\n");
 	if (bits.get(1)) {
 		//printf("DecodeAI01AndOtherAIs\n");
 		return DecodeAI01AndOtherAIs(bits);
@@ -315,20 +320,20 @@ DecodeExpandedBits(const BitArray& bits)
 
 	int fiveBitEncodationMethod = ToInt(bits, 1, 5);
 	switch (fiveBitEncodationMethod) {
-	case 12: /*printf("DecodeAI01320x\n");*/ return DecodeAI01392x(bits);
-	case 13: /*printf("DecodeAI01320x\n");*/ return DecodeAI01393x(bits);
+	case 12: /*printf("DecodeAI01392x\n");*/ return DecodeAI01392x(bits);
+	case 13: /*printf("DecodeAI01393x\n");*/ return DecodeAI01393x(bits);
 	}
 
 	int sevenBitEncodationMethod = ToInt(bits, 1, 7);
 	switch (sevenBitEncodationMethod) {
-	case 56: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "310", "11");
-	case 57: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "320", "11");
-	case 58: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "310", "13");
-	case 59: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "320", "13");
-	case 60: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "310", "15");
-	case 61: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "320", "15");
-	case 62: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "310", "17");
-	case 63: /*printf("DecodeAI01320x\n");*/ return DecodeAI013x0x1x(bits, "320", "17");
+	case 56: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "11");
+	case 57: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "11");
+	case 58: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "13");
+	case 59: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "13");
+	case 60: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "15");
+	case 61: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "15");
+	case 62: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "17");
+	case 63: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "17");
 	}
 
 	//printf("Unknown\n");

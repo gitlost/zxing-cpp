@@ -39,17 +39,18 @@ enum class BarcodeFormat
 	DataBar         = (1 << 5),  ///< GS1 DataBar, formerly known as RSS 14
 	DataBarExpanded = (1 << 6),  ///< GS1 DataBar Expanded, formerly known as RSS EXPANDED
 	DataMatrix      = (1 << 7),  ///< DataMatrix (2D)
-	EAN8            = (1 << 8),  ///< EAN-8 (1D)
-	EAN13           = (1 << 9),  ///< EAN-13 (1D)
-	ITF             = (1 << 10), ///< ITF (Interleaved Two of Five) (1D)
-	MaxiCode        = (1 << 11), ///< MaxiCode (2D)
-	PDF417          = (1 << 12), ///< PDF417 (1D) or (2D)
-	QRCode          = (1 << 13), ///< QR Code (2D)
-	UPCA            = (1 << 14), ///< UPC-A (1D)
-	UPCE            = (1 << 15), ///< UPC-E (1D)
+	DotCode         = (1 << 8),  ///< DotCode (2D)
+	EAN8            = (1 << 9),  ///< EAN-8 (1D)
+	EAN13           = (1 << 10),  ///< EAN-13 (1D)
+	ITF             = (1 << 11), ///< ITF (Interleaved Two of Five) (1D)
+	MaxiCode        = (1 << 12), ///< MaxiCode (2D)
+	PDF417          = (1 << 13), ///< PDF417 (1D) or (2D)
+	QRCode          = (1 << 14), ///< QR Code (2D)
+	UPCA            = (1 << 15), ///< UPC-A (1D)
+	UPCE            = (1 << 16), ///< UPC-E (1D)
 
 	OneDCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
-	TwoDCodes = Aztec | DataMatrix | MaxiCode | PDF417 | QRCode,
+	TwoDCodes = Aztec | DataMatrix | DotCode | MaxiCode | PDF417 | QRCode,
 	Any       = OneDCodes | TwoDCodes,
 
 	// Deprecated names, kept for compatibility at the moment

@@ -23,6 +23,7 @@
 #include "ThresholdBinarizer.h"
 
 #include <memory>
+#include <stdexcept>
 
 namespace ZXing {
 
@@ -63,6 +64,9 @@ static LumImage ExtractLum(const ImageView& iv, P projection)
 
 ImageView SetupLumImageView(const ImageView& iv, LumImage& lum, const DecodeHints& hints)
 {
+	if (iv.format() == ImageFormat::None)
+		throw std::invalid_argument("Invalid image format");
+
 	if (hints.binarizer() == Binarizer::GlobalHistogram || hints.binarizer() == Binarizer::LocalAverage) {
 		if (iv.format() != ImageFormat::Lum) {
 			lum = ExtractLum(iv, [r = RedIndex(iv.format()), g = GreenIndex(iv.format()), b = BlueIndex(iv.format())](
@@ -84,11 +88,12 @@ Result ReadBarcode(const ImageView& _iv, const DecodeHints& hints)
 
 	switch (hints.binarizer()) {
 	case Binarizer::BoolCast: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 0));
-	case Binarizer::FixedThreshold: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 127));
+	case Binarizer::FixedThreshold: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 0x30));
 	case Binarizer::GlobalHistogram: return MultiFormatReader(hints).read(GlobalHistogramBinarizer(iv));
 	case Binarizer::LocalAverage: return MultiFormatReader(hints).read(HybridBinarizer(iv));
 	default: return MultiFormatReader(hints).read(HybridBinarizer(iv)); /* Not reached */
 	}
+    return Result(DecodeStatus::FormatError);
 }
 
 Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
@@ -103,6 +108,7 @@ Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
 	case Binarizer::LocalAverage: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv));
 	default: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv)); /* Not reached */
 	}
+    return {};
 }
 
 } // ZXing

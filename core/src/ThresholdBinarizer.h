@@ -67,7 +67,7 @@ public:
 			for (auto src = _buffer.data(0, 0), end = _buffer.data(0, height()); src != end; ++src, ++dst)
 				*dst = *src <= _threshold;
 		} else {
-			auto processLine = [this, &res](int y, const auto* src, const int stride) {
+			auto processLine = [this, &res](int y, const uint8_t* src, const int stride) {
 				for (auto& dst : res.row(y)) {
 					dst = *src <= _threshold;
 					src += stride;

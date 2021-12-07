@@ -33,6 +33,8 @@ inline Direction opposite(Direction dir) noexcept
  *
  * The current position and direction is a PointT<T>. So depending on the type it can be used to traverse the image
  * in a Bresenham style (PointF) or in a discrete way (step only horizontal/vertical/diagonal (PointI)).
+ *
+ * Direction right {1, 0}, left {-1, 0}, down {0, 1}, up {0, -1} south-east {1, 1} etc.
  */
 template<typename POINT>
 class BitMatrixCursor
@@ -45,6 +47,7 @@ public:
 
 	BitMatrixCursor(const BitMatrix& image, POINT p, POINT d) : img(&image), p(p) { setDirection(d); }
 
+	// 3-valued state returned from `testAt()` and derivatives `edgeAtXXX()`
 	class Value
 	{
 		enum { INVALID = -1, WHITE = 0, BLACK = 1 };
@@ -76,11 +79,13 @@ public:
 	bool isBlack() const noexcept { return blackAt(p); }
 	bool isWhite() const noexcept { return whiteAt(p); }
 
+	// From POV of current direction, so if going right then front() points right, back() points left,
+	// left() points up & right() points down
 	POINT front() const noexcept { return d; }
 	POINT back() const noexcept { return {-d.x, -d.y}; }
 	POINT left() const noexcept { return {d.y, -d.x}; }
 	POINT right() const noexcept { return {-d.y, d.x}; }
-	POINT direction(Direction dir) const noexcept { return static_cast<int>(dir) * right(); }
+	POINT direction(Direction dir) const noexcept { return static_cast<int>(dir) * right(); } // LEFT or RIGHT
 
 	void turnBack() noexcept { d = back(); }
 	void turnLeft() noexcept { d = left(); }
@@ -139,6 +144,8 @@ public:
 		return sum * (nth == 0);
 	}
 
+	// Step along edge to LEFT or RIGHT, if `skipCorner` then after one step will turn
+	// LEFT/RIGHT and do another step if not at LEFT/RIGHT edge
 	bool stepAlongEdge(Direction dir, bool skipCorner = false)
 	{
 		if (!edgeAt(dir))

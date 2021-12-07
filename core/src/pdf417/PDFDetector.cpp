@@ -352,22 +352,27 @@ Detector::Detect(const BinaryBitmap& image, bool multiple, Result& result)
 	// TODO: reimplement PDF Detector
 	auto binImg = std::shared_ptr<const BitMatrix>(image.getBitMatrix(), [](const BitMatrix*){});
 	if (!binImg) {
+		//printf("!binImg\n");
 		return DecodeStatus::NotFound;
 	}
 
 #if defined(ZX_FAST_BIT_STORAGE)
-	if (!HasStartPattern(*binImg))
+	if (!HasStartPattern(*binImg)) {
+		//printf("!HasStartPattern\n");
 		return DecodeStatus::NotFound;
+	}
 #endif
 
 	auto barcodeCoordinates = DetectBarcode(*binImg, multiple);
 	if (barcodeCoordinates.empty()) {
+		//printf("barcodeCoordinates.empty() 1st\n");
 		auto newBits = std::make_shared<BitMatrix>(binImg->copy());
 		newBits->rotate180();
 		binImg = newBits;
 		barcodeCoordinates = DetectBarcode(*binImg, multiple);
 	}
 	if (barcodeCoordinates.empty()) {
+		//printf("barcodeCoordinates.empty() 2nd\n");
 		return DecodeStatus::NotFound;
 	}
 	result.points = barcodeCoordinates;

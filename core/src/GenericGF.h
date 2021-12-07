@@ -37,6 +37,7 @@ namespace ZXing {
 */
 class GenericGF
 {
+protected:
 	const int _size;
 	int _generatorBase;
 	std::vector<short> _expTable;
@@ -54,6 +55,13 @@ class GenericGF
 	*  In most cases it should be 1, but for QR code it is 0.
 	*/
 	GenericGF(int primitive, int size, int b);
+	virtual ~GenericGF() = default;
+
+	int fast_mod(const int input, const int ceil) const {
+		// avoid using the '%' modulo operator => ReedSolomon computation is more than twice as fast
+		// see also https://stackoverflow.com/a/33333636/2088798
+		return input < ceil ? input : input - ceil;
+	};
 
 public:
 	static const GenericGF& AztecData12();
@@ -65,19 +73,15 @@ public:
 	static const GenericGF& AztecData8();
 	static const GenericGF& MaxiCodeField64();
 
-	// note: replaced addOrSubstract calls with '^' / '^='. everyone trying to understand this code needs to look into
-	// Galois Fields with caracteristic 2 and will then understand that XOR is addition/substraction. And those
-	// operators are way more readable than a noisy member function name
-
 	/**
-	* @return 2 to the power of a in GF(size)
+	* @return 2 (GF(2**n)) or 3 (GF(p)) to the power of a in GF(size)
 	*/
 	int exp(int a) const {
 		return _expTable.at(a);
 	}
 
 	/**
-	* @return base 2 log of a in GF(size)
+	* @return base 2/3 log of a in GF(size)
 	*/
 	int log(int a) const {
 		if (a == 0) {
@@ -94,6 +98,24 @@ public:
 	}
 
 	/**
+	* Implements addition -- same as subtraction in GF(2**size).
+	*
+	* @return sum of a and b
+	*/
+	virtual int add(int a, int b) const noexcept {
+		return a ^ b;
+	}
+
+	/**
+	* Implements subtraction -- same as addition in GF(2**size).
+	*
+	* @return difference of a and b
+	*/
+	virtual int subtract(int a, int b) const noexcept {
+		return a ^ b;
+	}
+
+	/**
 	* @return product of a and b in GF(size)
 	*/
 	int multiply(int a, int b) const noexcept {
@@ -103,11 +125,6 @@ public:
 #ifdef ZX_REED_SOLOMON_USE_MORE_MEMORY_FOR_SPEED
 		return _expTable[_logTable[a] + _logTable[b]];
 #else
-		auto fast_mod = [](const int input, const int ceil) {
-			// avoid using the '%' modulo operator => ReedSolomon computation is more than twice as fast
-			// see also https://stackoverflow.com/a/33333636/2088798
-			return input < ceil ? input : input - ceil;
-		};
 		return _expTable[fast_mod(_logTable[a] + _logTable[b], _size - 1)];
 #endif
 	}

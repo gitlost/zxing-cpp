@@ -37,6 +37,7 @@ static BitMatrix ExtractPureBits(const BitMatrix& image)
 {
 	int left, top, width, height;
 	if (!image.findBoundingBox(left, top, width, height, BitMatrixParser::MATRIX_WIDTH)) {
+		//printf("!image.findBoundingBox\n");
 		return {};
 	}
 

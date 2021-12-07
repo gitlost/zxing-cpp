@@ -79,7 +79,7 @@ static int GetRotation(const std::array<int, 4>& sides, int length)
 
 static bool IsValidPoint(int x, int y, int imgWidth, int imgHeight)
 {
-	return x >= 0 && x < imgWidth && y > 0 && y < imgHeight;
+	return x >= 0 && x < imgWidth && y >= 0 && y < imgHeight;
 }
 
 static bool IsValidPoint(const ResultPoint& point, int imgWidth, int imgHeight)

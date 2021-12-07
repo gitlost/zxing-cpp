@@ -23,6 +23,7 @@
 #include "Result.h"
 #include "aztec/AZReader.h"
 #include "datamatrix/DMReader.h"
+#include "dotcode/DCReader.h"
 #include "maxicode/MCReader.h"
 #include "oned/ODReader.h"
 #include "pdf417/PDFReader.h"
@@ -51,6 +52,8 @@ MultiFormatReader::MultiFormatReader(const DecodeHints& hints)
 		_readers.emplace_back(new Pdf417::Reader(hints));
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(hints));
+	if (formats.testFlag(BarcodeFormat::DotCode))
+		_readers.emplace_back(new DotCode::Reader(hints));
 
 	// At end in "try harder" mode
 	if (formats.testFlags(BarcodeFormat::OneDCodes) && tryHarder) {

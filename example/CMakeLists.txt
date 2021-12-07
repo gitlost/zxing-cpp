@@ -11,6 +11,12 @@ if (BUILD_READERS)
     add_test(NAME ZXingReaderTest COMMAND ZXingReader -fast -format qrcode "${CMAKE_SOURCE_DIR}/test/samples/qrcode-1/1.png")
 
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/ZXingReader" DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME zxingcppreader)
+
+    add_executable (ZXingDecoder ZXingDecoder.cpp)
+
+    target_link_libraries (ZXingDecoder ZXing::ZXing)
+
+    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/ZXingDecoder" DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME zxingcppdecoder)
 endif()
 
 if (BUILD_WRITERS)
@@ -35,4 +41,13 @@ endif()
 if (TARGET Qt5::Multimedia)
     add_executable(ZXingQtCamReader ZXingQtCamReader.cpp ZXingQtCamReader.qrc ZXingQtReader.h)
     target_link_libraries(ZXingQtCamReader ZXing::ZXing Qt5::Gui Qt5::Multimedia Qt5::Quick)
+endif()
+
+if (BUILD_EXAMPLE_OPENCV)
+    find_package(OpenCV)
+    if (OpenCV_FOUND)
+        add_executable (ZXingOpenCV ZXingOpenCV.cpp)
+        target_include_directories (ZXingOpenCV PRIVATE ${OpenCV_INCLUDE_DIRS})
+        target_link_libraries (ZXingOpenCV ZXing::ZXing ${OpenCV_LIBS})
+    endif()
 endif()

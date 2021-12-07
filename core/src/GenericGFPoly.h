@@ -145,7 +145,7 @@ public:
 	*/
 	int evaluateAt(int a) const;
 
-	GenericGFPoly& addOrSubtract(GenericGFPoly& other);
+	GenericGFPoly& subtract(GenericGFPoly& other);
 	GenericGFPoly& multiply(const GenericGFPoly& other);
 	GenericGFPoly& multiplyByMonomial(int coefficient, int degree = 0);
 	GenericGFPoly& divide(const GenericGFPoly& other, GenericGFPoly& quotient);

@@ -267,7 +267,6 @@ IsNumericToAlphaNumericLatch(const BitArray& bits, int pos)
 static DecodedInformation
 ParseAlphaBlock(const BitArray& bits, ParsingState& state, std::string& buffer)
 {
-	//printf("ParseAlphaBlock\n");
 	while (IsStillAlpha(bits, state.position)) {
 		DecodedChar alpha = DecodeAlphanumeric(bits, state.position);
 		state.position = alpha.newPosition;
@@ -275,7 +274,6 @@ ParseAlphaBlock(const BitArray& bits, ParsingState& state, std::string& buffer)
 		if (alpha.isFNC1()) {
 			// Allow for some generators incorrectly placing a numeric latch "000" after an FNC1
 			if (state.position + 7 < bits.size() && ToInt(bits, state.position, 7) < 8) {
-				//printf("ALPHBadEncoding\n");
 				state.position += 3;
 			}
 			state.encoding = ParsingState::NUMERIC; // FNC1 latches to numeric encodation
@@ -335,14 +333,12 @@ DecodeIsoIec646(const BitArray& bits, int pos)
 static DecodedInformation
 ParseIsoIec646Block(const BitArray& bits, ParsingState& state, std::string& buffer)
 {
-	//printf("ParseIsoIec646Block\n");
 	while (IsStillIsoIec646(bits, state.position)) {
 		DecodedChar iso = DecodeIsoIec646(bits, state.position);
 		state.position = iso.newPosition;
 		if (iso.isFNC1()) {
 			// Allow for some generators incorrectly placing a numeric latch "000" after an FNC1
 			if (state.position + 7 < bits.size() && ToInt(bits, state.position, 7) < 8) {
-				//printf("ISOBadEncoding\n");
 				state.position += 3;
 			}
 			state.encoding = ParsingState::NUMERIC; // FNC1 latches to numeric encodation
@@ -387,7 +383,6 @@ DecodeNumeric(const BitArray& bits, int pos)
 static DecodedInformation
 ParseNumericBlock(const BitArray& bits, ParsingState& state, std::string& buffer)
 {
-	//printf("ParseNumericBlock\n");
 	while (IsStillNumeric(bits, state.position)) {
 		DecodedNumeric numeric = DecodeNumeric(bits, state.position);
 		if (!numeric.isValid())
@@ -423,7 +418,6 @@ static DecodedInformation
 ParseBlocks(const BitArray& bits, ParsingState& state, std::string& buffer)
 {
 	while (true) {
-		//printf("ParseBlocks state.position %d, encoding %d\n", state.position, (int)state.encoding);
 		int initialPosition = state.position;
 		auto result =
 			state.encoding == ParsingState::ALPHA ?
@@ -450,13 +444,16 @@ DoDecodeGeneralPurposeField(ParsingState& state, const BitArray& bits, std::stri
 }
 
 DecodeStatus
-DecodeAppIdGeneralPurposeField(const BitArray& bits, int pos, std::string& result)
+DecodeAppIdGeneralPurposeField(const BitArray& bits, int& position, int& remainingValue, std::string& result)
 {
 	try
 	{
 		ParsingState state;
-		state.position = pos;
-		result += DoDecodeGeneralPurposeField(state, bits, std::string()).newString;
+		state.position = position;
+		DecodedInformation info = DoDecodeGeneralPurposeField(state, bits, std::string());
+		result += info.newString;
+		position = state.position;
+		remainingValue = info.remainingValue;
 		return DecodeStatus::NoError;
 	}
 	catch (const std::exception &)
@@ -466,27 +463,26 @@ DecodeAppIdGeneralPurposeField(const BitArray& bits, int pos, std::string& resul
 }
 
 DecodeStatus
-DecodeAppIdAllCodes(const BitArray& bits, int pos, std::string& result)
+DecodeAppIdAllCodes(const BitArray& bits, int pos, int remainingValue, std::string& result)
 {
 	try
 	{
 		ParsingState state;
 		std::string remaining;
+		if (remainingValue != -1) {
+			remaining = std::to_string(remainingValue);
+		}
 		while (true) {
 			state.position = pos;
 			DecodedInformation info = DoDecodeGeneralPurposeField(state, bits, remaining);
-			//printf("DecodeAppIdAllCodes info.newString %s, remainingValue %d\n", info.newString.c_str(), info.remainingValue);
 			std::string parsedFields;
 			auto status = ParseFieldsInGeneralPurpose(info.newString, parsedFields);
 			if (StatusIsError(status)) {
 				if (result.empty() && remaining.empty()){
-					//printf("DecodeAppIdAllCodes result empty\n");
 					result = info.newString;
 					return DecodeStatus::NoError;
-				} else {
-					//printf("DecodeAppIdAllCodes Error(%d)\n", (int)status);
+				} else
 					return status;
-				}
 			}
 			result += parsedFields;
 			if (info.isRemaining()) {
@@ -501,7 +497,6 @@ DecodeAppIdAllCodes(const BitArray& bits, int pos, std::string& result)
 			}
 			pos = info.newPosition;
 		};
-		//printf("DecodeAppIdAllCodes NoError\n");
 		return DecodeStatus::NoError;
 	}
 	catch (const std::exception &)

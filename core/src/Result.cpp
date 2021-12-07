@@ -26,6 +26,13 @@
 
 namespace ZXing {
 
+Result::Result(DecodeStatus status) : _status(status)
+{
+	if (Diagnostics::enabled()) {
+		Diagnostics::moveTo(_diagnostics);
+	}
+}
+
 Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes,
 			   std::string symbologyIdentifier, StructuredAppendInfo sai, const bool readerInit)
 	: _format(format), _text(std::move(text)), _position(std::move(position)), _rawBytes(std::move(rawBytes)),

@@ -62,6 +62,11 @@ static int AdjustCodewordStartColumn(const BitMatrix& image, int minColumn, int 
 		}
 		increment = -increment;
 		leftToRight = !leftToRight;
+		if (correctedStartColumn < 0) {
+			correctedStartColumn = 0;
+		} else if (correctedStartColumn >= image.width()) {
+			correctedStartColumn = image.width() - 1;
+		}
 	}
 	return correctedStartColumn;
 }
@@ -661,6 +666,7 @@ static DecoderResult CreateDecoderResult(DetectionResult& detectionResult, const
 {
 	auto barcodeMatrix = CreateBarcodeMatrix(detectionResult);
 	if (!AdjustCodewordCount(detectionResult, barcodeMatrix)) {
+		//printf("CreateDecoderResult AdjustCodewordCount fail\n");
 		return DecodeStatus::NotFound;
 	}
 	std::vector<int> erasures;
@@ -700,6 +706,7 @@ ScanningDecoder::Decode(const BitMatrix& image, const Nullable<ResultPoint>& ima
 {
 	BoundingBox boundingBox;
 	if (!BoundingBox::Create(image.width(), image.height(), imageTopLeft, imageBottomLeft, imageTopRight, imageBottomRight, boundingBox)) {
+		//printf("ScanningDecoder::Decode BoundingBox::Create fail\n");
 		return DecodeStatus::NotFound;
 	}
 	

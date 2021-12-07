@@ -211,8 +211,10 @@ template<typename POINT>
 SymbolInfo DetectSymbol(BitMatrixCursor<POINT> topCur, int width, int height)
 {
 	auto pat = topCur.movedBy(height / 2 * topCur.right()).template readPatternFromBlack<Pattern417>(1, width / 3);
-	if (!IsPattern(pat, START_PATTERN))
+	if (!IsPattern(pat, START_PATTERN)) {
+		printf("!IsPattern(pat, START_PATTERN)\n");
 		return {};
+	}
 	int colWidth = Reduce(pat);
 	auto rowSkip = std::max(colWidth / 17.f, 1.f) * bresenhamDirection(topCur.right());
 	auto botCur  = topCur.movedBy((height - 1) * topCur.right());

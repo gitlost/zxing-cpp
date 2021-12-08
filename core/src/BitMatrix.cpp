@@ -259,8 +259,36 @@ BitMatrix Inflate(BitMatrix&& input, int width, int height, int quietZone)
 	if (input.width() == outputWidth && input.height() == outputHeight)
 		return std::move(input);
 
-	const int xscale = (outputWidth - 2*quietZone) / codeWidth;
-	const int yscale = (outputHeight - 2*quietZone) / codeHeight;
+	const int scale = std::min((outputWidth - 2*quietZone) / codeWidth, (outputHeight - 2*quietZone) / codeHeight);
+	// Padding includes both the quiet zone and the extra white pixels to
+	// accommodate the requested dimensions.
+	const int leftPadding = (outputWidth - (codeWidth * scale)) / 2;
+	const int topPadding = (outputHeight - (codeHeight * scale)) / 2;
+
+	BitMatrix result(outputWidth, outputHeight);
+
+	for (int inputY = 0, outputY = topPadding; inputY < input.height(); ++inputY, outputY += scale) {
+		for (int inputX = 0, outputX = leftPadding; inputX < input.width(); ++inputX, outputX += scale) {
+			if (input.get(inputX, inputY))
+				result.setRegion(outputX, outputY, scale, scale);
+		}
+	}
+
+	return result;
+}
+
+BitMatrix InflateXY(BitMatrix&& input, int width, int height, int xQuietZone, int yQuietZone)
+{
+	const int codeWidth = input.width();
+	const int codeHeight = input.height();
+	const int outputWidth = std::max(width, codeWidth + 2 * xQuietZone);
+	const int outputHeight = std::max(height, codeHeight + 2 * yQuietZone);
+
+	if (input.width() == outputWidth && input.height() == outputHeight)
+		return std::move(input);
+
+	const int xscale = (outputWidth - 2*xQuietZone) / codeWidth;
+	const int yscale = (outputHeight - 2*yQuietZone) / codeHeight;
 	// Padding includes both the quiet zone and the extra white pixels to
 	// accommodate the requested dimensions.
 	const int leftPadding = (outputWidth - (codeWidth * xscale)) / 2;

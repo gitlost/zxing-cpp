@@ -199,7 +199,7 @@ DecodeAI01392x(const BitArray& bits)
 	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE;
 	int remainingValue = -1;
 	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
-			|| StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
+			&& StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -237,7 +237,7 @@ DecodeAI01393x(const BitArray& bits)
 	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE + FIRST_THREE_DIGITS_SIZE;
 	int remainingValue = -1;
 	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
-			|| StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
+			&& StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -303,37 +303,35 @@ std::string
 DecodeExpandedBits(const BitArray& bits)
 {
 	if (bits.get(1)) {
-		//printf("DecodeAI01AndOtherAIs\n");
 		return DecodeAI01AndOtherAIs(bits);
 	}
 	if (!bits.get(2)) {
-		//printf("DecodeAnyAI\n");
 		return DecodeAnyAI(bits);
 	}
 
 	int fourBitEncodationMethod = ToInt(bits, 1, 4);
 
 	switch (fourBitEncodationMethod) {
-	case 4: /*printf("DecodeAI013103\n");*/ return DecodeAI013103(bits);
-	case 5: /*printf("DecodeAI01320x\n");*/ return DecodeAI01320x(bits);
+	case 4: return DecodeAI013103(bits);
+	case 5: return DecodeAI01320x(bits);
 	}
 
 	int fiveBitEncodationMethod = ToInt(bits, 1, 5);
 	switch (fiveBitEncodationMethod) {
-	case 12: /*printf("DecodeAI01392x\n");*/ return DecodeAI01392x(bits);
-	case 13: /*printf("DecodeAI01393x\n");*/ return DecodeAI01393x(bits);
+	case 12: return DecodeAI01392x(bits);
+	case 13: return DecodeAI01393x(bits);
 	}
 
 	int sevenBitEncodationMethod = ToInt(bits, 1, 7);
 	switch (sevenBitEncodationMethod) {
-	case 56: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "11");
-	case 57: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "11");
-	case 58: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "13");
-	case 59: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "13");
-	case 60: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "15");
-	case 61: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "15");
-	case 62: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "310", "17");
-	case 63: /*printf("DecodeAI013x0x1x\n");*/ return DecodeAI013x0x1x(bits, "320", "17");
+	case 56: return DecodeAI013x0x1x(bits, "310", "11");
+	case 57: return DecodeAI013x0x1x(bits, "320", "11");
+	case 58: return DecodeAI013x0x1x(bits, "310", "13");
+	case 59: return DecodeAI013x0x1x(bits, "320", "13");
+	case 60: return DecodeAI013x0x1x(bits, "310", "15");
+	case 61: return DecodeAI013x0x1x(bits, "320", "15");
+	case 62: return DecodeAI013x0x1x(bits, "310", "17");
+	case 63: return DecodeAI013x0x1x(bits, "320", "17");
 	}
 
 	//printf("Unknown\n");

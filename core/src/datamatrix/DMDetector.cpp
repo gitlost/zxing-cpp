@@ -909,9 +909,8 @@ static DetectorResult DetectPure(const BitMatrix& image)
 
 DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool tryRotate, bool isPure)
 {
-	if (isPure) {
+	if (isPure)
 		return DetectPure(image);
-	}
 
 	auto result = DetectNew(image, tryHarder, tryRotate);
 	if (!result.isValid() && tryHarder) {

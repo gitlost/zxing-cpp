@@ -320,9 +320,8 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	}
 
 	int xStop = next.pixelsTillEnd();
-	Result result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes),
+	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes),
 					raw2txt.symbologyIdentifier(), raw2txt.readerInit());
-	return result;
 }
 
 } // namespace ZXing::OneD

@@ -560,9 +560,8 @@ static DecoderResult DoDecode(const BitMatrix& bits, const std::string& characte
 {
 	// Construct a parser and read version, error-correction level
 	const Version* version = VersionForDimensionsOf(bits);
-	if (version == nullptr) {
+	if (version == nullptr)
 		return DecodeStatus::FormatError;
-	}
 	Diagnostics::fmt("  Dimensions:    %dx%d (HxW)\n", bits.height(), bits.width());
 
 	// Read codewords

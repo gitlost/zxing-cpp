@@ -88,10 +88,9 @@ Result ReadBarcode(const ImageView& _iv, const DecodeHints& hints)
 
 	switch (hints.binarizer()) {
 	case Binarizer::BoolCast: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 0));
-	case Binarizer::FixedThreshold: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 0x30));
+	case Binarizer::FixedThreshold: return MultiFormatReader(hints).read(ThresholdBinarizer(iv, 127));
 	case Binarizer::GlobalHistogram: return MultiFormatReader(hints).read(GlobalHistogramBinarizer(iv));
 	case Binarizer::LocalAverage: return MultiFormatReader(hints).read(HybridBinarizer(iv));
-	default: return MultiFormatReader(hints).read(HybridBinarizer(iv)); /* Not reached */
 	}
     return Result(DecodeStatus::FormatError);
 }
@@ -106,7 +105,6 @@ Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
 	case Binarizer::FixedThreshold: return MultiFormatReader(hints).readMultiple(ThresholdBinarizer(iv, 127));
 	case Binarizer::GlobalHistogram: return MultiFormatReader(hints).readMultiple(GlobalHistogramBinarizer(iv));
 	case Binarizer::LocalAverage: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv));
-	default: return MultiFormatReader(hints).readMultiple(HybridBinarizer(iv)); /* Not reached */
 	}
     return {};
 }

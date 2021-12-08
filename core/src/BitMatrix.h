@@ -290,6 +290,8 @@ public:
  */
 BitMatrix Inflate(BitMatrix&& input, int width, int height, int quietZone);
 
+BitMatrix InflateXY(BitMatrix&& input, int width, int height, int xQuietZone = 0, int yQuietZone = 0);
+
 /**
  * @brief Deflate (crop + subsample) a bit matrix
  * @param matrix

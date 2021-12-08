@@ -275,7 +275,7 @@ static const char* GetCharacter(Table table, int code)
 */
 static int ParseECIValue(const std::vector<bool>& correctedBits, const int flg, int& index)
 {
-	int endIndex = Size(correctedBits);
+	const int endIndex = Size(correctedBits);
 	int eci = 0;
 	for (int i = 0; i < flg && endIndex - index >= 4; i++) {
 		eci *= 10;
@@ -494,9 +494,9 @@ DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const std::s
 	std::vector<bool> correctedBits;
 	std::string symbologyIdentifier;
 	StructuredAppendInfo sai;
-	int layers = detectorResult.nbLayers();
-	int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
-	int numCodewords = Size(rawbits) / codewordSize;
+	const int layers = detectorResult.nbLayers();
+	const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
+	const int numCodewords = Size(rawbits) / codewordSize;
 
     Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
     Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");

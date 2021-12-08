@@ -119,7 +119,7 @@ public:
 	/// Specify whether to ignore, read or require EAN-2/5 add-on symbols while scanning EAN/UPC codes
 	ZX_PROPERTY(EanAddOnSymbol, eanAddOnSymbol, setEanAddOnSymbol)
 
-	/// Assume ITF codes employ a mod 10 check digit.
+	/// Assume ITF codes employ a GS1 check digit.
 	ZX_PROPERTY(bool, assumeITFCheckDigit, setAssumeITFCheckDigit)
 
 	/**

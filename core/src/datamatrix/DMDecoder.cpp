@@ -200,6 +200,7 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 					// Note no AIM Application Indicator format defined, ISO 16022:2006 11.2
 					Diagnostics::put("FNC1(2ndPos)");
 				}
+				state.firstFNC1Position = -1; // Ignore in subsequent ASCII segments
 			} else {
 				result.push_back((char)29); // translate as ASCII 29 <GS>
 				Diagnostics::put("FNC1(29)");

@@ -17,7 +17,11 @@ if (WINRT)
     )
 endif()
 
-set (ZXING_CORE_LOCAL_DEFINES)
+set (ZXING_CORE_LOCAL_DEFINES
+    $<$<BOOL:${BUILD_READERS}>:-DZXING_BUILD_READERS>
+    $<$<BOOL:${BUILD_WRITERS}>:-DZXING_BUILD_WRITERS>
+    $<$<BOOL:${BUILD_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
+)
 if (MSVC)
     set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
         -D_SCL_SECURE_NO_WARNINGS
@@ -163,6 +167,8 @@ endif()
 set (DATAMATRIX_FILES
     src/datamatrix/DMBitLayout.h
     src/datamatrix/DMBitLayout.cpp
+    src/datamatrix/DMVersion.h
+    src/datamatrix/DMVersion.cpp
 )
 if (BUILD_READERS)
     set (DATAMATRIX_FILES ${DATAMATRIX_FILES}
@@ -172,8 +178,6 @@ if (BUILD_READERS)
         src/datamatrix/DMDecoder.cpp
         src/datamatrix/DMDetector.h
         src/datamatrix/DMDetector.cpp
-        src/datamatrix/DMVersion.h
-        src/datamatrix/DMVersion.cpp
         src/datamatrix/DMReader.h
         src/datamatrix/DMReader.cpp
     )

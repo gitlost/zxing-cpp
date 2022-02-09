@@ -48,6 +48,8 @@ bool IsCheckDigitValid(const std::basic_string<T>& s)
 
 /**
  * Evaluate the prefix of the GTIN to estimate the country of origin. See
+ * <a href="https://www.gs1.org/standards/id-keys/company-prefix">
+ * https://www.gs1.org/standards/id-keys/company-prefix</a> and
  * <a href="https://en.wikipedia.org/wiki/List_of_GS1_country_codes">
  * https://en.wikipedia.org/wiki/List_of_GS1_country_codes</a>.
  *

@@ -240,6 +240,8 @@ int main(int argc, char* argv[])
 				printOptional("Add-On:     ", GTIN::EanAddOn(result));
 				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
 				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
+			} else if (result.format() == BarcodeFormat::ITF && result.text().length() == 14) {
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(ToUtf8(result.text()), result.format()));
 			}
 
 			if (result.isPartOfSequence()) {

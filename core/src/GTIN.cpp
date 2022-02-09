@@ -39,7 +39,7 @@ bool operator<(const CountryId& lhs, const CountryId& rhs)
 	return lhs.last < rhs.last;
 }
 
-// https://www.gs1.org/standards/id-keys/company-prefix (as of 5 May 2021)
+// https://www.gs1.org/standards/id-keys/company-prefix (as of 7 Feb 2022)
 // and https://en.wikipedia.org/wiki/List_of_GS1_country_codes
 static const CountryId COUNTRIES[] = {
 	// clang-format off
@@ -114,6 +114,7 @@ static const CountryId COUNTRIES[] = {
 	{628, 628, "SA"}, // Saudi Arabia
 	{629, 629, "AE"}, // United Arab Emirates
 	{630, 630, "QA"}, // Qatar
+	{631, 631, "NA"}, // Namibia
 	{640, 649, "FI"}, // Finland
 	{690, 699, "CN"}, // China
 	{700, 709, "NO"}, // Norway
@@ -170,40 +171,41 @@ static const CountryId COUNTRIES[] = {
 std::string LookupCountryIdentifier(const std::string& GTIN, const BarcodeFormat format)
 {
 	// Ignore add-on if any
-	auto space = GTIN.find(' ');
-	std::string::size_type size = space != std::string::npos ? space : GTIN.size();
+	const auto space = GTIN.find(' ');
+	const std::string::size_type size = space != std::string::npos ? space : GTIN.size();
 
 	if (size != 14 && size != 13 && size != 12 && size != 8)
 		return std::string();
 
-	int first = size == 14 ? 1 : 0;
-	int decLast = size == 12 || (size == 8 && format != BarcodeFormat::EAN8) ? 1 : 0; // UPC-A/E implicit leading 0
-	int prefix;
+	// GTIN-14 leading packaging level indicator
+	const int first = size == 14 ? 1 : 0;
+	// UPC-A/E implicit leading 0
+	const int implicitZero = size == 12 || (size == 8 && format != BarcodeFormat::EAN8) ? 1 : 0;
 
 	if (size != 8 || format != BarcodeFormat::EAN8) { // Assuming following doesn't apply to EAN-8
 		// 0000000 Restricted Circulation Numbers; 0000001-0000099 unused to avoid collision with GTIN-8
-		prefix = std::stoi(GTIN.substr(first, 7 - decLast));
+		int prefix = std::stoi(GTIN.substr(first, 7 - implicitZero));
 		if (prefix >= 0 && prefix <= 99)
 			return std::string();
 
 		// 00001-00009 US
-		prefix = std::stoi(GTIN.substr(first, 5 - decLast));
+		prefix = std::stoi(GTIN.substr(first, 5 - implicitZero));
 		if (prefix >= 1 && prefix <= 9)
 			return "US";
 
 		// 0001-0009 US
-		prefix = std::stoi(GTIN.substr(first, 4 - decLast));
+		prefix = std::stoi(GTIN.substr(first, 4 - implicitZero));
 		if (prefix >= 1 && prefix <= 9)
 			return "US";
 	}
 
-	prefix = std::stoi(GTIN.substr(first, 3 - decLast));
+	const int prefix = std::stoi(GTIN.substr(first, 3 - implicitZero));
 
 	// Special case EAN-8 for prefix < 100 (GS1 General Specifications Figure 1.4.3-1)
 	if (size == 8 && format == BarcodeFormat::EAN8 && prefix <= 99) // Restricted Circulation Numbers
 		return std::string();
 
-	auto it = std::lower_bound(std::begin(COUNTRIES), std::end(COUNTRIES), CountryId{0, prefix, nullptr});
+	const auto it = std::lower_bound(std::begin(COUNTRIES), std::end(COUNTRIES), CountryId{0, prefix, nullptr});
 
 	return it != std::end(COUNTRIES) && prefix >= it->first && prefix <= it->last ? it->id : std::string();
 }

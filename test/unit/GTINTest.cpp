@@ -1,5 +1,5 @@
 /*
-* Copyright 2021 gitlost
+* Copyright 2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -54,33 +54,61 @@ TEST(GTINTest, CountryIdentifierEAN13)
 	EXPECT_TRUE(LookupCountryIdentifier("9780735200449 51299").empty()); // Bookland (ISBN)
 
 	// Other
-	EXPECT_TRUE(LookupCountryIdentifier("0000000001467").empty()); // 0000000 Restricted Circulation Numbers
-	EXPECT_TRUE(LookupCountryIdentifier("0000000991467").empty()); // 0000001-0000099 unused to avoid GTIN-8 collision
-	EXPECT_TRUE(LookupCountryIdentifier("0000000111467 12").empty()); // 0000000 Restricted Circulation Numbers
-	EXPECT_EQ(LookupCountryIdentifier("0000102301467"), "US"); // 00001-00009 US
-	EXPECT_EQ(LookupCountryIdentifier("0000102301467 51299"), "US"); // 00001-00009 US
-	EXPECT_EQ(LookupCountryIdentifier("0000902301467"), "US"); // 00001-00009 US
-	EXPECT_EQ(LookupCountryIdentifier("0001602301467"), "US"); // 0001-0009 US
-	EXPECT_EQ(LookupCountryIdentifier("0009602301467 12"), "US");
-	EXPECT_EQ(LookupCountryIdentifier("0016602301467"), "US/CA"); // 001-019 US/CA
+	EXPECT_TRUE(LookupCountryIdentifier("0000000001465").empty()); // 0000000 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("0000000111461 12").empty());
+	EXPECT_TRUE(LookupCountryIdentifier("0000001991469").empty()); // 0000001-0000099 unused to avoid GTIN-8 collision
+	EXPECT_TRUE(LookupCountryIdentifier("0000099991463").empty());
+	EXPECT_EQ(LookupCountryIdentifier("0000102301463"), "US"); // 00001-00009 US
+	EXPECT_EQ(LookupCountryIdentifier("0000102301463 51299"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("0000902301465"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("0001602301465"), "US"); // 0001-0009 US
+	EXPECT_EQ(LookupCountryIdentifier("0009602301461 12"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("0016602301469"), "US/CA"); // 001-019 US/CA
 	EXPECT_EQ(LookupCountryIdentifier("0036602301467"), "US/CA");
-	EXPECT_EQ(LookupCountryIdentifier("0196602301467 51299"), "US/CA");
-	EXPECT_TRUE(LookupCountryIdentifier("0206602301467").empty()); // 020-029 Restricted Circulation Numbers
-	EXPECT_EQ(LookupCountryIdentifier("0306602301467"), "US"); // 030-039 US
-	EXPECT_EQ(LookupCountryIdentifier("0396602301467"), "US");
-	EXPECT_TRUE(LookupCountryIdentifier("0406602301467").empty()); // 040-049 Restricted Circulation Numbers
-	EXPECT_TRUE(LookupCountryIdentifier("0506602301467").empty()); // 050-059 reserved for future use
-	EXPECT_EQ(LookupCountryIdentifier("0606602301467"), "US/CA"); // 060-099 US/CA
-	EXPECT_EQ(LookupCountryIdentifier("0996602301467"), "US/CA");
-	EXPECT_EQ(LookupCountryIdentifier("1006602301467"), "US"); // 100-139 US
-	EXPECT_EQ(LookupCountryIdentifier("1396602301467"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("0196602301468 51299"), "US/CA");
+	EXPECT_TRUE(LookupCountryIdentifier("0206602301464").empty()); // 020-029 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("0296602301465").empty());
+	EXPECT_EQ(LookupCountryIdentifier("0306602301461"), "US"); // 030-039 US
+	EXPECT_EQ(LookupCountryIdentifier("0396602301462"), "US");
+	EXPECT_TRUE(LookupCountryIdentifier("0406602301468").empty()); // 040-049 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("0496602301469").empty());
+	EXPECT_TRUE(LookupCountryIdentifier("0506602301465").empty()); // 050-059 reserved for future use
+	EXPECT_TRUE(LookupCountryIdentifier("0596602301466").empty());
+	EXPECT_EQ(LookupCountryIdentifier("0606602301462"), "US/CA"); // 060-099 US/CA
+	EXPECT_EQ(LookupCountryIdentifier("0996602301464"), "US/CA");
+	EXPECT_EQ(LookupCountryIdentifier("1006602301469"), "US"); // 100-139 US
+	EXPECT_EQ(LookupCountryIdentifier("1396602301461"), "US");
 	EXPECT_TRUE(LookupCountryIdentifier("1406602301467").empty()); // 140-199 unassigned
-	EXPECT_TRUE(LookupCountryIdentifier("1996602301467").empty());
-	EXPECT_TRUE(LookupCountryIdentifier("2006602301467").empty()); // 200-299 Restricted Circulation Numbers
-	EXPECT_TRUE(LookupCountryIdentifier("2996602301467").empty());
-	EXPECT_EQ(LookupCountryIdentifier("9586602301467"), "MO");
-	EXPECT_EQ(LookupCountryIdentifier("9586602301467 12"), "MO");
-	EXPECT_EQ(LookupCountryIdentifier("9586602301467 51299"), "MO");
+	EXPECT_TRUE(LookupCountryIdentifier("1996602301463").empty());
+	EXPECT_TRUE(LookupCountryIdentifier("2006602301468").empty()); // 200-299 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("2996602301462").empty());
+	EXPECT_EQ(LookupCountryIdentifier("9586602301468"), "MO");
+	EXPECT_EQ(LookupCountryIdentifier("9586602301468 12"), "MO");
+	EXPECT_EQ(LookupCountryIdentifier("9586602301468 51299"), "MO");
+
+	// Additions/updates
+	EXPECT_EQ(LookupCountryIdentifier("3890102301467"), "ME");
+	//EXPECT_EQ(LookupCountryIdentifier("3900102301463"), "XK"); // Kosovo according to Wikipedia - awaiting GS1 confirmation
+	EXPECT_EQ(LookupCountryIdentifier("4700102301468"), "KG");
+	EXPECT_EQ(LookupCountryIdentifier("4830102301462"), "TM");
+	EXPECT_EQ(LookupCountryIdentifier("4880102301467"), "TJ");
+	EXPECT_EQ(LookupCountryIdentifier("5210102301461"), "GR");
+	EXPECT_EQ(LookupCountryIdentifier("5300102301469"), "AL");
+	EXPECT_EQ(LookupCountryIdentifier("6040102301463"), "SN");
+	EXPECT_EQ(LookupCountryIdentifier("6150102301469"), "NG");
+	EXPECT_EQ(LookupCountryIdentifier("6170102301467"), "CM");
+	EXPECT_EQ(LookupCountryIdentifier("6200102301461"), "TZ");
+	EXPECT_EQ(LookupCountryIdentifier("6230102301468"), "BN");
+	EXPECT_EQ(LookupCountryIdentifier("6300102301468"), "QA");
+	EXPECT_EQ(LookupCountryIdentifier("6310102301467"), "NA");
+	EXPECT_EQ(LookupCountryIdentifier("6990102301461"), "CN");
+	EXPECT_EQ(LookupCountryIdentifier("7710102301464"), "CO");
+	EXPECT_EQ(LookupCountryIdentifier("7780102301467"), "AR");
+	EXPECT_TRUE(LookupCountryIdentifier("7850102301467").empty());
+	EXPECT_EQ(LookupCountryIdentifier("8600102301467"), "RS");
+	EXPECT_EQ(LookupCountryIdentifier("8830102301468"), "MM");
+	EXPECT_EQ(LookupCountryIdentifier("8840102301467"), "KH");
+	EXPECT_EQ(LookupCountryIdentifier("9400102301462"), "NZ");
 }
 
 TEST(GTINTest, CountryIdentifierUPCA)
@@ -105,24 +133,28 @@ TEST(GTINTest, CountryIdentifierUPCA)
 	EXPECT_EQ(LookupCountryIdentifier("024543136538 00"), "US/CA");
 
 	// Other
-	EXPECT_TRUE(LookupCountryIdentifier("000000001467").empty()); // 0000000 Restricted Circulation Numbers
-	EXPECT_TRUE(LookupCountryIdentifier("000000991467").empty()); // 0000001-0000099 unused to avoid GTIN-8 collision
-	EXPECT_TRUE(LookupCountryIdentifier("000000111467 12").empty()); // 0000000 Restricted Circulation Numbers
-	EXPECT_EQ(LookupCountryIdentifier("000102301467"), "US"); // 00001-00009 US
-	EXPECT_EQ(LookupCountryIdentifier("000102301467 51299"), "US");
-	EXPECT_EQ(LookupCountryIdentifier("000902301467"), "US"); // 00001-00009 US
-	EXPECT_EQ(LookupCountryIdentifier("001602301467"), "US"); // 0001-0009 US
-	EXPECT_EQ(LookupCountryIdentifier("009602301467 12"), "US");
-	EXPECT_EQ(LookupCountryIdentifier("016602301467"), "US/CA"); // 001-019 US/CA
+	EXPECT_TRUE(LookupCountryIdentifier("000000001465").empty()); // 0000000 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("000000111461 12").empty());
+	EXPECT_TRUE(LookupCountryIdentifier("000001991468").empty()); // 0000001-0000099 unused to avoid GTIN-8 collision
+	EXPECT_TRUE(LookupCountryIdentifier("000099991463").empty());
+	EXPECT_EQ(LookupCountryIdentifier("000102301463"), "US"); // 00001-00009 US
+	EXPECT_EQ(LookupCountryIdentifier("000102301463 51299"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("000902301465"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("001602301465"), "US"); // 0001-0009 US
+	EXPECT_EQ(LookupCountryIdentifier("009602301461 12"), "US");
+	EXPECT_EQ(LookupCountryIdentifier("016602301469"), "US/CA"); // 001-019 US/CA
 	EXPECT_EQ(LookupCountryIdentifier("036602301467"), "US/CA");
-	EXPECT_EQ(LookupCountryIdentifier("196602301467 51299"), "US/CA");
-	EXPECT_TRUE(LookupCountryIdentifier("206602301467").empty()); // 020-029 Restricted Circulation Numbers
-	EXPECT_EQ(LookupCountryIdentifier("306602301467"), "US"); // 030-039 US
-	EXPECT_EQ(LookupCountryIdentifier("396602301467"), "US");
-	EXPECT_TRUE(LookupCountryIdentifier("406602301467").empty()); // 040-049 Restricted Circulation Numbers
-	EXPECT_TRUE(LookupCountryIdentifier("506602301467").empty()); // 050-059 reserved for future use
-	EXPECT_EQ(LookupCountryIdentifier("606602301467"), "US/CA"); // 060-099 US/CA
-	EXPECT_EQ(LookupCountryIdentifier("996602301467"), "US/CA");
+	EXPECT_EQ(LookupCountryIdentifier("196602301468 51299"), "US/CA");
+	EXPECT_TRUE(LookupCountryIdentifier("206602301464").empty()); // 020-029 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("296602301465").empty());
+	EXPECT_EQ(LookupCountryIdentifier("306602301461"), "US"); // 030-039 US
+	EXPECT_EQ(LookupCountryIdentifier("396602301462"), "US");
+	EXPECT_TRUE(LookupCountryIdentifier("406602301468").empty()); // 040-049 Restricted Circulation Numbers
+	EXPECT_TRUE(LookupCountryIdentifier("496602301469").empty());
+	EXPECT_TRUE(LookupCountryIdentifier("506602301465").empty()); // 050-059 reserved for future use
+	EXPECT_TRUE(LookupCountryIdentifier("596602301466").empty());
+	EXPECT_EQ(LookupCountryIdentifier("606602301462"), "US/CA"); // 060-099 US/CA
+	EXPECT_EQ(LookupCountryIdentifier("996602301464"), "US/CA");
 }
 
 TEST(GTINTest, CountryIdentifierUPCE)
@@ -188,5 +220,5 @@ TEST(GTINTest, CountryIdentifierGTIN14)
 
 	// Other
 	EXPECT_TRUE(LookupCountryIdentifier("12345678901231").empty()); // 200-299 Restricted Circulation Numbers
-	EXPECT_EQ(LookupCountryIdentifier("13005678901231"), "FR");
+	EXPECT_EQ(LookupCountryIdentifier("13005678901233"), "FR");
 }

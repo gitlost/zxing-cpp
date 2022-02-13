@@ -35,6 +35,7 @@ struct AiInfo
 	int fieldSize;	// if negative, the length is variable and abs(length) give the max size
 };
 
+// GS1 General Specifications Release 22.0 (Jan 22, 2022)
 static const AiInfo aiInfos[] = {
 // TWO_DIGIT_DATA_LENGTH
 	{ "00", 18 },
@@ -106,6 +107,7 @@ static const AiInfo aiInfos[] = {
 	{ "712", -20 },
 	{ "713", -20 },
 	{ "714", -20 },
+	{ "715", -20 },
 
 //THREE_DIGIT_PLUS_DIGIT_DATA_LENGTH
 	{ "310", 6 },
@@ -235,6 +237,7 @@ static const AiInfo aiInfos[] = {
 	{ "8026", 18 },
 	{ "8110", -70 },
 	{ "8111", 4 },
+	{ "8112", -70 },
 	{ "8200", -70 },
 };
 
@@ -289,4 +292,4 @@ ParseFieldsInGeneralPurpose(const std::string &rawInfo, std::string& result)
 	return status;
 }
 
-} // namespace ZXing::OneD::RSS
+} // namespace ZXing::OneD::DataBar

@@ -101,10 +101,10 @@ static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, 
 		height :	// Look at the whole image, not just the center
 		15;			// 15 rows spaced 1/32 apart is roughly the middle half of the image
 
-	for (int i = 0; i < maxLines; i++) {
+	PatternRow bars;
+	bars.reserve(128); // e.g. EAN-13 has 59 bars/spaces
 
-		PatternRow bars;
-		bars.reserve(128); // e.g. EAN-13 has 59 bars/spaces
+	for (int i = 0; i < maxLines; i++) {
 
 		// Scanning from the middle out. Determine which row we're looking at next:
 		int rowStepsAboveOrBelow = (i + 1) / 2;

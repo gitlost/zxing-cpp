@@ -196,10 +196,10 @@ DecodeAI01392x(const BitArray& bits)
 	buffer.append(std::to_string(lastAIdigit));
 	buffer.push_back(')');
 
-	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE;
+	int pos = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE;
 	int remainingValue = -1;
-	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
-			&& StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
+	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, pos, remainingValue, buffer))
+			&& StatusIsOK(DecodeAppIdAllCodes(bits, pos, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();
@@ -234,10 +234,10 @@ DecodeAI01393x(const BitArray& bits)
 	}
 	buffer.append(std::to_string(firstThreeDigits));
 
-	int position = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE + FIRST_THREE_DIGITS_SIZE;
+	int pos = HEADER_SIZE + AI01_GTIN_SIZE + LAST_DIGIT_SIZE + FIRST_THREE_DIGITS_SIZE;
 	int remainingValue = -1;
-	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, position, remainingValue, buffer))
-			&& StatusIsOK(DecodeAppIdAllCodes(bits, position, remainingValue, buffer))) {
+	if (StatusIsOK(DecodeAppIdGeneralPurposeField(bits, pos, remainingValue, buffer))
+			&& StatusIsOK(DecodeAppIdAllCodes(bits, pos, remainingValue, buffer))) {
 		return buffer;
 	}
 	return std::string();

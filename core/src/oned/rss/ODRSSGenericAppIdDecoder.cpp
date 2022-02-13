@@ -444,15 +444,15 @@ DoDecodeGeneralPurposeField(ParsingState& state, const BitArray& bits, std::stri
 }
 
 DecodeStatus
-DecodeAppIdGeneralPurposeField(const BitArray& bits, int& position, int& remainingValue, std::string& result)
+DecodeAppIdGeneralPurposeField(const BitArray& bits, int& pos, int& remainingValue, std::string& result)
 {
 	try
 	{
 		ParsingState state;
-		state.position = position;
+		state.position = pos;
 		DecodedInformation info = DoDecodeGeneralPurposeField(state, bits, std::string());
 		result += info.newString;
-		position = state.position;
+		pos = state.position;
 		remainingValue = info.remainingValue;
 		return DecodeStatus::NoError;
 	}
@@ -507,4 +507,4 @@ DecodeAppIdAllCodes(const BitArray& bits, int pos, int remainingValue, std::stri
 	return DecodeStatus::FormatError;
 }
 
-} // namespace ZXing::OneD::RSS
+} // namespace ZXing::OneD::DataBar

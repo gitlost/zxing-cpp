@@ -291,7 +291,7 @@ static int ParseECIValue(const std::vector<bool>& correctedBits, const int flg, 
 static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendInfo& sai)
 {
 	std::wstring id;
-	int i = 0;
+	std::string::size_type i = 0;
 
 	if (resultEncoded[0] == ' ') { // Space-delimited id
 		std::string::size_type sp = resultEncoded.find(' ', 1);
@@ -302,7 +302,7 @@ static void ParseStructuredAppend(std::wstring& resultEncoded, StructuredAppendI
 		id = resultEncoded.substr(1, sp - 1); // Strip space delimiters
 		i = sp + 1;
 	}
-	if (i + 1 >= (int)resultEncoded.size() || resultEncoded[i] < 'A' || resultEncoded[i] > 'Z'
+	if (i + 1 >= resultEncoded.size() || resultEncoded[i] < 'A' || resultEncoded[i] > 'Z'
 			|| resultEncoded[i + 1] < 'A' || resultEncoded[i + 1] > 'Z') {
 		Diagnostics::put("SAIError");
 		return;

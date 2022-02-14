@@ -31,7 +31,11 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#ifdef _MSC_VER
+#pragma warning(disable: 4996) /* function or variable may be unsafe */
+#endif
 #include <stb_image_write.h>
 
 using namespace ZXing;
@@ -132,7 +136,7 @@ void drawLine(const ImageView& image, PointI a, PointI b)
 	PointF dir = bresenhamDirection(PointF(b - a));
 	for (int i = 0; i < steps; ++i) {
 		auto p = centered(a + i * dir);
-		*((uint32_t*)image.data(p.x, p.y)) = 0xff0000ff;
+		*((uint32_t*)image.data((int)p.x, (int)p.y)) = 0xff0000ff;
 	}
 }
 

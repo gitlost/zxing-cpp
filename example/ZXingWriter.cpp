@@ -28,6 +28,9 @@
 #include <string>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#ifdef _MSC_VER
+#pragma warning(disable: 4996) /* function or variable may be unsafe */
+#endif
 #include <stb_image_write.h>
 
 using namespace ZXing;

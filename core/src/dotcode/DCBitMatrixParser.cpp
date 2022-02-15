@@ -203,10 +203,11 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 					continue;
 				}
 				if (mask == -1) {
+					const int xy = image.get(x, y) ? 1 : 0;
 					if (mask1 == -1) {
-						mask1 = image.get(x, y);
+						mask1 = xy;
 					} else {
-						mask = (mask1 << 1) | image.get(x, y);
+						mask = (mask1 << 1) | xy;
 						result.push_back(mask);
 					}
 					continue;
@@ -233,10 +234,11 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 					continue;
 				}
 				if (mask == -1) {
+					const int xy = image.get(x, y) ? 1 : 0;
 					if (mask1 == -1) {
-						mask1 = image.get(x, y);
+						mask1 = xy;
 					} else {
-						mask = (mask1 << 1) | image.get(x, y);
+						mask = (mask1 << 1) | xy;
 						result.push_back(mask);
 					}
 					continue;

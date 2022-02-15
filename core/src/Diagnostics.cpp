@@ -72,7 +72,7 @@ void put(const ByteArray& value, int begin, int end)
 			begin = 0;
 		}
 		if (end == -1) {
-			end = value.size();
+			end = static_cast<int>(value.size());
 		}
 		for (int i = begin; i < end; i++) {
 			chr(value[i], "", true/*appendHex*/);
@@ -142,7 +142,7 @@ void dump(const std::vector<int> value, const char* const postfix, int begin, in
 			begin = 0;
 		}
 		if (end == -1) {
-			end = value.size();
+			end = static_cast<int>(value.size());
 		}
 		for (int i = begin; i < end; i++) {
 			s << value[i];

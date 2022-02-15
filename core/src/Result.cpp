@@ -63,6 +63,8 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 #elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(disable: 4996) /* was declared deprecated */
 #endif
 	if (sequenceSize() != -1) {
 		_metadata.put(ResultMetadata::STRUCTURED_APPEND_CODE_COUNT, sequenceSize());

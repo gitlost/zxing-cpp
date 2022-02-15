@@ -61,7 +61,7 @@ static int validateInt(const char* optarg, int length, const bool neg, int &val)
 {
 	int start = 0;
 	bool haveNeg = false;
-    int i;
+	int i;
 
 	if (length == -1) {
 		length = static_cast<int>(strlen(optarg));
@@ -74,26 +74,26 @@ static int validateInt(const char* optarg, int length, const bool neg, int &val)
 		length--;
 		start = 1;
 	}
-    if (length > 9) { /* Prevent overflow */
-        return 0;
-    }
-    for (i = start; i < length; i++) {
-        if (optarg[i] < '0' || optarg[i] > '9') {
-            return 0;
-        }
-        val *= 10;
-        val += optarg[i] - '0';
-    }
+	if (length > 9) { /* Prevent overflow */
+		return 0;
+	}
+	for (i = start; i < length; i++) {
+		if (optarg[i] < '0' || optarg[i] > '9') {
+			return 0;
+		}
+		val *= 10;
+		val += optarg[i] - '0';
+	}
 	if (haveNeg) {
 		val = -val;
 	}
 
-    return 1;
+	return 1;
 }
 
 static int validateZint(const char* optarg, int &zintBarcode, int &zintOption2)
 {
-    int length = static_cast<int>(strlen(optarg));
+	int length = static_cast<int>(strlen(optarg));
 	const char *comma, *arg;
 
 	zintBarcode = 0;
@@ -101,16 +101,16 @@ static int validateZint(const char* optarg, int &zintBarcode, int &zintOption2)
 
 	arg = optarg;
 	comma = strchr(arg, ',');
-	if (!comma || comma == arg || !validateInt(arg, comma - arg, false, zintBarcode)) {
+	if (!comma || comma == arg || !validateInt(arg, static_cast<int>(comma - arg), false, zintBarcode)) {
 		return 0;
 	}
 
 	arg = comma + 1;
-	if (arg == optarg + length || !validateInt(arg, optarg - arg + length, false, zintOption2)) {
+	if (arg == optarg + length || !validateInt(arg, static_cast<int>(optarg - arg + length), false, zintOption2)) {
 		return 0;
 	}
 
-    return 1;
+	return 1;
 }
 
 static BitMatrix ParseBitMatrix(const std::string& str, const int width, int &height)
@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
 	Diagnostics::setEnabled(hints.enableDiagnostics());
 
 	if (width == 0) {
-		width = bitstream.length();
+		width = static_cast<int>(bitstream.length());
 	}
 	if (width > 1 && bitstream.length() % width) {
 		std::cerr << "Invalid bitstream - width " << width << " not multiple of length " << bitstream.length() << "\n";

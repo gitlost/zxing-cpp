@@ -38,7 +38,6 @@ macro(zxing_add_package name depname git_repo git_rev)
             GIT_TAG ${git_rev})
         if (${depname} STREQUAL "googletest")
             # Prevent overriding the parent project's compiler/linker settings on Windows
-            # (seem to need to do this before MakeAvailable)
             set (gtest_force_shared_crt ON CACHE BOOL "" FORCE)
         endif()
         FetchContent_MakeAvailable (${depname})

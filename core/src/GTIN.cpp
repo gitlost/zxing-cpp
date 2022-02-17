@@ -220,9 +220,7 @@ std::string EanAddOn(const Result& result)
 	auto pos = txt.find(L' ');
 	if (pos == std::wstring::npos)
 		return {};
-	std::string addOn;
-	TextUtfEncoding::ToUtf8(txt.substr(pos + 1), addOn);
-	return addOn;
+	return TextUtfEncoding::ToUtf8(txt.substr(pos + 1));
 }
 
 std::string IssueNr(const std::string& ean2AddOn)

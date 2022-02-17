@@ -77,7 +77,7 @@ namespace {
 static std::string getResultValue(const Result& result, const std::string& key)
 {
     if (key == "ecLevel")
-        return std::string(result.ecLevel().begin(), result.ecLevel().end());
+		return TextUtfEncoding::ToUtf8(result.ecLevel());
     if (key == "orientation")
         return std::to_string(result.orientation());
     if (key == "numBits")

@@ -498,9 +498,9 @@ DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const std::s
 	const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
 	const int numCodewords = Size(rawbits) / codewordSize;
 
-    Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
-    Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
-    Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, detectorResult.nbDatablocks(), numCodewords - detectorResult.nbDatablocks());
+	Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
+	Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
+	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, detectorResult.nbDatablocks(), numCodewords - detectorResult.nbDatablocks());
 	Diagnostics::put("  Decode:      ");
 	if (CorrectBits(detectorResult, rawbits, correctedBits)) {
 		std::wstring resultEncoded = GetEncodedData(correctedBits, characterSet, symbologyIdentifier, sai);

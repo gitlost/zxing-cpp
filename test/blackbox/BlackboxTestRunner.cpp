@@ -76,59 +76,58 @@ namespace {
 // Helper for `compareResult()` - map `key` to Result property, converting value to std::string
 static std::string getResultValue(const Result& result, const std::string& key)
 {
-    if (key == "ecLevel")
+	if (key == "ecLevel")
 		return TextUtfEncoding::ToUtf8(result.ecLevel());
-    if (key == "orientation")
-        return std::to_string(result.orientation());
-    if (key == "numBits")
-        return std::to_string(result.numBits());
-    if (key == "symbologyIdentifier")
-       return result.symbologyIdentifier();
-    if (key == "sequenceSize")
-        return std::to_string(result.sequenceSize());
-    if (key == "sequenceIndex")
-        return std::to_string(result.sequenceIndex());
-    if (key == "sequenceId")
-        return result.sequenceId();
-    if (key == "isLastInSequence")
-        return result.isLastInSequence() ? "true" : "false";
-    if (key == "isPartOfSequence")
-        return result.isPartOfSequence() ? "true" : "false";
-    if (key == "readerInit")
-        return result.readerInit() ? "true" : "false";
+	if (key == "orientation")
+		return std::to_string(result.orientation());
+	if (key == "numBits")
+		return std::to_string(result.numBits());
+	if (key == "symbologyIdentifier")
+		return result.symbologyIdentifier();
+	if (key == "sequenceSize")
+		return std::to_string(result.sequenceSize());
+	if (key == "sequenceIndex")
+		return std::to_string(result.sequenceIndex());
+	if (key == "sequenceId")
+		return result.sequenceId();
+	if (key == "isLastInSequence")
+		return result.isLastInSequence() ? "true" : "false";
+	if (key == "isPartOfSequence")
+		return result.isPartOfSequence() ? "true" : "false";
+	if (key == "readerInit")
+		return result.readerInit() ? "true" : "false";
 
-    return fmt::format("***Unknown key '{}'***", key);
+	return fmt::format("***Unknown key '{}'***", key);
 }
 
 // Read ".result.txt" file contents `expected` with lines "key=value" and compare to `actual`
 static bool compareResult(const Result& result, const std::string& expected, std::string& actual)
 {
-    bool ret = true;
+	bool ret = true;
 
-    actual.clear();
-    actual.reserve(expected.size());
+	actual.clear();
+	actual.reserve(expected.size());
 
-    std::stringstream expectedLines(expected);
-    std::string expectedLine;
-    while (std::getline(expectedLines, expectedLine)) {
-        if (expectedLine.empty() || expectedLine[0] == '#')
-            continue;
-        auto equals = expectedLine.find('=');
-        if (equals == std::string::npos) {
-            actual += "***Bad format, missing equals***\n";
-            return false;
-        }
-        std::string key = expectedLine.substr(0, equals);
-        std::string expectedValue = expectedLine.substr(equals + 1);
-        std::string actualValue = getResultValue(result, key);
-        if (actualValue != expectedValue) {
-            ret = false;
-            actualValue += " ***Mismatch***";
-        }
-        actual += key + '=' + actualValue + '\n';
-    }
-    //printf("actual %s\n", actual.c_str());
-    return ret;
+	std::stringstream expectedLines(expected);
+	std::string expectedLine;
+	while (std::getline(expectedLines, expectedLine)) {
+		if (expectedLine.empty() || expectedLine[0] == '#')
+			continue;
+		auto equals = expectedLine.find('=');
+		if (equals == std::string::npos) {
+			actual += "***Bad format, missing equals***\n";
+			return false;
+		}
+		std::string key = expectedLine.substr(0, equals);
+		std::string expectedValue = expectedLine.substr(equals + 1);
+		std::string actualValue = getResultValue(result, key);
+		if (actualValue != expectedValue) {
+			ret = false;
+			actualValue += " ***Mismatch***";
+		}
+		actual += key + '=' + actualValue + '\n';
+	}
+	return ret;
 }
 
 static std::string checkResult(const fs::path& imgPath, std::string_view expectedFormat, const Result& result)
@@ -141,11 +140,11 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 		return ifs ? std::optional(std::string(std::istreambuf_iterator<char>(ifs), std::istreambuf_iterator<char>())) : std::nullopt;
 	};
 
-    if (auto expected = readFile(".result.txt")) {
-        std::string actual;
-        if (!compareResult(result, *expected, actual))
-            return fmt::format("Result mismatch: expected\n{} but got\n{}", *expected, actual);
-    }
+	if (auto expected = readFile(".result.txt")) {
+		std::string actual;
+		if (!compareResult(result, *expected, actual))
+			return fmt::format("Result mismatch: expected\n{} but got\n{}", *expected, actual);
+	}
 
 	if (auto expected = readFile(".txt")) {
 		auto utf8Result = TextUtfEncoding::ToUtf8(result.text());
@@ -279,9 +278,9 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 	for (const auto& r : allResults)
 		text.append(r.text());
 
-    const auto& arf = allResults.front();
-    StructuredAppendInfo sai{arf.sequenceIndex(), arf.sequenceSize(), arf.sequenceId(), arf.sequenceLastECI()};
-    return Result(std::move(text), {}, arf.format(), {}, arf.symbologyIdentifier(), sai, arf.readerInit());
+	const auto& arf = allResults.front();
+	StructuredAppendInfo sai{arf.sequenceIndex(), arf.sequenceSize(), arf.sequenceId(), arf.sequenceLastECI()};
+	return Result(std::move(text), {}, arf.format(), {}, arf.symbologyIdentifier(), sai, arf.readerInit());
 }
 
 static void doRunStructuredAppendTest(

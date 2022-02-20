@@ -17,7 +17,6 @@
 
 #include "ODCode128Reader.h"
 
-#include "DecodeHints.h"
 #include "Diagnostics.h"
 #include "ODCode128Patterns.h"
 #include "Result.h"
@@ -321,7 +320,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 
 	int xStop = next.pixelsTillEnd();
 	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, std::move(rawCodes),
-					raw2txt.symbologyIdentifier(), raw2txt.readerInit());
+				  raw2txt.symbologyIdentifier(), raw2txt.readerInit());
 }
 
 } // namespace ZXing::OneD

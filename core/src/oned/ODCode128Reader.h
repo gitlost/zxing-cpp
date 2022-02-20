@@ -33,9 +33,6 @@ class Code128Reader : public RowReader
 {
 public:
 	Result decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const override;
-
-private:
-	bool _convertFNC1;
 };
 
 } // OneD

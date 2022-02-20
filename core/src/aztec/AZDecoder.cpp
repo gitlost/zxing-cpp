@@ -402,7 +402,7 @@ std::wstring GetEncodedData(const std::vector<bool>& correctedBits, const std::s
 				index += 3;
 				if (flg == 0) { // FNC1
 					haveFNC1 = true; // Will process first/second FNC1 at end after any Structured Append
-					result.push_back((char)29);
+					result.push_back((char)29); // May be removed at end if first/second FNC1
 				}
 				else if (flg <= 6) {
 					// FLG(1) to FLG(6) ECI
@@ -502,6 +502,7 @@ DecoderResult Decoder::Decode(const DetectorResult& detectorResult, const std::s
 	Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
 	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, detectorResult.nbDatablocks(), numCodewords - detectorResult.nbDatablocks());
 	Diagnostics::put("  Decode:      ");
+
 	if (CorrectBits(detectorResult, rawbits, correctedBits)) {
 		std::wstring resultEncoded = GetEncodedData(correctedBits, characterSet, symbologyIdentifier, sai);
 		if (resultEncoded.empty()) {

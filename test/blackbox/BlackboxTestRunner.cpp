@@ -278,9 +278,9 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 	for (const auto& r : allResults)
 		text.append(r.text());
 
-	const auto& arf = allResults.front();
-	StructuredAppendInfo sai{arf.sequenceIndex(), arf.sequenceSize(), arf.sequenceId(), arf.sequenceLastECI()};
-	return Result(std::move(text), {}, arf.format(), {}, arf.symbologyIdentifier(), sai, arf.readerInit());
+	const auto& first = allResults.front();
+	StructuredAppendInfo sai{ first.sequenceIndex(), first.sequenceSize(), first.sequenceId() };
+	return Result(std::move(text), {}, first.format(), {}, first.symbologyIdentifier(), sai, first.readerInit());
 }
 
 static void doRunStructuredAppendTest(

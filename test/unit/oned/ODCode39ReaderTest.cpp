@@ -1,5 +1,5 @@
 /*
-* Copyright 2021 gitlost
+* Copyright 2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 		EXPECT_EQ(result.text(), L"A");
 	}
 	{
-		// Checksum "A"
+		// "A" with checksum
 		PatternRow row({ 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
 		auto result = parse(row, DecodeHints().setAssumeCode39CheckDigit(true));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A3");
@@ -70,7 +70,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 		EXPECT_EQ(result.text(), L"+A");
 	}
 	{
-		// Extended "A" with checksum
+		// Extended "a" with checksum
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 2, 1, 1, 2, 1, 1 });
 		auto result = parse(row, DecodeHints().setTryCode39ExtendedMode(true).setAssumeCode39CheckDigit(true));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A7");

@@ -345,7 +345,7 @@ namespace DecodedBitStreamParser
 		}
 		// No identifier defined for mode 6
 
-        return DecoderResult(std::move(bytes), std::move(result))
+		return DecoderResult(std::move(bytes), std::move(result))
 				.setEcLevel(std::to_wstring(mode))
 				.setSymbologyIdentifier(std::move(symbologyIdentifier))
 				.setStructuredAppend(sai)

@@ -1,6 +1,2 @@
 symbologyIdentifier=]U0
 ecLevel=4
-sequenceSize=-1
-sequenceIndex=-1
-sequenceId=
-readerInit=false

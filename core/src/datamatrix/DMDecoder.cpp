@@ -117,20 +117,17 @@ struct Shift128
 /**
 * See ISO 16022:2006, 5.4.1, Table 6
 */
-static int ParseECIValue(BitSource& bits, int& position)
+static int ParseECIValue(BitSource& bits)
 {
 	int firstByte = bits.readBits(8);
-	position++;
 	if (firstByte <= 127)
 		return firstByte - 1;
 
 	int secondByte = bits.readBits(8);
-	position++;
 	if (firstByte <= 191)
 		return (firstByte - 128) * 254 + 127 + secondByte - 1;
 
 	int thirdByte = bits.readBits(8);
-	position++;
 
 	return (firstByte - 192) * 64516 + 16383 + (secondByte - 1) * 254 + thirdByte - 1;
 }
@@ -138,11 +135,10 @@ static int ParseECIValue(BitSource& bits, int& position)
 /**
 * See ISO 16022:2006, 5.6
 */
-static void ParseStructuredAppend(BitSource& bits, StructuredAppendInfo& sai, int& position)
+static void ParseStructuredAppend(BitSource& bits, StructuredAppendInfo& sai)
 {
 	// 5.6.2 Table 8
 	int symbolSequenceIndicator = bits.readBits(8);
-	position++;
 	sai.index = symbolSequenceIndicator >> 4;
 	sai.count = 17 - (symbolSequenceIndicator & 0x0F); // 2-16 permitted, 17 invalid
 
@@ -152,9 +148,7 @@ static void ParseStructuredAppend(BitSource& bits, StructuredAppendInfo& sai, in
 	}
 
 	int fileId1 = bits.readBits(8); // File identification 1
-	position++;
 	int fileId2 = bits.readBits(8); // File identification 2
-	position++;
 
 	// There's no conversion method or meaning given to the 2 file id codewords in Section 5.6.3, apart from
 	// saying that each value should be 1-254. Choosing here to represent them as base 256.
@@ -169,7 +163,7 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 {
 	Shift128 upperShift;
 
-	for (int position = 1; bits.available() >= 8; position++) {
+	while (bits.available() >= 8) {
 		int oneByte = bits.readBits(8);
 		switch (oneByte) {
 		case 0:
@@ -185,14 +179,14 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 			Diagnostics::put("BAS");
 			return Mode::BASE256_ENCODE;
 		case 232: // FNC1
-			if (position == state.firstFNC1Position || position == state.firstFNC1Position + 1) {
+			if (bits.byteOffset() == state.firstFNC1Position || bits.byteOffset() == state.firstFNC1Position + 1) {
 				// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
 				// modifiers that indicate ECI protocol (ISO 16022:2006 Annex N Table N.1, ISO 21471:2020 Annex G Table G.1)
 
 				// Only recognizing an FNC1 as first/second by codeword position (aka symbol character position), not
 				// by decoded character position, i.e. not recognizing a C40/Text encoded FNC1 (which requires a latch
 				// and a shift)
-				if (position == state.firstFNC1Position) {
+				if (bits.byteOffset() == state.firstFNC1Position) {
 					state.symbologyIdModifier = 2; // GS1
 					Diagnostics::put("FNC1(GS1)");
 				} else {
@@ -207,7 +201,7 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 			break;
 		case 233: // Structured Append
 			if (state.firstCodeword) { // Must be first ISO 16022:2006 5.6.1
-				ParseStructuredAppend(bits, state.sai, position);
+				ParseStructuredAppend(bits, state.sai);
 				state.firstFNC1Position = 5;
 				Diagnostics::fmt("SA(%d,%d,%s)", state.sai.index, state.sai.count, state.sai.id.c_str());
 			} else
@@ -244,8 +238,8 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 			Diagnostics::put("EDI");
 			return Mode::EDIFACT_ENCODE;
 		case 241: // ECI Character
-			state.encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bits, position), resultEncoded,
-																  result, state.encoding, &state.sai.lastECI);
+			state.encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bits), resultEncoded, result,
+																  state.encoding, &state.sai.lastECI);
 			break;
 		default:
 			if (oneByte <= 128) { // ASCII data (ASCII value + 1)

@@ -1,6 +1,1 @@
 symbologyIdentifier=]I1
-ecLevel=
-sequenceSize=-1
-sequenceIndex=-1
-sequenceId=
-readerInit=false

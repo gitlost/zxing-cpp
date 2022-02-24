@@ -126,7 +126,7 @@ TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 
 	// AIM "BYTE(1) A FNC1(2nd) 99 (0x63) BYTE(1) B" - FNC1(2nd) can occur anywhere
 	result = DecodeBitStream({0x40, 0x14, 0x19, 0x63, 0x40, 0x14, 0x20, 0x00}, version, ecLevel, "");
-	Diagnostics::setEnabled(false);
+	//Diagnostics::setEnabled(false);
 	EXPECT_EQ(result.symbologyIdentifier(), "]Q5");
 	EXPECT_EQ(result.text(), L"99AB"); // Application Indicator prefixed to data
 

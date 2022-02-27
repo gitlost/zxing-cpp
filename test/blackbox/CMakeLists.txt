@@ -11,6 +11,10 @@ if (BUILD_READERS)
         ZXFilesystem.h
     )
 
+    if (MSVC)
+        target_compile_options(ReaderTest PRIVATE -D_CRT_SECURE_NO_WARNINGS)
+    endif()
+
     target_link_libraries(ReaderTest
         ZXing::ZXing fmt::fmt stb::stb
         $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>

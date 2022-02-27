@@ -28,10 +28,10 @@
 #include "ReedSolomonDecoder.h"
 #include "TextDecoder.h"
 #include "TextUtfEncoding.h"
+#include "ZXCType.h"
 #include "ZXTestSupport.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <cstring>
 #include <numeric>
@@ -253,7 +253,7 @@ static StructuredAppendInfo ParseStructuredAppend(std::wstring& text)
 		id = text.substr(1, sp - 1); // Strip space delimiters
 		i = sp + 1;
 	}
-	if (i + 1 >= text.size() || text[i] < 'A' || text[i] > 'Z' || text[i + 1] < 'A' || text[i + 1] > 'Z') {
+	if (i + 1 >= text.size() || !zx_isupper(text[i]) || !zx_isupper(text[i + 1])) {
 		Diagnostics::put("SAIError");
 		return {};
 	}
@@ -385,14 +385,14 @@ AztecData GetEncodedData(const BitArray& bits, const std::string& characterSet)
 				symbologyIdModifier = 1; // GS1
 				res.text.erase(0, 1); // Remove FNC1
 				Diagnostics::put("FLG0(GS1)");
-			} else if (res.text.size() > 2 && res.text[0] >= 'A' && res.text[0] <= 'Z' && res.text[1] == 29) {
+			} else if (res.text.size() > 2 && zx_isupper(res.text[0]) && res.text[1] == 29) {
 				// FNC1 following single uppercase letter (the AIM Application Indicator)
 				symbologyIdModifier = 2; // AIM
 				res.text.erase(1, 1); // Remove FNC1
 				// The AIM Application Indicator character "A"-"Z" is left in the stream (ISO/IEC 24778:2008 16.2)
 				Diagnostics::fmt("FLG0(AIM %c)", res.text[0]);
-			} else if (res.text.size() > 3 && res.text[0] >= '0' && res.text[0] <= '9'
-					&& res.text[1] >= '0' && res.text[1] <= '9' && res.text[2] == 29) {
+			} else if (res.text.size() > 3 && zx_isdigit(res.text[0]) && zx_isdigit(res.text[1]) &&
+					   res.text[2] == 29) {
 				// FNC1 following 2 digits (the AIM Application Indicator)
 				symbologyIdModifier = 2; // AIM
 				res.text.erase(2, 1); // Remove FNC1
@@ -417,10 +417,11 @@ DecoderResult Decode(const DetectorResult& detectorResult, const std::string& ch
 	const int layers = detectorResult.nbLayers();
 	const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
 	const int numCodewords = Size(bits) / codewordSize;
+	const int numDataCodewords = detectorResult.nbDatablocks();
 
 	Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
 	Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
-	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, detectorResult.nbDatablocks(), numCodewords - detectorResult.nbDatablocks());
+	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
 	Diagnostics::put("  Decode:      ");
 
 	auto data = GetEncodedData(bits, characterSet);

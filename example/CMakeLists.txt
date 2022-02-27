@@ -12,7 +12,7 @@ if (BUILD_READERS)
         target_compile_options(ZXingReader PRIVATE -D_CRT_SECURE_NO_WARNINGS)
     endif()
 
-    add_test(NAME ZXingReader COMMAND ZXingReader -fast -format qrcode "${CMAKE_SOURCE_DIR}/test/samples/qrcode-1/1.png")
+    add_test(NAME ZXingReaderTest COMMAND ZXingReader -fast -format qrcode "${CMAKE_SOURCE_DIR}/test/samples/qrcode-1/1.png")
 
     install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/ZXingReader" DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME zxingcppreader)
 endif()
@@ -23,10 +23,10 @@ if (BUILD_WRITERS)
     target_link_libraries (ZXingWriter ZXing::ZXing stb::stb)
 
     if (MSVC)
-        target_compile_options(ZXingWriterTest PRIVATE -D_CRT_SECURE_NO_WARNINGS)
+        target_compile_options(ZXingWriter PRIVATE -D_CRT_SECURE_NO_WARNINGS)
     endif()
 
-    add_test(NAME ZXingWriter COMMAND ZXingWriter qrcode "I have the best words." test.png)
+    add_test(NAME ZXingWriterTest COMMAND ZXingWriter qrcode "I have the best words." test.png)
 endif()
 
 

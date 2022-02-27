@@ -53,11 +53,11 @@ class DecodeHints
 	bool _isPure : 1;
 	bool _tryCode39ExtendedMode : 1;
 	bool _assumeCode39CheckDigit : 1;
+	bool _assumeITFCheckDigit : 1;
 	bool _assumeGS1 : 1;
 	bool _returnCodabarStartEnd : 1;
 	Binarizer _binarizer : 2;
 	EanAddOnSymbol _eanAddOnSymbol : 2;
-    bool _assumeITFCheckDigit : 1;
     bool _enableDiagnostics : 1;
 
 	BarcodeFormats _formats = BarcodeFormat::None;
@@ -68,8 +68,8 @@ public:
 	// bitfields don't get default initialized to 0.
 	DecodeHints()
 		: _tryHarder(1), _tryRotate(1), _isPure(0), _tryCode39ExtendedMode(0), _assumeCode39CheckDigit(0),
-		  _assumeGS1(0), _returnCodabarStartEnd(0), _binarizer(Binarizer::LocalAverage),
-		  _eanAddOnSymbol(EanAddOnSymbol::Ignore), _assumeITFCheckDigit(0), _enableDiagnostics(0)
+		  _assumeITFCheckDigit(0), _assumeGS1(0), _returnCodabarStartEnd(0), _binarizer(Binarizer::LocalAverage),
+		  _eanAddOnSymbol(EanAddOnSymbol::Ignore), _enableDiagnostics(0)
 	{}
 
 #define ZX_PROPERTY(TYPE, GETTER, SETTER) \
@@ -107,6 +107,9 @@ public:
 	/// Assume Code-39 codes employ a check digit.
 	ZX_PROPERTY(bool, assumeCode39CheckDigit, setAssumeCode39CheckDigit)
 
+	/// Assume ITF codes employ a GS1 check digit.
+	ZX_PROPERTY(bool, assumeITFCheckDigit, setAssumeITFCheckDigit)
+
 	/**
 	* Assume the barcode is being processed as a GS1 barcode, and modify behavior as needed.
 	* NOTE: used to affect FNC1 handling for Code 128 (aka GS1-128) but behavior now based on position of FNC1.
@@ -122,9 +125,6 @@ public:
 
 	/// Specify whether to ignore, read or require EAN-2/5 add-on symbols while scanning EAN/UPC codes
 	ZX_PROPERTY(EanAddOnSymbol, eanAddOnSymbol, setEanAddOnSymbol)
-
-	/// Assume ITF codes employ a GS1 check digit.
-	ZX_PROPERTY(bool, assumeITFCheckDigit, setAssumeITFCheckDigit)
 
 	/**
 	* Enable diagnostics.

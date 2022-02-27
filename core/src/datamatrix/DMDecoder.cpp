@@ -340,10 +340,7 @@ static bool DecodeC40OrTextSegment(BitSource& bits, std::string& result, const M
 				break;
 			case 3:
 				if (cValue < 32) {
-					if (isC40)
-						result.push_back(upperShift(cValue + 96));
-					else
-						result.push_back(upperShift(TEXT_SHIFT3_SET_CHARS[cValue]));
+					result.push_back(upperShift(isC40 ? cValue + 96 : TEXT_SHIFT3_SET_CHARS[cValue]));
 					Diagnostics::chr(result.back(), prefixIfNonASCII);
 				} else {
 					Diagnostics::fmt("%sErrorShift3(%d)", modeName, cValue);

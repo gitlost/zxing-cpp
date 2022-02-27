@@ -17,6 +17,7 @@
 
 #include "DecoderResult.h"
 #include "DecodeStatus.h"
+#include "Diagnostics.h"
 #include "pdf417/PDFDecodedBitStreamParser.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 
@@ -32,6 +33,8 @@ using namespace ZXing::Pdf417;
 // Shorthand for Decode()
 static DecoderResult parse(const std::vector<int>& codewords, int ecLevel = 0, const std::string& characterSet = "")
 {
+	//Diagnostics::setEnabled(true);
+
 	auto result = DecodedBitStreamParser::Decode(codewords, ecLevel, characterSet);
 
 	#if 0
@@ -526,14 +529,6 @@ TEST(PDF417DecoderTest, ECIMultipleNumeric)
 		L"12345678901234567890123456789\u3930\u3132\u3334\u3536\u3738\u3930\u3132A\u0100\u0141\u0398");
 }
 
-TEST(PDF417DecoderTest, ECIInvalid)
-{
-	EXPECT_EQ(decode({ 4, 927, 901, 0 }), L"AA"); // Invalid Character Set ECI (> 899) silently ignored
-	EXPECT_EQ(decode({ 3, 0, 927 }), L"AA"); // Malformed Character Set ECI at end silently ignored
-	EXPECT_EQ(decode({ 3, 0, 926 }), L"AA"); // Malformed General ECI at end silently ignored
-	EXPECT_EQ(decode({ 3, 0, 925 }), L"AA"); // Malformed User-defined ECI at end silently ignored
-}
-
 TEST(PDF417DecoderTest, ECIMacroOptionalNumeric)
 {
 	// Check that ECI 25 (UnicodeBig) in numeric field (resulting in "\u3x3x" codepoints) still parses
@@ -569,6 +564,16 @@ TEST(PDF417DecoderTest, ECIUserDefined)
 	// 1-byte
 	EXPECT_EQ(decode({ 4, 925, 10, 0 }), L"AA"); // All User Defined ECIs silently ignored
 	EXPECT_TRUE(valid({ 3, 0, 925 })); // Malformed ECI at end silently ignored
+}
+
+TEST(PDF417DecoderTest, ECIInvalid)
+{
+	EXPECT_EQ(decode({ 4, 927, 901, 0 }), L"AA"); // Invalid Character Set ECI (> 899) silently ignored
+	EXPECT_EQ(decode({ 3, 927, 901 }), L""); // Invalid Character Set ECI (> 899) silently ignored
+	EXPECT_EQ(decode({ 3, 0, 927 }), L"AA"); // Malformed Character Set ECI at end silently ignored
+	EXPECT_EQ(decode({ 3, 0, 926 }), L"AA"); // Malformed General ECI at end silently ignored
+	EXPECT_EQ(decode({ 4, 0, 926, 111 }), L"AA"); // Malformed General ECI at end silently ignored
+	EXPECT_EQ(decode({ 3, 0, 925 }), L"AA"); // Malformed User-defined ECI at end silently ignored
 }
 
 TEST(PDF417DecoderTest, ReaderInit)

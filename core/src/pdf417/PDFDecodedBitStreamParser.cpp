@@ -817,7 +817,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 DecoderResult
 DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel, const std::string& characterSet)
 {
-	Diagnostics::fmt("  Codewords:  (%d)", codewords.size()); Diagnostics::dump(codewords, "\n");
+	Diagnostics::fmt("  Codewords:  (%d)", Size(codewords)); Diagnostics::dump(codewords, "\n");
 	std::wstring resultEncoded;
 	std::string result;
 	StructuredAppendInfo sai;

@@ -104,6 +104,24 @@ TEST(DMDecodeTest, C40)
 	EXPECT_EQ(decode({230, 91, 11, 91, 11, 91, 11, 91, 11, 91, 11, 91, 11, 254, 66, 74}), L"AIMAIMAIMAIMAIMAIMAI");
 }
 
+TEST(DMDecodeTest, C40Error)
+{
+	// Shift-1 31 (in range)
+	EXPECT_EQ(parse({230, 4, 221}).errorCode(), DecodeStatus::NoError);
+	// Shift-1 32 (out of range)
+	EXPECT_EQ(parse({230, 5, 5}).errorCode(), DecodeStatus::FormatError);
+
+	// Shift-2 27 (in range)
+	EXPECT_EQ(parse({230, 10, 125}).errorCode(), DecodeStatus::NoError);
+	// Shift-2 28 (out of range)
+	EXPECT_EQ(parse({230, 10, 165}).errorCode(), DecodeStatus::FormatError);
+
+	// Shift-3 31 (in range)
+	EXPECT_EQ(parse({230, 17, 93}).errorCode(), DecodeStatus::NoError);
+	// Shift-3 32 (out of range)
+	EXPECT_EQ(parse({230, 17, 133}).errorCode(), DecodeStatus::FormatError);
+}
+
 TEST(DMDecodeTest, Text)
 {
 	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 254}), L"aimaimaim");
@@ -111,6 +129,24 @@ TEST(DMDecodeTest, Text)
 	EXPECT_EQ(decode({239, 91, 11, 91, 11, 87, 218, 110}), L"aimaimaIm");
 	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 254, 67, 129}), L"aimaimaimB");
 	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 16, 218, 236, 107, 181, 69, 254, 129, 237}), L"aimaimaim{txt}\x04");
+}
+
+TEST(DMDecodeTest, TextError)
+{
+	// Shift-1 31 (in range)
+	EXPECT_EQ(parse({239, 4, 221}).errorCode(), DecodeStatus::NoError);
+	// Shift-1 32 (out of range)
+	EXPECT_EQ(parse({239, 5, 5}).errorCode(), DecodeStatus::FormatError);
+
+	// Shift-2 27 (in range)
+	EXPECT_EQ(parse({239, 10, 125}).errorCode(), DecodeStatus::NoError);
+	// Shift-2 28 (out of range)
+	EXPECT_EQ(parse({239, 10, 165}).errorCode(), DecodeStatus::FormatError);
+
+	// Shift-3 31 (in range)
+	EXPECT_EQ(parse({239, 17, 93}).errorCode(), DecodeStatus::NoError);
+	// Shift-3 32 (out of range)
+	EXPECT_EQ(parse({239, 17, 133}).errorCode(), DecodeStatus::FormatError);
 }
 
 TEST(DMDecodeTest, C40AndTextShiftUpper)

@@ -33,9 +33,6 @@
 #include <stb_image.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#ifdef _MSC_VER
-#pragma warning(disable: 4996) /* function or variable may be unsafe */
-#endif
 #include <stb_image_write.h>
 
 using namespace ZXing;
@@ -236,7 +233,7 @@ int main(int argc, char* argv[])
 			printOptional("EC Level:   ", ToUtf8(result.ecLevel()));
 
 			if (result.lineCount())
-				std::cout << "Lines:    " << result.lineCount() << "\n";
+				std::cout << "Lines:      " << result.lineCount() << "\n";
 
 			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
 					.testFlag(result.format())) {

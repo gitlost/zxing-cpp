@@ -705,8 +705,8 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 	// the fileId using text compaction, so in those cases the fileId will appear mangled.
 	std::ostringstream fileId;
 	fileId.fill('0');
-	for (int i = 0; codeIndex < codewords[0] && codewords[codeIndex] != MACRO_PDF417_TERMINATOR
-			&& codewords[codeIndex] != BEGIN_MACRO_PDF417_OPTIONAL_FIELD; i++, codeIndex++) {
+	for (; codeIndex < codewords[0] && codewords[codeIndex] != MACRO_PDF417_TERMINATOR
+			&& codewords[codeIndex] != BEGIN_MACRO_PDF417_OPTIONAL_FIELD; codeIndex++) {
 		fileId << std::setw(3) << codewords[codeIndex];
 	}
 	resultMetadata.setFileId(fileId.str());
@@ -750,24 +750,28 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 						uint64_t segmentCount;
 						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, segmentCount);
 						resultMetadata.setSegmentCount(static_cast<int>(segmentCount));
+						Diagnostics::fmt("SegmentCount(%d)", static_cast<int>(segmentCount));
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
 						uint64_t timestamp;
 						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, timestamp);
 						resultMetadata.setTimestamp(timestamp);
+						Diagnostics::put("Timestamp");
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
 						uint64_t checksum;
 						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, checksum);
 						resultMetadata.setChecksum(static_cast<int>(checksum));
+						Diagnostics::fmt("Checksum(%d)", static_cast<int>(checksum));
 						break;
 					}
 					case MACRO_PDF417_OPTIONAL_FIELD_FILE_SIZE: {
 						uint64_t fileSize;
 						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, fileSize);
 						resultMetadata.setFileSize(fileSize);
+						Diagnostics::put("FileSize");
 						break;
 					}
 					default: {

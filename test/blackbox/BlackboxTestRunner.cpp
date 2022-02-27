@@ -440,6 +440,11 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 8, 8, 180 },
 		});
 
+		runTests("ean8-extension-1", "EAN-8", 1, {
+			{ 1, 1, 0 },
+			{ 1, 1, 180 },
+		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
+
 		runTests("ean13-1", "EAN-13", 31, {
 			{ 26, 29, 0   },
 			{ 23, 29, 180 },

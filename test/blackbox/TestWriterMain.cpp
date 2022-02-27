@@ -24,9 +24,6 @@ using namespace ZXing;
 using namespace std::literals;
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#ifdef _MSC_VER
-#pragma warning(disable: 4996) /* function or variable may be unsafe */
-#endif
 #include <stb_image_write.h>
 
 void savePng(const BitMatrix& matrix, BarcodeFormat format)

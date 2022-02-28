@@ -185,6 +185,13 @@ static void printPositiveTestStats(int imageCount, const TestCase::TC& tc)
 
 	fmt::print(" | {}: {:3} of {:3}, misread {} of {}", tc.name, passCount, tc.minPassCount, Size(tc.misReadFiles),
 			   tc.maxMisreads);
+	#if 1
+	if (!tc.notDetectedFiles.empty()) {
+		fmt::print(", nd {}", Size(tc.notDetectedFiles));
+		for (const auto& f : tc.notDetectedFiles)
+			fmt::print(" {}", f.filename().string());
+	}
+	#endif
 
 	if (passCount < tc.minPassCount && !tc.notDetectedFiles.empty()) {
 		fmt::print("\nFAILED: Not detected ({}):", tc.name);

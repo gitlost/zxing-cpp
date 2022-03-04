@@ -540,6 +540,11 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 6, 8, 180 },
 		});
 
+		runTests("upce-extension-1", "UPC-E", 1, {
+			{ 1, 1, 0 },
+			{ 1, 1, 180 },
+		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
+
 		runTests("rss14-1", "DataBar", 6, {
 			{ 6, 6, 0   },
 			{ 6, 6, 180 },

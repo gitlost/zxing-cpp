@@ -321,7 +321,8 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 	auto ext = res.end;
 	PartialResult addOnRes;
 	if (_hints.eanAddOnSymbol() != EanAddOnSymbol::Ignore && ext.skipSymbol() &&
-		ext.skipSingle(static_cast<int>(begin.sum() * 4)) && (AddOn(addOnRes, ext, 5) || AddOn(addOnRes, ext, 2))) {
+		// ISO/IEC 15420:2009 4.3.5 max add-on gap is 12X (`begin` at right guard, which is 3X)
+		ext.skipSingle(begin.sum() * 4) && (AddOn(addOnRes, ext, 5) || AddOn(addOnRes, ext, 2))) {
 
 		// ISO/IEC 15420:2009 states that the content for "]E3" should be 15 or 18 digits, i.e. converted to EAN-13
 		// and extended with no separator, and that the content for "]E4" should be 8 digits, i.e. no add-on

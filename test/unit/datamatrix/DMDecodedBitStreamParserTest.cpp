@@ -37,7 +37,7 @@ static DecoderResult parse(ByteArray bytes, const bool isDMRE = false)
 
 	auto result = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "", isDMRE);
 
-	#if 1
+	#if 0
 	for (auto str : Diagnostics::get()) {
 		printf("%s ", str.c_str());
 	}

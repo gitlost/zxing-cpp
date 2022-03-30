@@ -57,10 +57,7 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _ecLevel(decodeResult.ecLevel()), _symbologyIdentifier(decodeResult.symbologyIdentifier()),
 	  _sai(decodeResult.structuredAppend()), _readerInit(decodeResult.readerInit())
 {
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(__GNUC__)
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #elif defined(_MSC_VER)
@@ -75,9 +72,7 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	if (_format == BarcodeFormat::QRCode && !sequenceId().empty()) {
 		_metadata.put(ResultMetadata::STRUCTURED_APPEND_PARITY, std::stoi(sequenceId()));
 	}
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
+#if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
 

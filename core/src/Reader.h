@@ -60,7 +60,7 @@ public:
 	// WARNING: this API is experimental and may change/disappear
 	virtual Results decode(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const {
 		auto res = decode(image);
-		return res.isValid() ? Results{std::move(res)} : Results{};
+		return res.status() != DecodeStatus::NotFound ? Results{std::move(res)} : Results{};
 	}
 };
 

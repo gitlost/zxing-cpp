@@ -46,7 +46,7 @@ constexpr int REGION2   = 0x5;
 constexpr int BYTE2     = 0x6;
 constexpr int BYTE4     = 0x7;
 constexpr int ECI       = 0x8;
-constexpr int UNICODE   = 0x9;
+constexpr int UNIC      = 0x9;
 constexpr int RESERVED2 = 0xA;
 constexpr int RESERVED3 = 0xB;
 constexpr int RESERVED4 = 0xC;
@@ -291,8 +291,8 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 				encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bits),
 																resultEncoded, result, encoding);
 				break;
-			case UNICODE:
-				Diagnostics::put("UNC");
+			case UNIC:
+				Diagnostics::put("UNIC");
 				uni = true;
 				// Not implemented
 				return DecodeStatus::FormatError;

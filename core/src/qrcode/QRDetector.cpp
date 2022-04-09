@@ -170,7 +170,7 @@ static double EstimateModuleSize(const BitMatrix& image, PointF a, PointF b)
 	BitMatrixCursorF cur(image, a, b - a);
 	assert(cur.isBlack());
 
-	if (!cur.stepToEdge(3, distance(a, b) / 3))
+	if (!cur.stepToEdge(3, (int)(distance(a, b) / 3)))
 		return -1;
 
 	cur.turnBack();

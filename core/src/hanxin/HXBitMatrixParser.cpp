@@ -272,17 +272,24 @@ static bool getFunctionalInfo(const BitMatrix& image, const int size, int &versi
 	std::vector<int> funcInfo(7, 0); 
 
 	// Version
-	funcInfo[0] = (image.get(0, 8) << 3) | (image.get(1, 8) << 2) | (image.get(2, 8) << 1) | image.get(3, 8);
-	funcInfo[1] = (image.get(4, 8) << 3) | (image.get(5, 8) << 2) | (image.get(6, 8) << 1) | image.get(7, 8);
+	funcInfo[0] = ((int)image.get(0, 8) << 3) | ((int)image.get(1, 8) << 2)
+					| ((int)image.get(2, 8) << 1) | (int)image.get(3, 8);
+	funcInfo[1] = ((int)image.get(4, 8) << 3) | ((int)image.get(5, 8) << 2)
+					| ((int)image.get(6, 8) << 1) | (int)image.get(7, 8);
 	// EC level & mask
-	funcInfo[2] = (image.get(8, 8) << 3) | (image.get(8, 7) << 2) | (image.get(8, 6) << 1) | image.get(8, 5);
+	funcInfo[2] = ((int)image.get(8, 8) << 3) | ((int)image.get(8, 7) << 2)
+					| ((int)image.get(8, 6) << 1) | (int)image.get(8, 5);
 
 	// Reed-Solomon
 	const int c = size - 9;
-	funcInfo[3] = (image.get(8, 4) << 3) | (image.get(8, 3) << 2) | (image.get(8, 2) << 1) | image.get(8, 1);
-	funcInfo[4] = (image.get(8, 0) << 3) | (image.get(c, 0) << 2) | (image.get(c, 1) << 1) | image.get(c, 2);
-	funcInfo[5] = (image.get(c, 3) << 3) | (image.get(c, 4) << 2) | (image.get(c, 5) << 1) | image.get(c, 6);
-	funcInfo[6] = (image.get(c, 7) << 3) | (image.get(c, 8) << 2) | (image.get(c + 1, 8) << 1) | image.get(c + 2, 8);
+	funcInfo[3] = ((int)image.get(8, 4) << 3) | ((int)image.get(8, 3) << 2)
+					| ((int)image.get(8, 2) << 1) | (int)image.get(8, 1);
+	funcInfo[4] = ((int)image.get(8, 0) << 3) | ((int)image.get(c, 0) << 2)
+					| ((int)image.get(c, 1) << 1) | (int)image.get(c, 2);
+	funcInfo[5] = ((int)image.get(c, 3) << 3) | ((int)image.get(c, 4) << 2)
+					| ((int)image.get(c, 5) << 1) | (int)image.get(c, 6);
+	funcInfo[6] = ((int)image.get(c, 7) << 3) | ((int)image.get(c, 8) << 2)
+					| ((int)image.get(c + 1, 8) << 1) | (int)image.get(c + 2, 8);
 
 	#if 0
 	printf("%s(%d) %s:", __FILE__, __LINE__, __func__);
@@ -330,7 +337,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, int& version, i
 		return {};
 	}
 
-	unsigned char grid[size * size];
+	unsigned char grid[189 * 189];
 	setupGrid(grid, size, version);
 
 	ByteArray batched;

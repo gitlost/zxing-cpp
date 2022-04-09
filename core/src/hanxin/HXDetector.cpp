@@ -34,7 +34,7 @@ static double EstimateModuleSize(const BitMatrix& image, PointF a, PointF b)
 	//printf("%s(%d) %s: cur.p (%f,%f), cur.d (%f,%f), isBlack %d, distance(a, b) %f\n", __FILE__, __LINE__, __func__, cur.p.x, cur.p.y, cur.d.x, cur.d.y, cur.isBlack(), distance(a, b)); fflush(stdout);
 	assert(cur.isBlack());
 
-	if (!cur.stepToEdge(1, distance(a, b) / 3))
+	if (!cur.stepToEdge(1, (int)(distance(a, b) / 3)))
 		return -1;
 
 	cur.turnBack();

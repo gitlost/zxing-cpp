@@ -51,6 +51,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -1            Print only file name, format, identifier, text and status on one line per file\n"
 			  << "    -escape       Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
 			  << "    -binarizer    Use specific binarizer\n"
+			  << "    -charset      Default character set\n"
 			  << "    -diagnostics  Print diagnostics\n"
 			  << "\n"
 			  << "Supported formats are:\n";
@@ -85,8 +86,7 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				std::cerr << e.what() << "\n";
 				return false;
 			}
-		}
-		else if (strcmp(argv[i], "-binarizer") == 0) {
+		} else if (strcmp(argv[i], "-binarizer") == 0) {
 			if (++i == argc)
 				return false;
 			std::string binarizer(argv[i]);
@@ -101,8 +101,13 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				std::cerr << "Unknown binarizer '" << binarizer << "'\n";
 				return false;
 			}
-		}
-		else if (strcmp(argv[i], "-diagnostics") == 0) {
+		} else if (strcmp(argv[i], "-charset") == 0) {
+			if (++i == argc) {
+				std::cerr << "No argument for -charset\n";
+				return false;
+			}
+			hints.setCharacterSet(argv[i]);
+		} else if (strcmp(argv[i], "-diagnostics") == 0) {
 			hints.setEnableDiagnostics(true);
 		} else if (strcmp(argv[i], "-1") == 0) {
 			oneLine = true;

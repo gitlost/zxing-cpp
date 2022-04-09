@@ -37,8 +37,8 @@ void put(const int value);
 void put(const ByteArray& value, int begin = -1, int end = -1);
 void fmt(const char* const format, ...);
 void chr(const unsigned char value, const char* const prefixIfNonASCII = "", const bool appendHex = false);
-void dump(const std::vector<int> value, const char* const postfix = "", int begin = -1, int end = -1);
-void dump(const ByteArray& value, const char* const postfix = "", int begin = -1, int end = -1);
+void dump(const std::vector<int> value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
+void dump(const ByteArray& value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
 
 } // namespace Diagnostics
 } // namespace ZXing

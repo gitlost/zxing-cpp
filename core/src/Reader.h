@@ -17,6 +17,7 @@
 */
 
 #include "Result.h"
+#include "Diagnostics.h"
 
 namespace ZXing {
 
@@ -60,7 +61,8 @@ public:
 	// WARNING: this API is experimental and may change/disappear
 	virtual Results decode(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const {
 		auto res = decode(image);
-		return res.status() != DecodeStatus::NotFound ? Results{std::move(res)} : Results{};
+		return res.isValid() || (res.status() == DecodeStatus::FormatError && Size(res.diagnostics()))
+				? Results{std::move(res)} : Results{};
 	}
 };
 

@@ -22,6 +22,7 @@
 #include "aztec/AZReader.h"
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
+#include "hanxin/HXReader.h"
 #include "maxicode/MCReader.h"
 #include "oned/ODReader.h"
 #include "pdf417/PDFReader.h"
@@ -47,6 +48,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -textonly     Return bare text only\n"
 			  << "    -diagnostics  Print diagnostics\n"
 			  << "    -format       Format\n"
+			  << "    -charset      Default character set\n"
 			  << "    -zint         Zint hints\n"
 			  << "    -bits         Bit dump\n"
 			  << "\n"
@@ -141,7 +143,7 @@ static ImageView getImageView(std::vector<uint8_t> &buf, const BitMatrix &bits)
 	return ImageView(buf.data(), bits.width(), bits.height(), ImageFormat::Lum);
 }
 
-static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, std::string &bitstream, int &width,
+static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string &bitstream, int &width,
 			bool &textOnly, int &zintBarcode, int &zintOption2)
 {
 	bool haveFormat = false, haveBits = false, haveWidth = false;
@@ -214,6 +216,12 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, std::string
 				return false;
 			}
 
+		} else if (strcmp(argv[i], "-charset") == 0) {
+			if (++i == argc) {
+				std::cerr << "No argument for -charset\n";
+				return false;
+			}
+			hints.setCharacterSet(argv[i]);
 		} else if (strcmp(argv[i], "-textonly") == 0) {
 			textOnly = true;
 		} else if (strcmp(argv[i], "-diagnostics") == 0) {
@@ -282,6 +290,11 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	// Bug in ODReader.cpp - exits too early for these if pure set
+	if (!hints.hasFormat(BarcodeFormat::DataBar | BarcodeFormat::DataBarExpanded)) {
+		hints.setIsPure(true);
+	}
+
 	if (hints.formats() == BarcodeFormat::Aztec) {
 		Aztec::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
@@ -290,6 +303,10 @@ int main(int argc, char* argv[])
 		DataMatrix::Reader reader(hints);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
+
+	} else if (hints.formats() == BarcodeFormat::HanXin) {
+		HanXin::Reader reader(hints);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 
 	} else if (hints.formats() == BarcodeFormat::DotCode) {
 		DotCode::Reader reader(hints);

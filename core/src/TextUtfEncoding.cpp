@@ -267,4 +267,27 @@ void AppendUtf8(std::wstring& str, const uint8_t* utf8, size_t length)
 	ConvertFromUtf8(utf8, length, str);
 }
 
+void AppendUtf32(std::wstring& str, const uint32_t* utf32, size_t length)
+{
+	if (sizeof(wchar_t) == 2) {
+		str.reserve(str.length() + length * 2);
+		for (size_t i = 0; i < length; ++i)
+		{
+			uint32_t wc = utf32[i];
+			if (wc < 0x110000 && !(wc >= 0xd800 && wc < 0xe000)) {
+				if (wc < 0x10000) {
+					str.push_back(static_cast<wchar_t>(wc));
+				} else {
+					uint16_t w = static_cast<uint16_t>(wc - 0x10000);
+					str.push_back(static_cast<wchar_t>(0xD800 + (w >> 10)));
+					str.push_back(static_cast<wchar_t>(0xDC00 + (w & 0x3FF)));
+				}
+			}
+		}
+	}
+	else {
+		str.append(reinterpret_cast<const wchar_t*>(utf32), length);
+	}
+}
+
 } // namespace ZXing::TextUtfEncoding

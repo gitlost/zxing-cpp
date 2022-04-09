@@ -218,6 +218,24 @@ if (BUILD_READERS)
 endif()
 
 
+set (HANXIN_FILES
+)
+if (BUILD_READERS)
+    set (HANXIN_FILES ${HANXIN_FILES}
+        src/hanxin/HXBitMatrixParser.h
+        src/hanxin/HXBitMatrixParser.cpp
+        src/hanxin/HXDataBlock.h
+        src/hanxin/HXDataBlock.cpp
+        src/hanxin/HXDecoder.h
+        src/hanxin/HXDecoder.cpp
+        src/hanxin/HXDetector.h
+        src/hanxin/HXDetector.cpp
+        src/hanxin/HXReader.h
+        src/hanxin/HXReader.cpp
+    )
+endif()
+
+
 set (MAXICODE_FILES
 )
 if (BUILD_READERS)
@@ -425,6 +443,7 @@ source_group (Sources FILES ${COMMON_FILES})
 source_group (Sources\\aztec FILES ${AZTEC_FILES})
 source_group (Sources\\datamatrix FILES ${DATAMATRIX_FILES})
 source_group (Sources\\dotcode FILES ${DOTCODE_FILES})
+source_group (Sources\\hanxin FILES ${HANXIN_FILES})
 source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
 source_group (Sources\\oned\\rss FILES ${ONED_RSS_FILES})
@@ -441,6 +460,7 @@ add_library (ZXing
     ${AZTEC_FILES}
     ${DATAMATRIX_FILES}
     ${DOTCODE_FILES}
+    ${HANXIN_FILES}
     ${MAXICODE_FILES}
     ${ONED_FILES}
     ${ONED_RSS_FILES}

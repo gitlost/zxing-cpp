@@ -1,6 +1,6 @@
 #pragma once
 /*
-* Copyright 2021 gitlost
+* Copyright 2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,18 +15,20 @@
 * limitations under the License.
 */
 
+#include <vector>
+
 namespace ZXing {
 
-class BinaryBitmap;
+class ByteArray;
 class BitMatrix;
-class DetectorResult;
 
-namespace DotCode {
+namespace HanXin {
 
-/**
- * @brief Detects a DotCode symbol in an image.
- */
-DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool isPure);
+class BitMatrixParser
+{
+public:
+	static ByteArray ReadCodewords(const BitMatrix& image, int& version, int& ecLevel, int& mask);
+};
 
-} // DotCode
+} // HanXin
 } // ZXing

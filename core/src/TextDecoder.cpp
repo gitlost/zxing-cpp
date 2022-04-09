@@ -311,7 +311,7 @@ TextDecoder::Append(std::wstring& str, const uint8_t* bytes, size_t length, Char
 		TextUtfEncoding::AppendUtf16(str, buf.data(), buf.size());
 		break;
 	}
-	case CharacterSet::UnicodeBig:
+	case CharacterSet::UTF16BE:
 	{
 		std::vector<uint16_t> buf;
 		for (size_t i = 0; i + 1 < length; i += 2) {
@@ -323,6 +323,42 @@ TextDecoder::Append(std::wstring& str, const uint8_t* bytes, size_t length, Char
 	case CharacterSet::UTF8:
 	{
 		TextUtfEncoding::AppendUtf8(str, bytes, length);
+		break;
+	}
+	case CharacterSet::GBK:
+	{
+		std::vector<uint16_t> buf;
+		GBTextDecoder::AppendGBK(buf, bytes, length);
+		TextUtfEncoding::AppendUtf16(str, buf.data(), buf.size());
+		break;
+	}
+	case CharacterSet::UTF16LE:
+	{
+		std::vector<uint16_t> buf;
+		for (size_t i = 0; i + 1 < length; i += 2) {
+			buf.push_back((static_cast<uint16_t>(bytes[i + 1]) << 8) | bytes[i]);
+		}
+		TextUtfEncoding::AppendUtf16(str, buf.data(), buf.size());
+		break;
+	}
+	case CharacterSet::UTF32BE:
+	{
+		std::vector<uint32_t> buf;
+		for (size_t i = 0; i + 3 < length; i += 4) {
+			buf.push_back((static_cast<uint32_t>(bytes[i]) << 24) | (static_cast<uint32_t>(bytes[i + 1]) << 16)
+						  | (static_cast<uint32_t>(bytes[i + 2]) << 8) | bytes[i + 3]);
+		}
+		TextUtfEncoding::AppendUtf32(str, buf.data(), buf.size());
+		break;
+	}
+	case CharacterSet::UTF32LE:
+	{
+		std::vector<uint32_t> buf;
+		for (size_t i = 0; i + 3 < length; i += 4) {
+			buf.push_back((static_cast<uint32_t>(bytes[i + 3]) << 24) | (static_cast<uint32_t>(bytes[i + 2]) << 16)
+						  | (static_cast<uint32_t>(bytes[i + 1]) << 8) | bytes[i]);
+		}
+		TextUtfEncoding::AppendUtf32(str, buf.data(), buf.size());
 		break;
 	}
 	default:

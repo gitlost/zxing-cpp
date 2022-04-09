@@ -27,8 +27,6 @@ namespace DotCode {
 /**
 * <p>The main class which implements DotCode decoding -- as opposed to locating and extracting
 * the DotCode from an image.</p>
-*
-* @author Manuel Kasten
 */
 class Decoder
 {

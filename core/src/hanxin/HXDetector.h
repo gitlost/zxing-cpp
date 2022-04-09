@@ -1,6 +1,6 @@
 #pragma once
 /*
-* Copyright 2021 gitlost
+* Copyright 2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,12 +21,12 @@ class BinaryBitmap;
 class BitMatrix;
 class DetectorResult;
 
-namespace DotCode {
+namespace HanXin {
 
 /**
- * @brief Detects a DotCode symbol in an image.
+ * @brief Detects a HanXin symbol in an image.
  */
 DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool isPure);
 
-} // DotCode
+} // HanXin
 } // ZXing

@@ -47,6 +47,7 @@ static BarcodeFormatName NAMES[] = {
 	{BarcodeFormat::DotCode, "DotCode"},
 	{BarcodeFormat::EAN8, "EAN-8"},
 	{BarcodeFormat::EAN13, "EAN-13"},
+	{BarcodeFormat::HanXin, "HanXin"},
 	{BarcodeFormat::ITF, "ITF"},
 	{BarcodeFormat::MaxiCode, "MaxiCode"},
 	{BarcodeFormat::PDF417, "PDF417"},

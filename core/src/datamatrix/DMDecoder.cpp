@@ -444,6 +444,7 @@ static bool DecodeBase256Segment(BitSource& bits, std::string& result)
 		Diagnostics::put("BASError(NegCount)");
 		return false;
 	}
+	Diagnostics::fmt("Cnt(%d,%d)", count, d1);
 
 	ByteArray bytes(count);
 	for (int i = 0; i < count; i++) {
@@ -583,6 +584,7 @@ static DecoderResult DoDecode(const BitMatrix& bits, const std::string& characte
 			resultBytes[i * dataBlocksCount + j] = codewordBytes[i];
 		}
 	}
+	Diagnostics::fmt("  ResultBytes:   (%d)", Size(resultBytes)); Diagnostics::dump(resultBytes, "\n");
 
 	// Decode the contents of that stream of bytes
 	return DecodedBitStreamParser::Decode(std::move(resultBytes), characterSet, version->isDMRE());

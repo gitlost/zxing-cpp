@@ -49,17 +49,39 @@ TEST(TextDecoderTest, AppendBINARY_ASCII)
 TEST(TextDecoderTest, AppendAllASCIIRange00_7F)
 {
 	uint8_t data[0x80];
-	uint8_t dataUnicodeBig[0x80 * 2];
+	uint8_t dataUTF16BE[0x80 * 2];
+	uint8_t dataUTF16LE[0x80 * 2];
+	uint8_t dataUTF32BE[0x80 * 4];
+	uint8_t dataUTF32LE[0x80 * 4];
+
 	for (int i = 0; i < 0x80; i++) {
 		data[i] = (uint8_t)i;
-		dataUnicodeBig[i << 1] = 0;
-		dataUnicodeBig[(i << 1) + 1] = (uint8_t)i;
+		int j = i << 1;
+		int k = j << 1;
+
+		dataUTF16BE[j] = 0;
+		dataUTF16BE[j + 1] = (uint8_t)i;
+
+		dataUTF16LE[j] = (uint8_t)i;
+		dataUTF16LE[j + 1] = 0;
+
+		dataUTF32BE[k] = dataUTF32BE[k + 1] = dataUTF32BE[k + 2] = 0;
+		dataUTF32BE[k + 3] = (uint8_t)i;
+
+		dataUTF32LE[k] = (uint8_t)i;
+		dataUTF32LE[k + 1] = dataUTF32LE[k + 2] = dataUTF32LE[k + 3] = 0;
 	}
 
 	for (int i = 0; i < static_cast<int>(CharacterSet::CharsetCount); i++) {
 		std::wstring str;
-		if (i == static_cast<int>(CharacterSet::UnicodeBig)) {
-			TextDecoder::Append(str, dataUnicodeBig, sizeof(dataUnicodeBig), static_cast<CharacterSet>(i));
+		if (i == static_cast<int>(CharacterSet::UTF16BE)) {
+			TextDecoder::Append(str, dataUTF16BE, sizeof(dataUTF16BE), static_cast<CharacterSet>(i));
+		} else if (i == static_cast<int>(CharacterSet::UTF16LE)) {
+			TextDecoder::Append(str, dataUTF16LE, sizeof(dataUTF16LE), static_cast<CharacterSet>(i));
+		} else if (i == static_cast<int>(CharacterSet::UTF32BE)) {
+			TextDecoder::Append(str, dataUTF32BE, sizeof(dataUTF32BE), static_cast<CharacterSet>(i));
+		} else if (i == static_cast<int>(CharacterSet::UTF32LE)) {
+			TextDecoder::Append(str, dataUTF32LE, sizeof(dataUTF32LE), static_cast<CharacterSet>(i));
 		} else {
 			TextDecoder::Append(str, data, sizeof(data), static_cast<CharacterSet>(i));
 		}
@@ -180,6 +202,17 @@ TEST(TextDecoderTest, AppendGB2312)
 	}
 }
 
+TEST(TextDecoderTest, AppendGBK)
+{
+	{
+		static const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0xA1, 0xA4, 0xA1, 0xAA, 0xA8, 0xA6, 'Z' };
+		std::wstring str;
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::GBK);
+		EXPECT_EQ(str, std::wstring(L"a\u03B2c\u00B7\u2014\u00E9Z"));
+		EXPECT_EQ(ToUtf8(str), "aβc·—éZ");
+	}
+}
+
 TEST(TextDecoderTest, AppendGB18030)
 {
 	{
@@ -211,13 +244,13 @@ TEST(TextDecoderTest, AppendEUC_KR)
 	}
 }
 
-TEST(TextDecoderTest, AppendUnicodeBig)
+TEST(TextDecoderTest, AppendUTF16BE)
 {
 	{
 		std::wstring str;
 		static const uint8_t data[] = { 0x00, 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x01, 0xFF, 0x10, 0xFF,
 										0xFF, 0xFD };
-		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UnicodeBig);
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF16BE);
 		EXPECT_EQ(str, std::wstring(L"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 		EXPECT_EQ(ToUtf8(str), std::string("\x01\x7F\xC2\x80ÿǿჿ\xEF\xBF\xBD"));
 	}
@@ -225,7 +258,69 @@ TEST(TextDecoderTest, AppendUnicodeBig)
 	{
 		std::wstring str;
 		static const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
-		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UnicodeBig);
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF16BE);
+		EXPECT_EQ(str, std::wstring(L"\U00010000"));
+		EXPECT_EQ(ToUtf8(str), std::string("𐀀"));
+	}
+}
+
+TEST(TextDecoderTest, AppendUTF16LE)
+{
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0xFF, 0x10,
+										0xFD, 0xFF };
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF16LE);
+		EXPECT_EQ(str, std::wstring(L"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(ToUtf8(str), std::string("\x01\x7F\xC2\x80ÿǿჿ\xEF\xBF\xBD"));
+	}
+
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x00, 0xD8, 0x00, 0xDC }; // Surrogate pair U+10000
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF16LE);
+		EXPECT_EQ(str, std::wstring(L"\U00010000"));
+		EXPECT_EQ(ToUtf8(str), std::string("𐀀"));
+	}
+}
+
+TEST(TextDecoderTest, AppendUTF32BE)
+{
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x7F, 0x00, 0x00, 0x00, 0x80,
+										0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00, 0x10, 0xFF,
+										0x00, 0x00, 0xFF, 0xFD };
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF32BE);
+		EXPECT_EQ(str, std::wstring(L"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(ToUtf8(str), std::string("\x01\x7F\xC2\x80ÿǿჿ\xEF\xBF\xBD"));
+	}
+
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x00, 0x01, 0x00, 0x00  }; // U+10000
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF32BE);
+		EXPECT_EQ(str, std::wstring(L"\U00010000"));
+		EXPECT_EQ(ToUtf8(str), std::string("𐀀"));
+	}
+}
+
+TEST(TextDecoderTest, AppendUTF32LE)
+{
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x01, 0x00, 0x00, 0x00, 0x7F, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+										0xFF, 0x00, 0x00, 0x00, 0xFF, 0x01, 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00,
+										0xFD, 0xFF, 0x00, 0x00 };
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF32LE);
+		EXPECT_EQ(str, std::wstring(L"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(ToUtf8(str), std::string("\x01\x7F\xC2\x80ÿǿჿ\xEF\xBF\xBD"));
+	}
+
+	{
+		std::wstring str;
+		static const uint8_t data[] = { 0x00, 0x00, 0x01, 0x00  }; // U+10000
+		TextDecoder::Append(str, data, sizeof(data), CharacterSet::UTF32LE);
 		EXPECT_EQ(str, std::wstring(L"\U00010000"));
 		EXPECT_EQ(ToUtf8(str), std::string("𐀀"));
 	}

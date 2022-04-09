@@ -17,6 +17,7 @@
 #include "Diagnostics.h"
 
 #include <cstdarg>
+#include <iomanip>
 #include <sstream>
 
 namespace ZXing::Diagnostics {
@@ -134,10 +135,12 @@ void chr(const unsigned char value, const char* const prefixIfNonASCII, const bo
 	}
 }
 
-void dump(const std::vector<int> value, const char* const postfix, int begin, int end)
+void dump(const std::vector<int> value, const char* const postfix, int begin, int end, bool hex)
 {
 	if (_enabled) {
 		std::ostringstream s;
+		s.fill('0');
+
 		if (begin == -1) {
 			begin = 0;
 		}
@@ -145,7 +148,11 @@ void dump(const std::vector<int> value, const char* const postfix, int begin, in
 			end = static_cast<int>(value.size());
 		}
 		for (int i = begin; i < end; i++) {
-			s << value[i];
+			if (hex) {
+				s << std::setw(2) << std::hex << value[i];
+			} else {
+				s << value[i];
+			}
 			if (i != end - 1) {
 				s << " ";
 			}
@@ -155,12 +162,12 @@ void dump(const std::vector<int> value, const char* const postfix, int begin, in
 	}
 }
 
-void dump(const ByteArray& value, const char* const postfix, int begin, int end)
+void dump(const ByteArray& value, const char* const postfix, int begin, int end, bool hex)
 {
 	if (_enabled) {
 		std::vector<int> v;
 		v.insert(v.end(), value.begin(), value.end());
-		dump(v, postfix, begin, end);
+		dump(v, postfix, begin, end, hex);
 	}
 }
 

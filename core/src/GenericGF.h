@@ -72,6 +72,8 @@ public:
 	static const GenericGF& DataMatrixField256();
 	static const GenericGF& AztecData8();
 	static const GenericGF& MaxiCodeField64();
+	static const GenericGF& HanXinField256();
+	static const GenericGF& HanXinFuncInfo();
 
 	/**
 	* @return 2 (GF(2**n)) or 3 (GF(p)) to the power of a in GF(size)

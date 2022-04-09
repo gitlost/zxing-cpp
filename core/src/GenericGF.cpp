@@ -75,6 +75,20 @@ GenericGF::MaxiCodeField64()
 	return inst;
 }
 
+const GenericGF &
+GenericGF::HanXinField256()
+{
+	static GenericGF inst(0x0163, 256, 1); // x^8 + x^6 + x^5 + x + 1
+	return inst;
+}
+
+const GenericGF &
+GenericGF::HanXinFuncInfo()
+{
+	static GenericGF inst(0x13, 16, 1); // = AztecParam
+	return inst;
+}
+
 
 /**
 * Create a representation of GF(size) using the given primitive polynomial.

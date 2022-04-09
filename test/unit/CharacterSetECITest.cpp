@@ -27,8 +27,14 @@ TEST(CharacterSetECITest, ValueForCharset)
 {
 	EXPECT_EQ(ValueForCharset(CharacterSet::ISO8859_1), 3);
 	EXPECT_EQ(ValueForCharset(CharacterSet::ISO8859_2), 4);
+	EXPECT_EQ(ValueForCharset(CharacterSet::UTF16BE), 25);
 	EXPECT_EQ(ValueForCharset(CharacterSet::ASCII), 27);
 	EXPECT_EQ(ValueForCharset(CharacterSet::EUC_KR), 30);
+	EXPECT_EQ(ValueForCharset(CharacterSet::GBK), 31);
+	EXPECT_EQ(ValueForCharset(CharacterSet::GB18030), 32);
+	EXPECT_EQ(ValueForCharset(CharacterSet::UTF16LE), 33);
+	EXPECT_EQ(ValueForCharset(CharacterSet::UTF32BE), 34);
+	EXPECT_EQ(ValueForCharset(CharacterSet::UTF32LE), 35);
 	EXPECT_EQ(ValueForCharset(CharacterSet::BINARY), 899);
 	EXPECT_EQ(ValueForCharset(CharacterSet::Unknown), -1);
 }
@@ -41,7 +47,8 @@ TEST(CharacterSetECITest, InitEncoding)
 	EXPECT_EQ(InitEncoding(std::string("asdfasdf"), CharacterSet::ISO8859_2), CharacterSet::ISO8859_2);
 	EXPECT_EQ(InitEncoding(std::string("ISO-8859-1")), CharacterSet::ISO8859_1);
 	EXPECT_EQ(InitEncoding(std::string("ISO-8859-2")), CharacterSet::ISO8859_2);
-	EXPECT_EQ(InitEncoding(std::string("UTF-16BE")), CharacterSet::UnicodeBig);
+	EXPECT_EQ(InitEncoding(std::string("UTF-16BE")), CharacterSet::UTF16BE);
+	EXPECT_EQ(InitEncoding(std::string("UTF-16LE")), CharacterSet::UTF16LE);
 	EXPECT_EQ(InitEncoding(std::string(), CharacterSet::Unknown), CharacterSet::Unknown);
 }
 

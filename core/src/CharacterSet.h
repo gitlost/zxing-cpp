@@ -48,8 +48,12 @@ enum class CharacterSet
 	GB18030,
 	EUC_JP,
 	EUC_KR,
-	UnicodeBig,
+	UTF16BE,
 	UTF8,
+	GBK,
+	UTF16LE,
+	UTF32BE,
+	UTF32LE,
 
 	BINARY,
 

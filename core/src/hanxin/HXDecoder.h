@@ -1,6 +1,6 @@
 #pragma once
 /*
-* Copyright 2021 gitlost
+* Copyright 2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,18 +15,24 @@
 * limitations under the License.
 */
 
+#include <string>
+
 namespace ZXing {
 
-class BinaryBitmap;
+class DecoderResult;
 class BitMatrix;
-class DetectorResult;
 
-namespace DotCode {
+namespace HanXin {
 
 /**
- * @brief Detects a DotCode symbol in an image.
- */
-DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool isPure);
+* <p>The main class which implements HanXin decoding -- as opposed to locating and extracting
+* the HanXin from an image.</p>
+*/
+class Decoder
+{
+public:
+	static DecoderResult Decode(const BitMatrix& bits, const std::string& characterSet);
+};
 
-} // DotCode
+} // HanXin
 } // ZXing

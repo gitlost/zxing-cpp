@@ -3574,3 +3574,54 @@ GBTextDecoder::AppendGB2312(std::vector<uint16_t>& result, const uint8_t* bytes,
 	}
 	result.resize(unicodeLen);
 }
+
+void
+GBTextDecoder::AppendGBK(std::vector<uint16_t>& result, const uint8_t* bytes, size_t length)
+{
+	uint8_t buf[2];
+	int nbuf = 0;
+	int invalid = 0;
+
+	result.resize(length);
+	int unicodeLen = 0;
+	for (size_t i = 0; i<length; i++) {
+        uint8_t ch = bytes[i];
+        switch (nbuf) {
+        case 0:
+            if (ch < 128) {
+                // ASCII
+                result[unicodeLen++] = ch;
+            } else if (Is1stByte(ch)) {
+                // GBK 1st byte?
+                buf[0] = ch;
+                nbuf = 1;
+            } else {
+                // Invalid
+                result[unicodeLen++] = REPLACEMENT;
+                ++invalid;
+            }
+            break;
+        case 1:
+            // GBK 2nd byte
+            if (Is2ndByteIn2Bytes(ch)) {
+                buf[1] = ch;
+                int clen = 2;
+                unsigned u = qt_Gb18030ToUnicode(buf, clen);
+                if (clen == 2) {
+                    result[unicodeLen++] = ValidChar(u);
+                } else {
+                    result[unicodeLen++] = REPLACEMENT;
+                    ++invalid;
+                }
+                nbuf = 0;
+            } else {
+                // Error
+                result[unicodeLen++] = REPLACEMENT;
+                ++invalid;
+                nbuf = 0;
+            }
+            break;
+        }
+    }
+    result.resize(unicodeLen);
+}

@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    compileSdkVersion 30
-    buildToolsVersion "30.0.3"
+    compileSdkVersion 31
+    buildToolsVersion "32.0.0"
 //    ndkVersion '21.1.6352462'
 
     defaultConfig {
-        minSdkVersion 26
-        targetSdkVersion 30
+        minSdkVersion 21
+        targetSdkVersion 31
 
         ndk {
             // speed up build: compile only arm versions
@@ -23,12 +23,6 @@ android {
         }
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -41,17 +35,17 @@ android {
             path file('src/main/cpp/CMakeLists.txt')
         }
     }
-    lintOptions {
-        disable "UnsafeExperimentalUsageError"
+    lint {
+        disable 'UnsafeExperimentalUsageError'
     }
 }
 
 dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'androidx.core:core-ktx:1.6.0'
+    implementation 'androidx.core:core-ktx:1.7.0'
 
-    def camerax_version = "1.0.1"
+    def camerax_version = "1.0.2"
     implementation "androidx.camera:camera-core:${camerax_version}"
 
 }

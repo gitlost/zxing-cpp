@@ -290,10 +290,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	// Bug in ODReader.cpp - exits too early for these if pure set
-	if (!hints.hasFormat(BarcodeFormat::DataBar | BarcodeFormat::DataBarExpanded)) {
-		hints.setIsPure(true);
-	}
+	hints.setIsPure(true);
 
 	if (hints.formats() == BarcodeFormat::Aztec) {
 		Aztec::Reader reader(hints);

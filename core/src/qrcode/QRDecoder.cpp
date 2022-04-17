@@ -463,7 +463,7 @@ DoDecode(const BitMatrix& bits, const Version& version, const std::string& hinte
 	auto formatInfo = ReadFormatInformation(bits, mirrored);
 	if (!formatInfo.isValid())
 		return DecodeStatus::FormatError;
-	Diagnostics::fmt("  Dimensions: %dx%d (HxW)\n", bits.height(), bits.width());
+	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %d)\n", bits.height(), bits.width(), (bits.width() - 17) / 4);
 	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask());
 
 	// Read codewords

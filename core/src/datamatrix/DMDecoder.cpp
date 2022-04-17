@@ -204,14 +204,18 @@ static Mode DecodeAsciiSegment(BitSource& bits, std::string& result, std::string
 				ParseStructuredAppend(bits, state.sai);
 				state.firstFNC1Position = 5;
 				Diagnostics::fmt("SA(%d,%d,%s)", state.sai.index, state.sai.count, state.sai.id.c_str());
-			} else
+			} else {
+				Diagnostics::put("SAError");
 				return Mode::FORMAT_ERROR;
+			}
 			break;
 		case 234: // Reader Programming
 			if (state.firstCodeword) // Must be first ISO 16022:2006 5.2.4.9
 				state.readerInit = true;
-			else
+			else {
+				Diagnostics::put("RPError");
 				return Mode::FORMAT_ERROR;
+			}
 			Diagnostics::put("RInit");
 			break;
 		case 235: // Upper Shift (shift to Extended ASCII)
@@ -366,9 +370,10 @@ static bool DecodeAnsiX12Segment(BitSource& bits, std::string& result)
 		for (int cValue : *triple) {
 			// X12 segment terminator <CR>, separator *, sub-element separator >, space
 			static const char segChars[4] = {'\r', '*', '>', ' '};
-			if (cValue < 0)
+			if (cValue < 0) {
+				Diagnostics::fmt("X12Error(%d)", cValue);
 				return false;
-			else if (cValue < 4)
+			} else if (cValue < 4)
 				result.push_back(segChars[cValue]);
 			else if (cValue < 14) // 0 - 9
 				result.push_back((char)(cValue + 44));

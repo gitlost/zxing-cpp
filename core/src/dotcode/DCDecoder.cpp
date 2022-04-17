@@ -185,9 +185,9 @@ static void ProcessBinaryArray(std::vector<uint16_t>& binary, uint64_t& b103, in
 				if (cnt == 1) {
 					eci = binary[i + 1];
 				} else if (cnt == 2) {
-					eci = (binary[i + 1] - 40) * 113 + binary[i + 2] + 40;
+					eci = (binary[i + 2] << 8) | binary[i + 1];
 				} else {
-					eci = (binary[i + 1] - 40) * 12769 + binary[i + 2] * 113 + binary[i + 3] + 40;
+					eci = (binary[i + 3] << 16) | (binary[i + 2] << 8) | binary[i + 1];
 				}
 				encoding = CharacterSetECI::OnChangeAppendReset(eci, resultEncoded, result, encoding, &sai.lastECI);
 			}
@@ -220,7 +220,7 @@ static void ProcessBinary(const ByteArray& codewords, int& position, std::wstrin
 
 			if (code <= BIN_7SHIFT_C) {
 				Diagnostics::fmt("BIN_%dSHIFTC", 2 + code - BIN_2SHIFT_C);
-				int end_position = std::min(position + 2 + code - BIN_2SHIFT_C, length);
+				int end_position = std::min(position + 2 + code - BIN_2SHIFT_C + 1, length);
 				while (++position < end_position) {
 					int c_code = codewords[position];
 					if (c_code < 10) {
@@ -229,6 +229,7 @@ static void ProcessBinary(const ByteArray& codewords, int& position, std::wstrin
 					result.append(std::to_string(c_code));
 					Diagnostics::fmt("%02d", c_code);
 				}
+				position--;
 			} else {
 				switch (code) {
 				case BIN_TERM_A:

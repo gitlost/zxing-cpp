@@ -300,6 +300,7 @@ static bool getFunctionalInfo(const BitMatrix& image, const int size, int &versi
 	#endif
 
 	if (!ReedSolomonDecode(GenericGF::HanXinFuncInfo(), funcInfo, 4)) {
+		version = ecLevel = mask = 0;
 		return false;
 	}
 

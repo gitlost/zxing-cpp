@@ -43,20 +43,19 @@ using namespace TextUtfEncoding;
 
 static void PrintUsage(const char* exePath)
 {
-	std::cout << "Usage: " << exePath << " [-width <NUMBER>] [-textonly] [-diagnostics] -format <FORMAT> -bits <BITSTREAM>\n"
+	std::cout << "Usage: " << exePath << " [-width <NUMBER>] [-textonly] [-diagnostics] [-charset <CHARSET>] -format <FORMAT> -bits <BITSTREAM>\n"
 			  << "    -width        Width of bit dump (if omitted 1st LF in bits)\n"
 			  << "    -textonly     Return bare text only\n"
 			  << "    -diagnostics  Print diagnostics\n"
-			  << "    -format       Format\n"
 			  << "    -charset      Default character set\n"
 			  << "    -zint         Zint hints\n"
+			  << "    -format       Format\n"
 			  << "    -bits         Bit dump\n"
-			  << "\n"
-			  << "Supported formats are:\n";
+			  << "Supported formats (case insensitive, with or without '-'):\n  ";
 	for (auto f : BarcodeFormats::all()) {
-		std::cout << "    " << ToString(f) << "\n";
+		std::cout << "  " << ToString(f);
 	}
-	std::cout << "Format can be lowercase, with or without '-'\n";
+	std::cout << "\n";
 }
 
 static int validateInt(const char* optarg, int length, const bool neg, int &val)
@@ -338,7 +337,7 @@ int main(int argc, char* argv[])
 		}
 		// BARCODE_CODE39, BARCODE_EXCODE39, BARCODE_LOGMARS
 		if ((zintBarcode == 8 || zintBarcode == 9 || zintBarcode == 50) && zintOption2 == 1) {
-			hints.setAssumeCode39CheckDigit(true);
+			hints.setValidateCode39CheckSum(true);
 		}
 		OneD::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));

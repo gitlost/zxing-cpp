@@ -218,6 +218,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 						}
 						if (code == 0xFFE) {
 							submode = !submode;
+							Diagnostics::fmt("RGSW%d", submode ? 2 : 1);
 						} else {
 							if (submode) {
 								result.push_back(code / 0x5E + 0xD8);

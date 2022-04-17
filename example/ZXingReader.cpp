@@ -46,6 +46,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -fast         Skip some lines/pixels during detection (faster)\n"
 			  << "    -norotate     Don't try rotated image during detection (faster)\n"
 			  << "    -format       Only detect given format(s) (faster)\n"
+			  << "    -multires     Image size threshold at which to start multi-resolution scanning, 0 disables it\n"
 			  << "    -pngout       Write a copy of the input image with barcodes outlined by a red line\n"
 			  << "    -ispure       Assume the image contains only a 'pure'/perfect code (faster)\n"
 			  << "    -1            Print only file name, format, identifier, text and status on one line per file\n"
@@ -82,6 +83,15 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				return false;
 			try {
 				hints.setFormats(BarcodeFormatsFromString(argv[i]));
+			} catch (const std::exception& e) {
+				std::cerr << e.what() << "\n";
+				return false;
+			}
+		} else if (strcmp(argv[i], "-multires") == 0) {
+			if (++i == argc)
+				return false;
+			try {
+				hints.setMultiResolutionThreshold(std::stoi(argv[i]));
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << "\n";
 				return false;
@@ -157,6 +167,8 @@ int main(int argc, char* argv[])
 	bool angleEscape = false;
 	int ret = 0;
 
+	hints.setMultiResolutionThreshold(500); // enable the feature by default
+
 	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, filePaths, outPath)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
@@ -228,6 +240,7 @@ int main(int argc, char* argv[])
 					  << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
 					  << "No. Bits:   " << result.numBits() << "\n"
+					  << "IsMirrored: " << (result.isMirrored() ? "true" : "false") << "\n"
 					  << "Error:      " << ToString(result.status()) << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {

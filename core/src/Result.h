@@ -45,7 +45,8 @@ public:
 	explicit Result(DecodeStatus status);
 
 	Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes = {},
-		   std::string symbologyIdentifier = "", StructuredAppendInfo sai = {}, const bool readerInit = false);
+		   std::string symbologyIdentifier = "", StructuredAppendInfo sai = {}, const bool readerInit = false,
+		   int lineCount = 0);
 
 	// 1D convenience constructor
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, ByteArray&& rawBytes = {},
@@ -83,6 +84,13 @@ public:
 	}
 
 	int orientation() const; //< orientation of barcode in degree, see also Position::orientation()
+
+	/**
+	 * @brief isMirrored is the symbol mirrored (currently only supported by QRCode and DataMatrix)
+	 */
+	bool isMirrored() const {
+		return _isMirrored;
+	}
 
 	const ByteArray& rawBytes() const {
 		return _rawBytes;
@@ -163,9 +171,7 @@ public:
 		return _diagnostics;
 	}
 
-	bool operator==(const Result& o) const {
-		return text() == o.text() && format() == o.format();
-	}
+	bool operator==(const Result& o) const;
 
 private:
 	DecodeStatus _status = DecodeStatus::NoError;
@@ -178,6 +184,7 @@ private:
 	ResultMetadata _metadata;
 	std::string _symbologyIdentifier;
 	StructuredAppendInfo _sai;
+	bool _isMirrored = false;
 	bool _readerInit = false;
 	int _lineCount = 0;
 	std::list<std::string> _diagnostics;

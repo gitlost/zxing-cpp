@@ -66,13 +66,6 @@ Reader::Reader(const DecodeHints& hints) :
 
 Reader::~Reader() = default;
 
-static bool IsIntersecting(QuadrilateralI a, QuadrilateralI b)
-{
-	bool x = b.topRight().x < a.topLeft().x || b.topLeft().x > a.topRight().x;
-	bool y = b.bottomLeft().y < a.topLeft().y || b.topLeft().y > a.bottomLeft().y;
-	return !(x || y);
-}
-
 /**
 * We're going to examine rows from the middle outward, searching alternately above and below the
 * middle, and farther out each time. rowStep is the number of rows between each successive
@@ -102,6 +95,10 @@ static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, 
 		height :	// Look at the whole image, not just the center
 		15;			// 15 rows spaced 1/32 apart is roughly the middle half of the image
 
+	if (isPure)
+		minLineCount = 1;
+	std::vector<int> checkRows;
+
 	PatternRow bars;
 	bars.reserve(128); // e.g. EAN-13 has 59 bars/spaces
 
@@ -114,6 +111,15 @@ static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, 
 		if (rowNumber < 0 || rowNumber >= height) {
 			// Oops, if we run off the top or bottom, stop
 			break;
+		}
+
+		// See if we have additional check rows (see below) to process
+		if (checkRows.size()) {
+			--i;
+			rowNumber = checkRows.back();
+			checkRows.pop_back();
+			if (rowNumber < 0 || rowNumber >= height)
+				continue;
 		}
 
 		if (!image.getPatternRow(rowNumber, rotate ? 270 : 0, bars))
@@ -135,15 +141,15 @@ static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, 
 			// Look for a barcode
 			for (size_t r = 0; r < readers.size(); ++r) {
 				// If this is a pure symbol, then checking a single non-empty line is sufficient for all but the stacked
-				// DataBar codes. They are the only ones using the decodingState, which we can use a flag here.
+				// DataBar codes. They are the only ones using the decodingState, which we can use as a flag here.
 				if (isPure && i && !decodingState[r])
 					continue;
 
 				PatternView next(bars);
 				do {
 					Result result = readers[r]->decodePattern(rowNumber, next, decodingState[r]);
-					result.incrementLineCount();
 					if (result.isValid()) {
+						result.incrementLineCount();
 						if (upsideDown) {
 							// update position (flip horizontally).
 							auto points = result.position();
@@ -163,43 +169,47 @@ static Results DoDecode(const std::vector<std::unique_ptr<RowReader>>& readers, 
 						// check if we know this code already
 						for (auto& other : res) {
 							if (other == result) {
+								// merge the position information
 								auto dTop = maxAbsComponent(other.position().topLeft() - result.position().topLeft());
 								auto dBot = maxAbsComponent(other.position().bottomLeft() - result.position().topLeft());
-								auto length = maxAbsComponent(other.position().topLeft() - other.position().bottomRight());
-								// if the new line is less than half the length of the existing result away from the
-								// latter, we consider it to belong to the same symbol
-								if (std::min(dTop, dBot) < length / 2) {
-									// if so, merge the position information
-									auto points = other.position();
-									if (dTop < dBot ||
-										(dTop == dBot && rotate ^ (sumAbsComponent(points[0]) >
-																   sumAbsComponent(result.position()[0])))) {
-										points[0] = result.position()[0];
-										points[1] = result.position()[1];
-									} else {
-										points[2] = result.position()[2];
-										points[3] = result.position()[3];
-									}
-									other.setPosition(points);
-									other.incrementLineCount();
-									// clear the result below, so we don't insert it again
-									result = Result(DecodeStatus::NotFound);
+								auto points = other.position();
+								if (dTop < dBot || (dTop == dBot && rotate ^ (sumAbsComponent(points[0]) >
+																			  sumAbsComponent(result.position()[0])))) {
+									points[0] = result.position()[0];
+									points[1] = result.position()[1];
+								} else {
+									points[2] = result.position()[2];
+									points[3] = result.position()[3];
 								}
+								other.setPosition(points);
+								other.incrementLineCount();
+								// clear the result, so we don't insert it again below
+								result = Result(DecodeStatus::NotFound);
+								break;
 							}
 						}
 
-						if (result.isValid()) {
+						if (result.isValid())
 							res.push_back(std::move(result));
-							if (maxSymbols && Reduce(res, 0, [&](int s, const Result& r) {
-												  return s + (r.lineCount() >= minLineCount);
-											  }) == maxSymbols)
-								goto out;
+
+						if (maxSymbols && Reduce(res, 0, [&](int s, const Result& r) {
+											  return s + (r.lineCount() >= minLineCount);
+										  }) == maxSymbols) {
+							goto out;
+						}
+
+						// if we found a valid code but have a minLineCount > 1, add additional check rows above and
+						// below the current one
+						if (checkRows.empty() && minLineCount > 1 && rowStep > 1) {
+							checkRows = {rowNumber - 1, rowNumber + 1};
+							if (rowStep > 2)
+								checkRows.insert(checkRows.end(), {rowNumber - 2, rowNumber + 2});
 						}
 					}
 					// make sure we make progress and we start the next try on a bar
 					next.shift(2 - (next.index() % 2));
 					next.extend();
-				} while (tryHarder && next.isValid());
+				} while (tryHarder && next.size());
 			}
 		}
 	}

@@ -28,7 +28,6 @@
 #include "QRBitMatrixParser.h"
 #include "QRCodecMode.h"
 #include "QRDataBlock.h"
-#include "QRDecoderMetadata.h"
 #include "QRFormatInformation.h"
 #include "ReedSolomonDecoder.h"
 #include "StructuredAppend.h"
@@ -511,7 +510,7 @@ DecoderResult Decode(const BitMatrix& bits, const std::string& hintedCharset)
 		return res;
 
 	if (auto resMirrored = DoDecode(bits, *version, hintedCharset, true); resMirrored.isValid()) {
-		resMirrored.setExtra(std::make_shared<DecoderMetadata>(true));
+		resMirrored.setIsMirrored(true);
 		return resMirrored;
 	}
 

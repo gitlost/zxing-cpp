@@ -34,9 +34,9 @@ Result::Result(DecodeStatus status) : _status(status)
 }
 
 Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, ByteArray&& rawBytes,
-			   std::string symbologyIdentifier, StructuredAppendInfo sai, const bool readerInit)
+			   std::string symbologyIdentifier, StructuredAppendInfo sai, const bool readerInit, int lineCount)
 	: _format(format), _text(std::move(text)), _position(std::move(position)), _rawBytes(std::move(rawBytes)),
-	  _symbologyIdentifier(symbologyIdentifier), _sai(sai), _readerInit(readerInit)
+	  _symbologyIdentifier(symbologyIdentifier), _sai(sai), _readerInit(readerInit), _lineCount(lineCount)
 {
 	_numBits = Size(_rawBytes) * 8;
 
@@ -55,7 +55,8 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	: _status(decodeResult.errorCode()), _format(format), _text(std::move(decodeResult).text()),
 	  _position(std::move(position)), _rawBytes(std::move(decodeResult).rawBytes()), _numBits(decodeResult.numBits()),
 	  _ecLevel(decodeResult.ecLevel()), _symbologyIdentifier(decodeResult.symbologyIdentifier()),
-	  _sai(decodeResult.structuredAppend()), _readerInit(decodeResult.readerInit())
+	  _sai(decodeResult.structuredAppend()), _isMirrored(decodeResult.isMirrored()),
+	  _readerInit(decodeResult.readerInit())
 {
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -87,6 +88,23 @@ int Result::orientation() const
 {
 	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
 	return std::lround(_position.orientation() * 180 / std_numbers_pi_v);
+}
+
+bool Result::operator==(const Result& o) const
+{
+	if (format() != o.format() || text() != o.text())
+		return false;
+
+	if (BarcodeFormats(BarcodeFormat::TwoDCodes).testFlag(format()))
+		return IsIntersecting(position(), o.position());
+
+	// if one line is less than half the length of the other away from the
+	// latter, we consider it to belong to the same symbol
+	auto dTop = maxAbsComponent(o.position().topLeft() - position().topLeft());
+	auto dBot = maxAbsComponent(o.position().bottomLeft() - position().topLeft());
+	auto length = maxAbsComponent(position().topLeft() - position().bottomRight());
+
+	return std::min(dTop, dBot) < length / 2;
 }
 
 } // ZXing

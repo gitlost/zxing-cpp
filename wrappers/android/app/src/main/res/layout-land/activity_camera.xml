@@ -13,15 +13,10 @@
         android:layout_height="match_parent"
         app:scaleType="fitCenter" />
 
-    <View
-        android:id="@+id/cropRect"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="@drawable/shape_rectangle"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <!-- Camera control buttons -->
+    <com.example.zxingcppdemo.PreviewOverlay
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
     <TextView
         android:id="@+id/result"

@@ -94,6 +94,8 @@ static std::string getResultValue(const Result& result, const std::string& key)
 		return result.isLastInSequence() ? "true" : "false";
 	if (key == "isPartOfSequence")
 		return result.isPartOfSequence() ? "true" : "false";
+	if (key == "isMirrored")
+		return result.isMirrored() ? "true" : "false";
 	if (key == "readerInit")
 		return result.readerInit() ? "true" : "false";
 
@@ -403,8 +405,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("codabar-2", "Codabar", 4, {
-			{ 3, 3, 0   },
-			{ 3, 3, 180 },
+			{ 2, 3, 0   },
+			{ 2, 3, 180 },
 		});
 
 		runTests("code39-1", "Code39", 4, {
@@ -433,7 +435,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("code128-2", "Code128", 21, {
-			{ 19, 21, 0   },
+			{ 18, 21, 0   },
 			{ 19, 21, 180 },
 		});
 
@@ -454,13 +456,13 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
 		runTests("ean13-1", "EAN-13", 31, {
-			{ 26, 29, 0   },
+			{ 24, 29, 0   },
 			{ 23, 29, 180 },
 		});
 
 		runTests("ean13-2", "EAN-13", 24, {
-			{ 7, 14, 0   },
-			{ 7, 14, 180 },
+			{ 7, 13, 0   },
+			{ 7, 13, 180 },
 		});
 
 		runTests("ean13-3", "EAN-13", 21, {
@@ -469,12 +471,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("ean13-4", "EAN-13", 22, {
-			{ 7, 14, 0   },
-			{ 8, 14, 180 },
+			{ 6, 13, 0   },
+			{ 8, 13, 180 },
 		});
 
 		runTests("ean13-extension-1", "EAN-13", 5, {
-			{ 4, 5, 0 },
+			{ 3, 5, 0 },
 			{ 3, 5, 180 },
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
@@ -497,33 +499,33 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("upca-1", "UPC-A", 12, {
-			{  9, 12, 0, 1, 0   },
-			{ 11, 12, 0, 1, 180 },
+			{  9, 12, 0   },
+			{ 11, 12, 180 },
 		});
 
 		runTests("upca-2", "UPC-A", 36, {
-			{ 17, 23, 0   },
-			{ 18, 23, 180 },
+			{ 17, 22, 0   },
+			{ 16, 22, 180 },
 		});
 
 		runTests("upca-3", "UPC-A", 21, {
-			{ 7, 10, 0, 1, 0   },
-			{ 8, 10, 0, 1, 180 },
+			{ 7, 10, 0   },
+			{ 8, 10, 180 },
 		});
 
 		runTests("upca-4", "UPC-A", 19, {
-			{ 9, 11, 0, 1, 0   },
-			{ 9, 11, 0, 1, 180 },
+			{ 8, 12, 0   },
+			{ 9, 12, 180 },
 		});
 
 		runTests("upca-5", "UPC-A", 32, {
 			{ 17, 20, 0   },
-			{ 19, 20, 180 },
+			{ 18, 20, 180 },
 		});
 		
 		runTests("upca-extension-1", "UPC-A", 6, {
-			{ 4, 6, 0 },
-			{ 4, 6, 180 },
+			{ 4, 4, 0 },
+			{ 3, 4, 180 },
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
 		runTests("upce-1", "UPC-E", 3, {
@@ -533,13 +535,13 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("upce-2", "UPC-E", 28, {
-			{ 19, 22, 0, 1, 0   },
+			{ 17, 22, 0, 1, 0   },
 			{ 20, 22, 1, 1, 180 },
 		});
 
 		runTests("upce-3", "UPC-E", 11, {
-			{ 6, 8, 0   },
-			{ 6, 8, 180 },
+			{ 5, 7, 0   },
+			{ 6, 7, 180 },
 		});
 
 		runTests("upce-extension-1", "UPC-E", 1, {
@@ -553,8 +555,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("rss14-2", "DataBar", 16, {
-			{ 8 , 10, 0   },
-			{ 10, 10, 180 },
+			{ 8, 10, 0   },
+			{ 9, 10, 180 },
 		});
 
 		runTests("rssexpanded-1", "DataBarExpanded", 33, {

@@ -391,7 +391,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				case CC_3SHIFT_B:
 				case CC_4SHIFT_B:
 					shift = CODESET_B;
-					shift_cnt = 2 + code - CC_SHIFT_B; // 1 more to counter decrement below
+					shift_cnt = 1 + code - CC_SHIFT_B + 1; // +1 to counter decrement below
 					position_1710 = 0;
 					Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
 					break;
@@ -420,7 +420,8 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				case CA_5SHIFT_B:
 				case CA_6SHIFT_B:
 					shift = CODESET_B;
-					shift_cnt = 2 + code - CA_SHIFT_B; // 1 more to counter decrement below
+					shift_cnt = 1 + code - CA_SHIFT_B + 1; // +1 to counter decrement below
+					Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
 					break;
 				case CA_LATCH_B:
 					codeset = CODESET_B;
@@ -431,7 +432,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				case CA_3SHIFT_C:
 				case CA_4SHIFT_C:
 					shift = CODESET_C;
-					shift_cnt = 3 + code - CA_2SHIFT_C; // 1 more to counter decrement below
+					shift_cnt = 2 + code - CA_2SHIFT_C + 1; // +1 to counter decrement below
 					Diagnostics::fmt("SHIFTC%d", shift_cnt - 1);
 					break;
 				case CA_LATCH_C:
@@ -484,7 +485,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				case CB_3SHIFT_C:
 				case CB_4SHIFT_C:
 					shift = CODESET_C;
-					shift_cnt = 2 + code - CB_2SHIFT_C;
+					shift_cnt = 2 + code - CB_2SHIFT_C + 1; // +1 to counter decrement below
 					Diagnostics::fmt("%dSHIFTC", shift_cnt - 1);
 					break;
 				case CB_LATCH_C:

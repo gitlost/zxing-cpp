@@ -98,7 +98,13 @@ static FinderPatternSets GenerateFinderPatternSets(std::vector<ConcentricPattern
 	std::sort(patterns.begin(), patterns.end(), [](const auto& a, const auto& b) { return a.size < b.size; });
 
 	auto sets            = std::multimap<double, FinderPatternSet>();
-	auto squaredDistance = [](PointF a, PointF b) { return dot((a - b), (a - b)); };
+	auto squaredDistance = [](const auto* a, const auto* b) {
+		// The scaling of the distance by the b/a size ratio is a very coarse compensation for the shortening effect of
+		// the camera projection on slanted symbols. The fact that the size of the finder pattern is proportional to the
+		// distance from the camera is used here. This approximation only works if a < b < 2*a (see below).
+		// Test image: fix-finderpattern-order.jpg
+		return dot((*a - *b), (*a - *b)) * std::pow(double(b->size) / a->size, 2);
+	};
 
 	int nbPatterns = Size(patterns);
 	for (int i = 0; i < nbPatterns - 2; i++) {
@@ -115,9 +121,9 @@ static FinderPatternSets GenerateFinderPatternSets(std::vector<ConcentricPattern
 				// Orders the three points in an order [A,B,C] such that AB is less than AC
 				// and BC is less than AC, and the angle between BC and BA is less than 180 degrees.
 
-				auto distAB = squaredDistance(*a, *b);
-				auto distBC = squaredDistance(*b, *c);
-				auto distAC = squaredDistance(*a, *c);
+				auto distAB = squaredDistance(a, b);
+				auto distBC = squaredDistance(b, c);
+				auto distAC = squaredDistance(a, c);
 
 				if (distBC >= distAB && distBC >= distAC) {
 					std::swap(a, b);
@@ -170,18 +176,12 @@ static double EstimateModuleSize(const BitMatrix& image, PointF a, PointF b)
 	BitMatrixCursorF cur(image, a, b - a);
 	assert(cur.isBlack());
 
-	if (!cur.stepToEdge(3, (int)(distance(a, b) / 3)))
-		return -1;
-
-	cur.turnBack();
-
-	// the following is basically a simple "cur.step()" that reverts the very last step that crossed from back into
-	// white, but due to a numerical instability near an integer boundary (think .999999999995) it might be required
-	// to back up two steps. See issues #300 and #308.
-	if (!cur.stepToEdge(1, 2))
+	if (!cur.stepToEdge(3, (int)(distance(a, b) / 3), true))
 		return -1;
 
 	assert(cur.isBlack());
+	cur.turnBack();
+
 
 	auto pattern = cur.readPattern<std::array<int, 5>>();
 
@@ -217,26 +217,25 @@ static RegressionLine TraceLine(const BitMatrix& image, PointF p, PointF d, int 
 	RegressionLine line;
 	line.setDirectionInward(cur.back());
 
-	cur.stepToEdge(edge);
-	if (edge == 3) {
-		// collect points inside the black line -> go one step back
+	// collect points inside the black line -> backup on 3rd edge
+	cur.stepToEdge(edge, 0, edge == 3);
+	if (edge == 3)
 		cur.turnBack();
-		cur.step();
+
+	auto curI = BitMatrixCursorI(image, PointI(cur.p), PointI(mainDirection(cur.d)));
+	// make sure curI positioned such that the white->black edge is directly behind
+	// Test image: fix-traceline.jpg
+	while (!curI.edgeAtBack()) {
+		if (curI.edgeAtLeft())
+			curI.turnRight();
+		else if (curI.edgeAtRight())
+			curI.turnLeft();
+		else
+			curI.step(-1);
 	}
 
 	for (auto dir : {Direction::LEFT, Direction::RIGHT}) {
-		auto c = BitMatrixCursorI(image, PointI(cur.p), PointI(mainDirection(cur.direction(dir))));
-		// if cur.d is near diagonal, it could be c.p is at a corner, i.e. c is not currently at an edge and hence,
-		// stepAlongEdge() would fail. Going either a step forward or backward should do the trick.
-		if (!c.edgeAt(dir)) {
-			c.step();
-			if (!c.edgeAt(dir)) {
-				c.step(-2);
-				if (!c.edgeAt(dir))
-					return {};
-			}
-		}
-
+		auto c = BitMatrixCursorI(image, curI.p, curI.direction(dir));
 		auto stepCount = static_cast<int>(maxAbsComponent(cur.p - p));
 		do {
 			line.add(centered(c.p));
@@ -249,6 +248,14 @@ static RegressionLine TraceLine(const BitMatrix& image, PointF p, PointF d, int 
 		log(p, 2);
 
 	return line;
+}
+
+// estimate how tilted the symbol is (return value between 1 and 2, see also above)
+static double EstimateTilt(const FinderPatternSet& fp)
+{
+	int min = std::min({fp.bl.size, fp.tl.size, fp.tr.size});
+	int max = std::max({fp.bl.size, fp.tl.size, fp.tr.size});
+	return double(max) / min;
 }
 
 DetectorResult SampleAtFinderPatternSet(const BitMatrix& image, const FinderPatternSet& fp)
@@ -302,9 +309,9 @@ DetectorResult SampleAtFinderPatternSet(const BitMatrix& image, const FinderPatt
 				}
 			}
 
-			// if the resolution of the RegressionLines is sufficient, use their intersection as the best estimate
-			// (see discussion in #199, TODO: tune threshold in RegressionLine::isHighRes())
-			if (bl2.isHighRes() && bl3.isHighRes() && tr2.isHighRes() && tr3.isHighRes())
+			// if the symbol is tilted or the resolution of the RegressionLines is sufficient, use their intersection
+			// as the best estimate (see discussion in #199 and test image estimate-tilt.jpg )
+			if (EstimateTilt(fp) > 1.1 || (bl2.isHighRes() && bl3.isHighRes() && tr2.isHighRes() && tr3.isHighRes()))
 				return sample(brInter, quad[2] - PointF(3, 3));
 		}
 	}

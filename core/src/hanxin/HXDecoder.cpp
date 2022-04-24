@@ -237,9 +237,10 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 									result.push_back((code - 0xEB0) % 0x5E + 0xA1);
 									Diagnostics::chr(result.back());
 								} else {
-									result.push_back((code - 0xFCA) / 0x5E);
+									code = code - 0xFCA + 0xA8A1;
+									result.push_back(code >> 8);
 									Diagnostics::chr(result.back());
-									result.push_back((code - 0xFCA) % 0x5E + 0xA1);
+									result.push_back(code & 0xFF);
 									Diagnostics::chr(result.back());
 								}
 							}

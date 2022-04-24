@@ -143,7 +143,7 @@ static ImageView getImageView(std::vector<uint8_t> &buf, const BitMatrix &bits)
 }
 
 static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string &bitstream, int &width,
-			bool &textOnly, int &zintBarcode, int &zintOption2)
+			bool &textOnly, bool& angleEscape, int &zintBarcode, int &zintOption2)
 {
 	bool haveFormat = false, haveBits = false, haveWidth = false;
 	int nlWidth = -1;
@@ -225,6 +225,8 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string
 			textOnly = true;
 		} else if (strcmp(argv[i], "-diagnostics") == 0) {
 			hints.setEnableDiagnostics(true);
+		} else if (strcmp(argv[i], "-escape") == 0) {
+			angleEscape = true;
 		} else {
 			std::cerr << "Unknown option '" << argv[i] << "'\n";
 			return false;
@@ -265,7 +267,7 @@ int main(int argc, char* argv[])
 	Result result(DecodeStatus::NotFound);
 	std::list<std::string> diagnostics;
 
-	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, zintBarcode, zintOption2)) {
+	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, angleEscape, zintBarcode, zintOption2)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}

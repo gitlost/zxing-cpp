@@ -269,7 +269,7 @@ static void setupGrid(unsigned char *grid, const int size, const int version)
 
 static bool getFunctionalInfo(const BitMatrix& image, const int size, int &version, int &ecLevel, int &mask)
 {
-	std::vector<int> funcInfo(7, 0); 
+	std::vector<int> funcInfo(7, 0);
 
 	// Version
 	funcInfo[0] = ((int)image.get(0, 8) << 3) | ((int)image.get(1, 8) << 2)

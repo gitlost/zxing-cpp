@@ -267,6 +267,8 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 	int codeset = CODESET_C;
 	int shift = 0, shift_cnt = 0;
 	int position_1710 = 0;
+	int position_macro = 2; // Need LATCH_B so 2nd codeword (excluding initial mask codeword)
+	bool set_position_macro;
 	bool gs1 = true, aim = false;
 	bool readerInit = false;
 	StructuredAppendInfo sai;
@@ -282,12 +284,13 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 			case C_FNC1:
 				if (position == 1) {
 					gs1 = false;
+					position_macro++;
 					Diagnostics::put("FNC1(Pos1)");
 				} else if ((position == 2 && codewords[1] <= 99)
-						|| (position == 3 && codewords[1] == CC_LATCH_A && codewords[2] >= 33 && codewords[2] <= 58)
-						|| (position == 3 && codewords[1] >= CC_SHIFT_B && codewords[1] <= CC_LATCH_B
-							&& ((codewords[2] >= 33 && codewords[2] <= 58)
-								|| (codewords[2] >= 65 && codewords[2] <= 90)))) {
+							|| (position == 3 && codewords[1] == CC_LATCH_A && codewords[2] >= 33 && codewords[2] <= 58)
+							|| (position == 3 && codewords[1] >= CC_SHIFT_B && codewords[1] <= CC_LATCH_B
+								&& ((codewords[2] >= 33 && codewords[2] <= 58)
+									|| (codewords[2] >= 65 && codewords[2] <= 90)))) {
 					// AIM Application Indicator format
 					aim = true;
 					Diagnostics::fmt("FNC1(Pos%d)", position);
@@ -310,9 +313,13 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				}
 				break;
 			case C_FNC2:
+				set_position_macro = position + 2 == position_macro;
 				// Note Structured Append FNC2 removed above if present, so only ECI
 				encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(codewords, position),
 																resultEncoded, result, encoding, &sai.lastECI);
+				if (set_position_macro) {
+					position_macro = position + 2; // Need LATCH_B so 2nd codeword (excluding initial mask codeword)
+				}
 				break;
 			case C_FNC3:
 				if (position == 1) {
@@ -461,11 +468,11 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				case CB_FS:
 				case CB_GS:
 				case CB_RS:
-					if (position == 3) { // Need LATCH_B so 2nd codeword (excluding initial mask codeword)
+					if (position == position_macro) {
 						// Macros
 						result.append(macroBegins[code - CB_HT]);
 						macroEnd = macroEnds[code - CB_HT];
-						Diagnostics::fmt("Macro%d", code - CB_HT);
+						Diagnostics::fmt("Macro%d", code);
 					} else {
 						result.push_back(ctrls[code - CB_HT]);
 						Diagnostics::chr(result.back());
@@ -473,7 +480,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 					break;
 				case CB_SHIFT_A:
 					shift = CODESET_A;
-					shift_cnt = 1;
+					shift_cnt = 1 + 1; // +1 to counter decrement below
 					Diagnostics::put("SHIFTA");
 					break;
 				case CB_LATCH_A:
@@ -503,6 +510,11 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet)
 				Diagnostics::put("SHEND");
 			}
 		}
+	}
+	if (position == position_1710) {
+		result.append("10");
+		position_1710 = 0;
+		Diagnostics::put("10(1710)");
 	}
 
 	if (!macroEnd.empty()) {

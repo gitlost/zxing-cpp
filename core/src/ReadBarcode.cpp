@@ -48,7 +48,7 @@ static LumImage ExtractLum(const ImageView& iv, P projection)
 
 	auto* dst = res.data();
 	for(int y = 0; y < iv.height(); ++y)
-		for(int x = 0; x < iv.width(); ++x)
+		for(int x = 0, w = iv.width(); x < w; ++x)
 			*dst++ = projection(iv.data(x, y));
 
 	return res;
@@ -83,7 +83,7 @@ public:
 	LumImagePyramid(const ImageView& iv, int threshold)
 	{
 		layers.push_back(iv);
-		while (threshold > 0 && std::max(layers.back().width(), layers.back().height()) > threshold)
+		while (threshold > 0 && std::min(layers.back().width(), layers.back().height()) > threshold)
 			addLayer();
 #if 0
 		// Reversing the layers means we'd start with the smallest. that can make sense if we are only looking for a
@@ -126,15 +126,17 @@ std::unique_ptr<BinaryBitmap> CreateBitmap(ZXing::Binarizer binarizer, const Ima
 
 Result ReadBarcode(const ImageView& _iv, const DecodeHints& hints)
 {
-#if 0
-	auto ress = ReadBarcodes(_iv, DecodeHints(hints).setMaxNumberOfSymbols(1));
-	return ress.empty() ? Result(DecodeStatus::NotFound) : ress.front();
-#else
-	LumImage lum;
-	ImageView iv = SetupLumImageView(_iv, lum, hints);
+	if (hints.maxNumberOfSymbols() == 1) {
+		// HACK: use the maxNumberOfSymbols value as a switch to ReadBarcodes to enable the downscaling
+		// see python and android wrapper
+		auto ress = ReadBarcodes(_iv, DecodeHints(hints).setMaxNumberOfSymbols(1));
+		return ress.empty() ? Result(DecodeStatus::NotFound) : ress.front();
+	} else {
+		LumImage lum;
+		ImageView iv = SetupLumImageView(_iv, lum, hints);
 
-	return MultiFormatReader(hints).read(*CreateBitmap(hints.binarizer(), iv));
-#endif
+		return MultiFormatReader(hints).read(*CreateBitmap(hints.binarizer(), iv));
+	}
 }
 
 Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
@@ -146,7 +148,7 @@ Results ReadBarcodes(const ImageView& _iv, const DecodeHints& hints)
 	if (hints.isPure())
 		return {reader.read(*CreateBitmap(hints.binarizer(), iv))};
 
-	LumImagePyramid pyramid(iv, hints.multiResolutionThreshold());
+	LumImagePyramid pyramid(iv, hints.downscaleThreshold() * hints.tryDownscale());
 
 	Results results;
 	int maxSymbols = hints.maxNumberOfSymbols();

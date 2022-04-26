@@ -175,7 +175,7 @@ static void ProcessBinaryArray(std::vector<uint16_t>& binary, uint64_t& b103, in
 	for (int i = 0, len = Size(binary); i < len; i++) {
 		if (binary[i] < 256) {
 			result.push_back((char)binary[i]);
-			Diagnostics::chr(result.back());
+			Diagnostics::chr(result.back(), "", true/*appendHex*/);
 		} else {
 			int cnt = 1 + binary[i] - 256;
 			if (i + cnt >= len) {
@@ -184,10 +184,11 @@ static void ProcessBinaryArray(std::vector<uint16_t>& binary, uint64_t& b103, in
 				int eci;
 				if (cnt == 1) {
 					eci = binary[i + 1];
+				// Assuming big-endian byte order
 				} else if (cnt == 2) {
-					eci = (binary[i + 2] << 8) | binary[i + 1];
+					eci = (binary[i + 1] << 8) | binary[i + 2];
 				} else {
-					eci = (binary[i + 3] << 16) | (binary[i + 2] << 8) | binary[i + 1];
+					eci = (binary[i + 1] << 16) | (binary[i + 2] << 8) | binary[i + 3];
 				}
 				encoding = CharacterSetECI::OnChangeAppendReset(eci, resultEncoded, result, encoding, &sai.lastECI);
 			}

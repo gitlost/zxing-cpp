@@ -15,6 +15,7 @@
 */
 
 #include "BitMatrixIO.h"
+#include "CharacterSetECI.h"
 #include "Diagnostics.h"
 #include "ReadBarcode.h"
 #include "TextUtfEncoding.h"
@@ -33,27 +34,56 @@
 #include <chrono>
 #include <clocale>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
 using namespace ZXing;
 using namespace TextUtfEncoding;
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x) ((int) (sizeof(x) / sizeof((x)[0])))
+#endif
+
+static const char *hints[] = {
+	"tryCode39ExtendedMode", "validateCode39CheckSum", "validateITFCheckSum", "returnCodabarStartEnd"
+};
+
+static const char *charsets[] = {
+	"ISO-8859-1",  "ISO-8859-2",  "ISO-8859-3",  "ISO-8859-4",  "ISO-8859-5",
+	"ISO-8859-6",  "ISO-8859-7",  "ISO-8859-8",  "ISO-8859-9",  "ISO-8859-10",
+	"ISO-8859-11", "ISO-8859-13", "ISO-8859-14", "ISO-8859-15", "ISO-8859-16",
+	"Shift_JIS",   "Cp1250",      "Cp1251",      "Cp1252",      "Cp1256",
+	"UTF-16BE",    "UTF-8",       "ASCII",       "Big5",        "GB2312",
+	"GB18030",     "EUC-CN",      "GBK",         "EUC-KR",      "UTF-16LE",
+	"UTF-32BE",    "UTF-32LE",    "BINARY",
+};
+
 static void PrintUsage(const char* exePath)
 {
-	std::cout << "Usage: " << exePath << " [-width <NUMBER>] [-textonly] [-diagnostics] [-charset <CHARSET>] -format <FORMAT> -bits <BITSTREAM>\n"
-			  << "    -width        Width of bit dump (if omitted 1st LF in bits)\n"
-			  << "    -textonly     Return bare text only\n"
-			  << "    -diagnostics  Print diagnostics\n"
-			  << "    -charset      Default character set\n"
-			  << "    -zint         Zint hints\n"
-			  << "    -format       Format\n"
-			  << "    -bits         Bit dump\n"
+	std::cout << "Usage: " << exePath << " [options] -format <FORMAT> -bits <BITSTREAM>\n"
+			  << "    -format <FORMAT>     Format\n"
+			  << "    -bits <BITSTREAM>    Bit dump\n"
+			  << "    -width <NUMBER>      Width of bit dump (if omitted 1st LF in bitstream)\n"
+			  << "    -textonly            Return bare text only\n"
+			  << "    -diagnostics         Print diagnostics\n"
+			  << "    -hint <HINT[,HINT]>  Hints\n"
+			  << "    -charset <CHARSET>   Default character set\n"
 			  << "Supported formats (case insensitive, with or without '-'):\n  ";
 	for (auto f : BarcodeFormats::all()) {
 		std::cout << "  " << ToString(f);
+	}
+	std::cout << "\nSupported hints (case insensitive, comma-separated):\n  ";
+	for (int i = 0; i < ARRAY_SIZE(hints); i++) {
+		std::cout << "  " << hints[i];
+	}
+	std::cout << "\nSupported character sets (case insensitive):\n  ";
+	for (int i = 0; i < ARRAY_SIZE(charsets); i++) {
+		if (i && i % 12 == 0) std::cout << "\n  ";
+		std::cout << "  " << std::setw(11) << charsets[i];
 	}
 	std::cout << "\n";
 }
@@ -92,28 +122,6 @@ static int validateInt(const char* optarg, int length, const bool neg, int &val)
 	return 1;
 }
 
-static int validateZint(const char* optarg, int &zintBarcode, int &zintOption2)
-{
-	int length = static_cast<int>(strlen(optarg));
-	const char *comma, *arg;
-
-	zintBarcode = 0;
-	zintOption2 = 0;
-
-	arg = optarg;
-	comma = strchr(arg, ',');
-	if (!comma || comma == arg || !validateInt(arg, static_cast<int>(comma - arg), false, zintBarcode)) {
-		return 0;
-	}
-
-	arg = comma + 1;
-	if (arg == optarg + length || !validateInt(arg, static_cast<int>(optarg - arg + length), false, zintOption2)) {
-		return 0;
-	}
-
-	return 1;
-}
-
 static BitMatrix ParseBitMatrix(const std::string& str, const int width, int &height)
 {
 	height = static_cast<int>(str.length() / width);
@@ -132,7 +140,7 @@ static BitMatrix ParseBitMatrix(const std::string& str, const int width, int &he
 
 static ImageView getImageView(std::vector<uint8_t> &buf, const BitMatrix &bits)
 {
-	buf.reserve(bits.width() * bits.height());
+	buf.resize(bits.width() * bits.height());
 	for (int r = 0; r < bits.height(); r++) {
 		const int k = r * bits.width();
 		for (int c = 0; c < bits.width(); c++) {
@@ -143,9 +151,9 @@ static ImageView getImageView(std::vector<uint8_t> &buf, const BitMatrix &bits)
 }
 
 static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string &bitstream, int &width,
-			bool &textOnly, bool& angleEscape, int &zintBarcode, int &zintOption2)
+			bool &textOnly, bool& angleEscape)
 {
-	bool haveFormat = false, haveBits = false, haveWidth = false;
+	bool haveFormat = false, haveBits = false, haveWidth = false, haveCharSet = false;
 	int nlWidth = -1;
 
 	for (int i = 1; i < argc; ++i) {
@@ -205,19 +213,43 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string
 				return false;
 			}
 
-		} else if (strcmp(argv[i], "-zint") == 0) {
+		} else if (strcmp(argv[i], "-hint") == 0) {
 			if (++i == argc) {
-				std::cerr << "No argument for -format\n";
+				std::cerr << "No argument for -hint\n";
 				return false;
 			}
-			if (!validateZint(argv[i], zintBarcode, zintOption2)) {
-				std::cerr << "Invalid argument for -zint (\"<symbology>,<option_1>,<option_2>,<option_3>\")\n";
-				return false;
+			std::string hint(argv[i]);
+			std::transform(hint.begin(), hint.end(), hint.begin(), [](char c) { return (char)std::tolower(c); });
+			std::istringstream input(hint);
+			for (std::string token; std::getline(input, token, ',');) {
+				if (!token.empty()) {
+					if (token == "trycode39extendedmode" || token == "code39extendedmode") {
+						hints.setTryCode39ExtendedMode(true);
+					} else if (token == "validatecode39checksum" || token == "code39checksum") {
+						hints.setValidateCode39CheckSum(true);
+					} else if (token == "validateitfchecksum" || token == "itfchecksum") {
+						hints.setValidateITFCheckSum(true);
+					} else if (token == "returncodabarstartend" || token == "codabarstartend") {
+						hints.setReturnCodabarStartEnd(true);
+					} else {
+						std::cerr << "Unknown hint '" << token << "'\n";
+						return false;
+					}
+				}
 			}
 
 		} else if (strcmp(argv[i], "-charset") == 0) {
+			if (haveCharSet) {
+				std::cerr << "Single -charset only\n";
+				return false;
+			}
+			haveCharSet = true;
 			if (++i == argc) {
 				std::cerr << "No argument for -charset\n";
+				return false;
+			}
+			if (CharacterSetECI::CharsetFromName(argv[i]) == CharacterSet::Unknown) {
+				std::cerr << "Unknown character set '" << argv[i] << "'\n";
 				return false;
 			}
 			hints.setCharacterSet(argv[i]);
@@ -261,13 +293,11 @@ int main(int argc, char* argv[])
 	BitMatrix bits;
 	std::vector<uint8_t> buf;
 	bool angleEscape = false;
-	int zintBarcode = 0;
-	int zintOption2 = 0;
 	int ret = 0;
 	Result result(DecodeStatus::NotFound);
 	std::list<std::string> diagnostics;
 
-	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, angleEscape, zintBarcode, zintOption2)) {
+	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, angleEscape)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
@@ -333,14 +363,6 @@ int main(int argc, char* argv[])
 
 	} else if (hints.formats().testFlags(BarcodeFormat::OneDCodes)) {
 		hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
-		// BARCODE_EXCODE39
-		if (zintBarcode == 9) {
-			hints.setTryCode39ExtendedMode(true);
-		}
-		// BARCODE_CODE39, BARCODE_EXCODE39, BARCODE_LOGMARS
-		if ((zintBarcode == 8 || zintBarcode == 9 || zintBarcode == 50) && zintOption2 == 1) {
-			hints.setValidateCode39CheckSum(true);
-		}
 		OneD::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 

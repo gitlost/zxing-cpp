@@ -772,11 +772,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 				Diagnostics::put("FileSize");
 				break;
 			}
-			default: {
-				status = DecodeStatus::FormatError;
-				Diagnostics::put("MACROError");
-				break;
-			}
+			default: status = DecodeStatus::FormatError; Diagnostics::put("MACROError"); break;
 			}
 			break;
 		}
@@ -786,11 +782,7 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 			Diagnostics::put("MACROTerm");
 			break;
 		}
-		default: {
-			status = DecodeStatus::FormatError;
-			Diagnostics::put("MACROError");
-			break;
-		}
+		default: status = DecodeStatus::FormatError; Diagnostics::put("MACROError"); break;
 		}
 		if (StatusIsError(status)) {
 			return status;

@@ -50,7 +50,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -ispure                 Assume the image contains only a 'pure'/perfect code (faster)\n"
 			  << "    -1                      Print only file name, format, identifier, text and status on one line per file\n"
 			  << "    -escape                 Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
-			  << "    -pngout <png out path>  Write a copy of the input image with barcodes outlined by a red line\n"
+			  << "    -pngout <png out path>  Write a copy of the input image with barcodes outlined by a green line\n"
 			  << "    -binarizer <BINARIZER>  Use specific binarizer\n"
 			  << "    -charset <CHARSET>      Default character set\n"
 			  << "    -diagnostics            Print diagnostics\n"

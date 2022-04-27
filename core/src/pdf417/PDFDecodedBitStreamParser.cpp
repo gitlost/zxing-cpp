@@ -92,9 +92,7 @@ static bool TerminatesCompaction(int code)
 	case BYTE_COMPACTION_MODE_LATCH_6:
 	case BEGIN_MACRO_PDF417_CONTROL_BLOCK:
 	case BEGIN_MACRO_PDF417_OPTIONAL_FIELD:
-	case MACRO_PDF417_TERMINATOR:
-		return true;
-		break;
+	case MACRO_PDF417_TERMINATOR: return true;
 	}
 	return false;
 }
@@ -719,73 +717,59 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 
 	while (codeIndex < codewords[0]) {
 		switch (codewords[codeIndex]) {
-			case BEGIN_MACRO_PDF417_OPTIONAL_FIELD: {
-				codeIndex++;
-				if (codeIndex >= codewords[0]) {
-					break;
-				}
-				switch (codewords[codeIndex]) {
-					case MACRO_PDF417_OPTIONAL_FIELD_FILE_NAME: {
-						std::string fileName;
-						codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, fileName);
-						resultMetadata.setFileName(fileName);
-						Diagnostics::fmt("FileName(%s)", fileName.c_str());
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_SENDER: {
-						std::string sender;
-						codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, sender);
-						resultMetadata.setSender(sender);
-						Diagnostics::fmt("Sender(%s)", sender.c_str());
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_ADDRESSEE: {
-						std::string addressee;
-						codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, addressee);
-						resultMetadata.setAddressee(addressee);
-						Diagnostics::fmt("Addressee(%s)", addressee.c_str());
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_SEGMENT_COUNT: {
-						uint64_t segmentCount;
-						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, segmentCount);
-						resultMetadata.setSegmentCount(static_cast<int>(segmentCount));
-						Diagnostics::fmt("SegmentCount(%d)", static_cast<int>(segmentCount));
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
-						uint64_t timestamp;
-						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, timestamp);
-						resultMetadata.setTimestamp(timestamp);
-						Diagnostics::put("Timestamp");
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
-						uint64_t checksum;
-						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, checksum);
-						resultMetadata.setChecksum(static_cast<int>(checksum));
-						Diagnostics::fmt("Checksum(%d)", static_cast<int>(checksum));
-						break;
-					}
-					case MACRO_PDF417_OPTIONAL_FIELD_FILE_SIZE: {
-						uint64_t fileSize;
-						codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, fileSize);
-						resultMetadata.setFileSize(fileSize);
-						Diagnostics::put("FileSize");
-						break;
-					}
-					default: {
-						status = DecodeStatus::FormatError;
-						Diagnostics::put("MACROError");
-						break;
-					}
-				}
+		case BEGIN_MACRO_PDF417_OPTIONAL_FIELD: {
+			codeIndex++;
+			if (codeIndex >= codewords[0]) {
 				break;
 			}
-			case MACRO_PDF417_TERMINATOR: {
-				codeIndex++;
-				resultMetadata.setLastSegment(true);
-				Diagnostics::put("MACROTerm");
+			switch (codewords[codeIndex]) {
+			case MACRO_PDF417_OPTIONAL_FIELD_FILE_NAME: {
+				std::string fileName;
+				codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, fileName);
+				resultMetadata.setFileName(fileName);
+				Diagnostics::fmt("FileName(%s)", fileName.c_str());
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_SENDER: {
+				std::string sender;
+				codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, sender);
+				resultMetadata.setSender(sender);
+				Diagnostics::fmt("Sender(%s)", sender.c_str());
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_ADDRESSEE: {
+				std::string addressee;
+				codeIndex = DecodeMacroOptionalTextField(status, codewords, codeIndex + 1, addressee);
+				resultMetadata.setAddressee(addressee);
+				Diagnostics::fmt("Addressee(%s)", addressee.c_str());
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_SEGMENT_COUNT: {
+				uint64_t segmentCount;
+				codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, segmentCount);
+				resultMetadata.setSegmentCount(static_cast<int>(segmentCount));
+				Diagnostics::fmt("SegmentCount(%d)", static_cast<int>(segmentCount));
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
+				uint64_t timestamp;
+				codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, timestamp);
+				resultMetadata.setTimestamp(timestamp);
+				Diagnostics::put("Timestamp");
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
+				uint64_t checksum;
+				codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, checksum);
+				resultMetadata.setChecksum(static_cast<int>(checksum));
+				Diagnostics::fmt("Checksum(%d)", static_cast<int>(checksum));
+				break;
+			}
+			case MACRO_PDF417_OPTIONAL_FIELD_FILE_SIZE: {
+				uint64_t fileSize;
+				codeIndex = DecodeMacroOptionalNumericField(status, codewords, codeIndex + 1, fileSize);
+				resultMetadata.setFileSize(fileSize);
+				Diagnostics::put("FileSize");
 				break;
 			}
 			default: {
@@ -793,6 +777,20 @@ DecodeStatus DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, 
 				Diagnostics::put("MACROError");
 				break;
 			}
+			}
+			break;
+		}
+		case MACRO_PDF417_TERMINATOR: {
+			codeIndex++;
+			resultMetadata.setLastSegment(true);
+			Diagnostics::put("MACROTerm");
+			break;
+		}
+		default: {
+			status = DecodeStatus::FormatError;
+			Diagnostics::put("MACROError");
+			break;
+		}
 		}
 		if (StatusIsError(status)) {
 			return status;

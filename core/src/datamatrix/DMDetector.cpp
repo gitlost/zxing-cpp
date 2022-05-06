@@ -892,9 +892,9 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	auto modSize = (modSizeX + modSizeY) / 2;
 
 	//printf("dimT %d, dimR %d, modSizeX %g, modSizeY %g, modSize %g\n", dimT, dimR, modSizeX, modSizeY, modSize);
-	if (dimT % 2 != 0 || dimR % 2 != 0 || dimT < 10 || dimT > 144 || dimR < 8 || dimR > 144 ||
-		std::abs(modSizeX - modSizeY) > 1 ||
-		!image.isIn(PointF{left + modSizeX / 2 + (dimT - 1) * modSize, top + modSizeY / 2 + (dimR - 1) * modSize})) {
+	if (dimT % 2 != 0 || dimR % 2 != 0 || dimT < 10 || dimT > 144 || dimR < 8 || dimR > 144
+		|| std::abs(modSizeX - modSizeY) > 1
+		|| !image.isIn(PointF{left + modSizeX / 2 + (dimT - 1) * modSize, top + modSizeY / 2 + (dimR - 1) * modSize})) {
 		//printf("!image.isIn\n");
 		return {};
 	}

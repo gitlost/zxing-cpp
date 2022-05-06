@@ -54,17 +54,11 @@ public:
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
-	bool isValid() const {
-		return StatusIsOK(_status);
-	}
+	bool isValid() const { return StatusIsOK(_status); }
 
-	DecodeStatus status() const {
-		return _status;
-	}
+	DecodeStatus status() const { return _status; }
 
-	BarcodeFormat format() const {
-		return _format;
-	}
+	BarcodeFormat format() const { return _format; }
 
 	/**
 	 * @brief text Content of symbol.
@@ -72,37 +66,23 @@ public:
 	 * For UPC-A and UPC-E, the content is 12 and 8 digits respectively, i.e. is not expanded to 13 digits.
 	 * For EAN-13, UPC-A, UPC-E and EAN-8 with add-on, the add-on is appended separated by a space.
 	 */
-	const std::wstring& text() const {
-		return _text;
-	}
+	const std::wstring& text() const { return _text; }
 
-	const Position& position() const {
-		return _position;
-	}
-	void setPosition(Position pos) {
-		_position = pos;
-	}
+	const Position& position() const { return _position; }
+	void setPosition(Position pos) { _position = pos; }
 
 	int orientation() const; //< orientation of barcode in degree, see also Position::orientation()
 
 	/**
 	 * @brief isMirrored is the symbol mirrored (currently only supported by QRCode and DataMatrix)
 	 */
-	bool isMirrored() const {
-		return _isMirrored;
-	}
+	bool isMirrored() const { return _isMirrored; }
 
-	const ByteArray& rawBytes() const {
-		return _rawBytes;
-	}
+	const ByteArray& rawBytes() const { return _rawBytes; }
 
-	int numBits() const {
-		return _numBits;
-	}
+	int numBits() const { return _numBits; }
 
-	const std::wstring& ecLevel() const {
-		return _ecLevel;
-	}
+	const std::wstring& ecLevel() const { return _ecLevel; }
 
 	const ResultMetadata& metadata() const {
 		return _metadata;
@@ -115,9 +95,7 @@ public:
 	/**
 	 * @brief symbologyIdentifier Symbology identifier "]cm" where "c" is symbology code character, "m" the modifier.
 	 */
-	const std::string& symbologyIdentifier() const {
-		return _symbologyIdentifier;
-	}
+	const std::string& symbologyIdentifier() const { return _symbologyIdentifier; }
 
 	/**
 	 * @brief sequenceSize number of symbols in a structured append sequence.
@@ -153,19 +131,13 @@ public:
 	/**
 	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
 	 */
-	bool readerInit() const {
-		return _readerInit;
-	}
+	bool readerInit() const { return _readerInit; }
 
 	/**
 	 * @brief How many lines have been detected with this code (applies only to 1D symbologies)
 	 */
-	int lineCount() const {
-		return _lineCount;
-	}
-	void incrementLineCount() {
-		++_lineCount;
-	}
+	int lineCount() const { return _lineCount; }
+	void incrementLineCount() { ++_lineCount; }
 
 	const std::list<std::string>& diagnostics() const {
 		return _diagnostics;

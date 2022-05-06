@@ -35,8 +35,13 @@ Result::Result(DecodeStatus status) : _status(status)
 
 Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, std::string&& symbologyIdentifier,
 			   ByteArray&& rawBytes, StructuredAppendInfo&& sai, const bool readerInit, int lineCount)
-	: _format(format), _text(std::move(text)), _position(std::move(position)), _rawBytes(std::move(rawBytes)),
-	  _symbologyIdentifier(std::move(symbologyIdentifier)), _sai(std::move(sai)), _readerInit(readerInit),
+	: _format(format),
+	  _text(std::move(text)),
+	  _position(std::move(position)),
+	  _rawBytes(std::move(rawBytes)),
+	  _symbologyIdentifier(std::move(symbologyIdentifier)),
+	  _sai(std::move(sai)),
+	  _readerInit(readerInit),
 	  _lineCount(lineCount)
 {
 	_numBits = Size(_rawBytes) * 8;
@@ -53,10 +58,16 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 {}
 
 Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format)
-	: _status(decodeResult.errorCode()), _format(format), _text(std::move(decodeResult).text()),
-	  _position(std::move(position)), _rawBytes(std::move(decodeResult).rawBytes()), _numBits(decodeResult.numBits()),
-	  _ecLevel(decodeResult.ecLevel()), _symbologyIdentifier(decodeResult.symbologyIdentifier()),
-	  _sai(decodeResult.structuredAppend()), _isMirrored(decodeResult.isMirrored()),
+	: _status(decodeResult.errorCode()),
+	  _format(format),
+	  _text(std::move(decodeResult).text()),
+	  _position(std::move(position)),
+	  _rawBytes(std::move(decodeResult).rawBytes()),
+	  _numBits(decodeResult.numBits()),
+	  _ecLevel(decodeResult.ecLevel()),
+	  _symbologyIdentifier(decodeResult.symbologyIdentifier()),
+	  _sai(decodeResult.structuredAppend()),
+	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit())
 {
 #if defined(__clang__) || defined(__GNUC__)

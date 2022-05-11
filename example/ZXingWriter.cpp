@@ -16,6 +16,7 @@
 
 #include "BarcodeFormat.h"
 #include "BitMatrix.h"
+#include "BitMatrixIO.h"
 #include "CharacterSetECI.h"
 #include "MultiFormatWriter.h"
 #include "TextUtfEncoding.h"
@@ -24,6 +25,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -41,10 +43,11 @@ static void PrintUsage(const char* exePath)
 	          << "    -ecc       Error correction level, [0-8]\n"
 	          << "\n"
 			  << "Supported formats are:\n";
-	for (auto f : BarcodeFormats::all()) {
+	for (auto f : BarcodeFormatsFromString("Aztec Codabar Code39 Code93 Code128 DataMatrix EAN8 EAN13 ITF PDF417 QRCode UPCA UPCE"))
 		std::cout << "    " << ToString(f) << "\n";
-	}
-	std::cout << "Format can be lowercase letters, with or without '-'.\n";
+
+	std::cout << "Format can be lowercase letters, with or without '-'.\n"
+			  << "Output format is determined by file name, supported are png, jpg and svg.\n";
 }
 
 static bool ParseSize(std::string str, int* width, int* height)
@@ -130,7 +133,8 @@ int main(int argc, char* argv[])
 
 	try {
 		auto writer = MultiFormatWriter(format).setMargin(margin).setEncoding(encoding).setEccLevel(eccLevel);
-		auto bitmap = ToMatrix<uint8_t>(writer.encode(TextUtfEncoding::FromUtf8(text), width, height));
+		auto matrix = writer.encode(TextUtfEncoding::FromUtf8(text), width, height);
+		auto bitmap = ToMatrix<uint8_t>(matrix);
 
 		auto ext = GetExtension(filePath);
 		int success = 0;
@@ -138,6 +142,8 @@ int main(int argc, char* argv[])
 			success = stbi_write_png(filePath.c_str(), bitmap.width(), bitmap.height(), 1, bitmap.data(), 0);
 		} else if (ext == "jpg" || ext == "jpeg") {
 			success = stbi_write_jpg(filePath.c_str(), bitmap.width(), bitmap.height(), 1, bitmap.data(), 0);
+		} else if (ext == "svg") {
+			success = (std::ofstream(filePath) << ToSVG(matrix)).good();
 		}
 
 		if (!success) {

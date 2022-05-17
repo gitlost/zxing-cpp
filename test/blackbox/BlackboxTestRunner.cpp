@@ -59,9 +59,7 @@ namespace {
 		TC tc[2] = {};
 		int rotation = 0; // The rotation in degrees clockwise to use for this test.
 
-		TestCase(int mntf, int mnts, int mmf, int mms, int r)
-			: tc{{"fast", mntf, mmf}, {"slow", mnts, mms}}, rotation(r)
-		{}
+		TestCase(int mntf, int mnts, int mmf, int mms, int r) : tc{{"fast", mntf, mmf}, {"slow", mnts, mms}}, rotation(r) {}
 		TestCase(int mntf, int mnts, int r) : TestCase(mntf, mnts, 0, 0, r) {}
 		TestCase(int mntp, int mmp, PureTag) : tc{{"pure", mntp, mmp}} {}
 	};
@@ -224,8 +222,8 @@ static std::vector<fs::path> getImagesInDirectory(const fs::path& directory)
 	return result;
 }
 
-static void doRunTests(
-	const fs::path& directory, std::string_view format, int totalTests, const std::vector<TestCase>& tests, DecodeHints hints)
+static void doRunTests(const fs::path& directory, std::string_view format, int totalTests, const std::vector<TestCase>& tests,
+					   DecodeHints hints)
 {
 	auto imgPaths = getImagesInDirectory(directory);
 	auto folderName = directory.stem();
@@ -268,9 +266,8 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 {
 	std::list<Result> allResults;
 	for (const auto& imgPath : imgPaths) {
-		auto results =
-			ReadBarcodes(ImageLoader::load(imgPath),
-						 DecodeHints().setFormats(BarcodeFormatFromString(format.data())).setTryDownscale(false));
+		auto results = ReadBarcodes(ImageLoader::load(imgPath),
+									DecodeHints().setFormats(BarcodeFormatFromString(format.data())).setTryDownscale(false));
 		allResults.insert(allResults.end(), results.begin(), results.end());
 	}
 
@@ -289,13 +286,12 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 		text.append(r.text());
 
 	const auto& first = allResults.front();
-	StructuredAppendInfo sai{ first.sequenceIndex(), first.sequenceSize(), first.sequenceId() };
-	return Result(std::move(text), {}, first.format(), std::string(first.symbologyIdentifier()), {}, std::move(sai),
-				  first.readerInit());
+	StructuredAppendInfo sai{first.sequenceIndex(), first.sequenceSize(), first.sequenceId()};
+	return {std::move(text), {}, first.format(), std::string(first.symbologyIdentifier()), {}, std::move(sai), first.readerInit()};
 }
 
-static void doRunStructuredAppendTest(
-	const fs::path& directory, std::string_view format, int totalTests, const std::vector<TestCase>& tests)
+static void doRunStructuredAppendTest(const fs::path& directory, std::string_view format, int totalTests,
+									  const std::vector<TestCase>& tests)
 {
 	auto imgPaths = getImagesInDirectory(directory);
 	auto folderName = directory.stem();
@@ -308,8 +304,7 @@ static void doRunStructuredAppendTest(
 	}
 
 	if (Size(imageGroups) != totalTests)
-		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName, totalTests,
-				   imageGroups.size());
+		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName, totalTests, imageGroups.size());
 
 	for (auto& test : tests) {
 		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
@@ -346,7 +341,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			doRunTests(testPathPrefix / directory, format, total, tests, hints);
 	};
 
-	auto runStructuredAppendTest = [&](std::string_view directory, std::string_view format, int total, const std::vector<TestCase>& tests) {
+	auto runStructuredAppendTest = [&](std::string_view directory, std::string_view format, int total,
+									   const std::vector<TestCase>& tests) {
 		if (hasTest(directory))
 			doRunStructuredAppendTest(testPathPrefix / directory, format, total, tests);
 	};
@@ -635,6 +631,14 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		runStructuredAppendTest("qrcode-7", "QRCode", 1, {
 			{ 1, 1, 0   },
+		});
+
+		runTests("microqrcode-1", "MicroQRCode", 16, {
+			{ 15, 15, 0   },
+			{ 15, 15, 90  },
+			{ 15, 15, 180 },
+			{ 14, 14, 270 },
+			{ 9, 0, pure },
 		});
 
 		runTests("pdf417-1", "PDF417", 17, {

@@ -18,6 +18,7 @@
 */
 
 #include "ConcentricFinder.h"
+#include "DetectorResult.h"
 
 #include <vector>
 
@@ -33,15 +34,17 @@ struct FinderPatternSet
 	ConcentricPattern bl, tl, tr;
 };
 
+using FinderPatterns = std::vector<ConcentricPattern>;
 using FinderPatternSets = std::vector<FinderPatternSet>;
 
-FinderPatternSets FindFinderPatternSets(const BitMatrix& image, bool tryHarder);
-DetectorResult SampleAtFinderPatternSet(const BitMatrix& image, const FinderPatternSet& fp);
+FinderPatterns FindFinderPatterns(const BitMatrix& image, bool tryHarder);
+FinderPatternSets GenerateFinderPatternSets(FinderPatterns&& patterns);
 
-/**
- * @brief Detects a QR Code in an image.
- */
-DetectorResult Detect(const BitMatrix& image, bool tryHarder, bool isPure);
+DetectorResult SampleQR(const BitMatrix& image, const FinderPatternSet& fp);
+DetectorResult SampleMQR(const BitMatrix& image, const ConcentricPattern& fp);
+
+DetectorResult DetectPureQR(const BitMatrix& image);
+DetectorResult DetectPureMQR(const BitMatrix& image);
 
 } // QRCode
 } // ZXing

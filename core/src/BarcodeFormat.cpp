@@ -50,6 +50,7 @@ static BarcodeFormatName NAMES[] = {
 	{BarcodeFormat::HanXin, "HanXin"},
 	{BarcodeFormat::ITF, "ITF"},
 	{BarcodeFormat::MaxiCode, "MaxiCode"},
+	{BarcodeFormat::MicroQRCode, "MicroQRCode"},
 	{BarcodeFormat::PDF417, "PDF417"},
 	{BarcodeFormat::QRCode, "QRCode"},
 	{BarcodeFormat::UPCA, "UPC-A"},

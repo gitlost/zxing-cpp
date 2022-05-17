@@ -39,19 +39,20 @@ enum class BarcodeFormat
 	DataBar         = (1 << 5),  ///< GS1 DataBar, formerly known as RSS 14
 	DataBarExpanded = (1 << 6),  ///< GS1 DataBar Expanded, formerly known as RSS EXPANDED
 	DataMatrix      = (1 << 7),  ///< DataMatrix (2D)
-	DotCode         = (1 << 8),  ///< DotCode (2D)
-	EAN8            = (1 << 9),  ///< EAN-8 (1D)
-	EAN13           = (1 << 10),  ///< EAN-13 (1D)
-	HanXin          = (1 << 11),  ///< HanXin (2D)
-	ITF             = (1 << 12), ///< ITF (Interleaved Two of Five) (1D)
-	MaxiCode        = (1 << 13), ///< MaxiCode (2D)
-	PDF417          = (1 << 14), ///< PDF417 (1D) or (2D)
-	QRCode          = (1 << 15), ///< QR Code (2D)
-	UPCA            = (1 << 16), ///< UPC-A (1D)
-	UPCE            = (1 << 17), ///< UPC-E (1D)
+	EAN8            = (1 << 8),  ///< EAN-8 (1D)
+	EAN13           = (1 << 9),  ///< EAN-13 (1D)
+	ITF             = (1 << 10), ///< ITF (Interleaved Two of Five) (1D)
+	MaxiCode        = (1 << 11), ///< MaxiCode (2D)
+	PDF417          = (1 << 12), ///< PDF417 (1D) or (2D)
+	QRCode          = (1 << 13), ///< QR Code (2D)
+	UPCA            = (1 << 14), ///< UPC-A (1D)
+	UPCE            = (1 << 15), ///< UPC-E (1D)
+	MicroQRCode     = (1 << 16), ///< Micro QR Code (2D)
+	HanXin          = (1 << 17), ///< HanXin (2D)
+	DotCode         = (1 << 18), ///< DotCode (2D)
 
 	OneDCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
-	TwoDCodes = Aztec | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode,
+	TwoDCodes = Aztec | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode,
 	Any       = OneDCodes | TwoDCodes,
 
 	// Deprecated names, kept for compatibility at the moment
@@ -72,7 +73,7 @@ enum class BarcodeFormat
 	UPC_A [[deprecated]]        = UPCA,
 	UPC_E [[deprecated]]        = UPCE,
 
-	_max                        = UPCE, ///> implementation detail, don't use
+	_max                        = DotCode, ///> implementation detail, don't use
 };
 
 ZX_DECLARE_FLAGS(BarcodeFormats, BarcodeFormat)

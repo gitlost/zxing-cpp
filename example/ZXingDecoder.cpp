@@ -369,6 +369,10 @@ int main(int argc, char* argv[])
 	} else if (hints.formats() == BarcodeFormat::QRCode) {
 		QRCode::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+
+	} else if (hints.formats() == BarcodeFormat::MicroQRCode) {
+		QRCode::Reader reader(hints);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}
 
 	if (!result.isValid()) {

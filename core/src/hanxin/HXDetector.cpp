@@ -116,12 +116,12 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	for (auto [p, d] : {std::pair(tl, PointI{1, 1}), {tr, {-1, 1}}, {br, {-1, -1}}}) {
 		diagonal = BitMatrixCursorI(image, p, d).readPatternFromBlack<Pattern>(1, width / 3);
 		if (!IsPattern(diagonal, PATTERN)) {
-			printf("%s(%d) %s: FAIL !IsPattern\n", __FILE__, __LINE__, __func__);
+			//printf("%s(%d) %s: FAIL !IsPattern\n", __FILE__, __LINE__, __func__);
 			return {};
 		}
 	}
 	if (!IsPattern(BitMatrixCursorI(image, bl, {1, -1}).readPatternFromBlack<PatternBL>(1, width / 3), PATTERN_BL)) {
-		printf("%s(%d) %s: FAIL !IsPattern(diagonalBL)\n", __FILE__, __LINE__, __func__);
+		//printf("%s(%d) %s: FAIL !IsPattern(diagonalBL)\n", __FILE__, __LINE__, __func__);
 		return {};
 	}
 

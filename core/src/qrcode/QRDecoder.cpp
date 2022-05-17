@@ -29,6 +29,7 @@
 #include "QRCodecMode.h"
 #include "QRDataBlock.h"
 #include "QRFormatInformation.h"
+#include "QRVersion.h"
 #include "ReedSolomonDecoder.h"
 #include "StructuredAppend.h"
 #include "TextDecoder.h"
@@ -73,9 +74,8 @@ static DecodeStatus DecodeHanziSegment(BitSource& bits, int count, std::wstring&
 {
 	Diagnostics::fmt("HAN(%d)", count);
 	// Don't crash trying to read more bits than we have available.
-	if (count * 13 > bits.available()) {
+	if (count * 13 > bits.available())
 		return DecodeStatus::FormatError;
-	}
 
 	// Each character will require 2 bytes. Read the characters as 2-byte pairs
 	// and decode as GB2312 afterwards
@@ -88,8 +88,7 @@ static DecodeStatus DecodeHanziSegment(BitSource& bits, int count, std::wstring&
 		if (assembledTwoBytes < 0x00A00) {
 			// In the 0xA1A1 to 0xAAFE range
 			assembledTwoBytes += 0x0A1A1;
-		}
-		else {
+		} else {
 			// In the 0xB0A1 to 0xFAFE range
 			assembledTwoBytes += 0x0A6A1;
 		}
@@ -106,9 +105,8 @@ static DecodeStatus DecodeKanjiSegment(BitSource& bits, int count, CharacterSet 
 {
 	Diagnostics::fmt("KAN(%d)", count);
 	// Don't crash trying to read more bits than we have available.
-	if (count * 13 > bits.available()) {
+	if (count * 13 > bits.available())
 		return DecodeStatus::FormatError;
-	}
 
 	// Each character will require 2 bytes. Read the characters as 2-byte pairs
 	// and decode as Shift_JIS afterwards
@@ -121,8 +119,7 @@ static DecodeStatus DecodeKanjiSegment(BitSource& bits, int count, CharacterSet 
 		if (assembledTwoBytes < 0x01F00) {
 			// In the 0x8140 to 0x9FFC range
 			assembledTwoBytes += 0x08140;
-		}
-		else {
+		} else {
 			// In the 0xE040 to 0xEBBF range
 			assembledTwoBytes += 0x0C140;
 		}
@@ -143,14 +140,13 @@ static DecodeStatus DecodeByteSegment(BitSource& bits, int count, CharacterSet c
 {
 	Diagnostics::fmt("BYTE(%d)", count);
 	// Don't crash trying to read more bits than we have available.
-	if (8 * count > bits.available()) {
+	if (8 * count > bits.available())
 		return DecodeStatus::FormatError;
-	}
 
 	ByteArray readBytes(count);
-	for (int i = 0; i < count; i++) {
+	for (int i = 0; i < count; i++)
 		readBytes[i] = static_cast<uint8_t>(bits.readBits(8));
-	}
+
 	if (currentCharset == CharacterSet::Unknown) {
 		// The spec isn't clear on this mode; see
 		// section 6.4.5: t does not say which encoding to assuming
@@ -158,12 +154,13 @@ static DecodeStatus DecodeByteSegment(BitSource& bits, int count, CharacterSet c
 		// Shift_JIS -- without anything like an ECI designator to
 		// give a hint.
 		if (!hintedCharset.empty())
-		{
+        {
 			currentCharset = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
 			Diagnostics::fmt("HINTENC(%d)", (int)currentCharset);
 		}
+
 		if (currentCharset == CharacterSet::Unknown)
-		{
+        {
 			currentCharset = TextDecoder::GuessEncoding(readBytes.data(), Size(readBytes));
 			Diagnostics::fmt("GUESSENC(%d)", (int)currentCharset);
 		}
@@ -185,9 +182,9 @@ static char ToAlphaNumericChar(int value)
 		' ', '$', '%', '*', '+', '-', '.', '/', ':'
 	};
 
-	if (value < 0 || value >= Size(ALPHANUMERIC_CHARS)) {
+	if (value < 0 || value >= Size(ALPHANUMERIC_CHARS))
 		throw std::out_of_range("ToAlphaNumericChar: out of range");
-	}
+
 	return ALPHANUMERIC_CHARS[value];
 }
 
@@ -197,9 +194,8 @@ static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool f
 	// Read two characters at a time
 	std::string buffer;
 	while (count > 1) {
-		if (bits.available() < 11) {
+		if (bits.available() < 11)
 			return DecodeStatus::FormatError;
-		}
 		int nextTwoCharsBits = bits.readBits(11);
 		buffer += ToAlphaNumericChar(nextTwoCharsBits / 45);
 		buffer += ToAlphaNumericChar(nextTwoCharsBits % 45);
@@ -207,9 +203,8 @@ static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool f
 	}
 	if (count == 1) {
 		// special case: one character left
-		if (bits.available() < 6) {
+		if (bits.available() < 6)
 			return DecodeStatus::FormatError;
-		}
 		buffer += ToAlphaNumericChar(bits.readBits(6));
 	}
 	// See section 6.4.8.1, 6.4.8.2
@@ -220,8 +215,7 @@ static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool f
 				if (i < buffer.length() - 1 && buffer[i + 1] == '%') {
 					// %% is rendered as %
 					buffer.erase(i + 1);
-				}
-				else {
+				} else {
 					// In alpha mode, % should be converted to FNC1 separator 0x1D
 					buffer[i] = static_cast<char>(0x1D);
 				}
@@ -240,39 +234,39 @@ static DecodeStatus DecodeNumericSegment(BitSource& bits, int count, std::wstrin
 	std::string buffer;
 	while (count >= 3) {
 		// Each 10 bits encodes three digits
-		if (bits.available() < 10) {
+		if (bits.available() < 10)
 			return DecodeStatus::FormatError;
-		}
+
 		int threeDigitsBits = bits.readBits(10);
-		if (threeDigitsBits >= 1000) {
+		if (threeDigitsBits >= 1000)
 			return DecodeStatus::FormatError;
-		}
+
 		buffer += ToAlphaNumericChar(threeDigitsBits / 100);
 		buffer += ToAlphaNumericChar((threeDigitsBits / 10) % 10);
 		buffer += ToAlphaNumericChar(threeDigitsBits % 10);
 		count -= 3;
 	}
+
 	if (count == 2) {
 		// Two digits left over to read, encoded in 7 bits
-		if (bits.available() < 7) {
+		if (bits.available() < 7)
 			return DecodeStatus::FormatError;
-		}
+
 		int twoDigitsBits = bits.readBits(7);
-		if (twoDigitsBits >= 100) {
+		if (twoDigitsBits >= 100)
 			return DecodeStatus::FormatError;
-		}
+
 		buffer += ToAlphaNumericChar(twoDigitsBits / 10);
 		buffer += ToAlphaNumericChar(twoDigitsBits % 10);
-	}
-	else if (count == 1) {
+	} else if (count == 1) {
 		// One digit left over to read
-		if (bits.available() < 4) {
+		if (bits.available() < 4)
 			return DecodeStatus::FormatError;
-		}
+
 		int digitBits = bits.readBits(4);
-		if (digitBits >= 10) {
+		if (digitBits >= 10)
 			return DecodeStatus::FormatError;
-		}
+
 		buffer += ToAlphaNumericChar(digitBits);
 	}
 
@@ -305,6 +299,30 @@ static DecodeStatus ParseECIValue(BitSource& bits, int& outValue)
 }
 
 /**
+ * QR codes encode mode indicators and terminator codes into a constant bit length of 4.
+ * Micro QR codes have terminator codes that vary in bit length but are always longer than
+ * the mode indicators.
+ * M1 - 0 length mode code, 3 bits terminator code
+ * M2 - 1 bit mode code, 5 bits terminator code
+ * M3 - 2 bit mode code, 7 bits terminator code
+ * M4 - 3 bit mode code, 9 bits terminator code
+ * IsTerminator peaks into the bit stream to see if the current position is at the start of
+ * a terminator code.  If true, then the decoding can finish. If false, then the decoding
+ * can read off the next mode code.
+ *
+ * See ISO 18004:2006, 6.4.1 Table 2
+ *
+ * @param bits the stream of bits that might have a terminator code
+ * @param version the QR or micro QR code version
+ */
+bool IsTerminator(const BitSource& bits, const Version& version)
+{
+	const int bitsRequired = TerminatorBitsLength(version);
+	const int bitsAvailable = std::min(bits.available(), bitsRequired);
+	return bits.peakBits(bitsAvailable) == 0;
+}
+
+/**
 * <p>QR Codes can encode text as bits in one of several modes, and can use multiple modes
 * in one QR Code. This method decodes the bits back into text.</p>
 *
@@ -320,6 +338,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 	int appIndValue = -1; // ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position)
 	StructuredAppendInfo structuredAppend;
 	static const int GB2312_SUBSET = 1;
+	const int modeBitLength = CodecModeBitsLength(version);
+	const int minimumBitsRequired = modeBitLength + CharacterCountBits(CodecMode::NUMERIC, version);
 
 	try
 	{
@@ -328,13 +348,15 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 		CodecMode mode;
 		do {
 			// While still another segment to read...
-			if (bits.available() < 4) {
+			if (bits.available() < minimumBitsRequired || IsTerminator(bits, version)) {
 				// OK, assume we're done. Really, a TERMINATOR mode should have been recorded here
 				mode = CodecMode::TERMINATOR;
 				Diagnostics::put("AVAIL(<4)");
-			}
-			else {
-				mode = CodecModeForBits(bits.readBits(4)); // mode is encoded by 4 bits
+			} else if (modeBitLength == 0) {
+				// MicroQRCode version 1 is always NUMERIC and modeBitLength is 0
+				mode = CodecMode::NUMERIC;
+			} else {
+				mode = CodecModeForBits(bits.readBits(modeBitLength), version.isMicroQRCode());
 			}
 			switch (mode) {
 			case CodecMode::TERMINATOR:
@@ -385,9 +407,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				int countHanzi = bits.readBits(CharacterCountBits(mode, version));
 				if (subset == GB2312_SUBSET) {
 					auto status = DecodeHanziSegment(bits, countHanzi, resultEncoded);
-					if (StatusIsError(status)) {
+					if (StatusIsError(status))
 						return status;
-					}
 				}
 				break;
 			}
@@ -403,9 +424,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				case CodecMode::KANJI:        status = DecodeKanjiSegment(bits, count, currentCharset, resultEncoded); break;
 				default:                      Diagnostics::put("FormatError"); status = DecodeStatus::FormatError;
 				}
-				if (StatusIsError(status)) {
+				if (StatusIsError(status))
 					return status;
-				}
 				break;
 			}
 			}
@@ -418,19 +438,16 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 	}
 
 	if (appIndValue >= 0) {
-		if (appIndValue < 10) { // "00-09"
+		if (appIndValue < 10) // "00-09"
 			resultEncoded.insert(0, L'0' + std::to_wstring(appIndValue));
-		}
-		else if (appIndValue < 100) { // "10-99"
+		else if (appIndValue < 100) // "10-99"
 			resultEncoded.insert(0, std::to_wstring(appIndValue));
-		}
-		else if ((appIndValue >= 165 && appIndValue <= 190) || (appIndValue >= 197 && appIndValue <= 222)) { // "A-Za-z"
+		else if ((appIndValue >= 165 && appIndValue <= 190) || (appIndValue >= 197 && appIndValue <= 222)) // "A-Za-z"
 			resultEncoded.insert(0, 1, static_cast<wchar_t>(appIndValue - 100));
-		}
 		else {
 			Diagnostics::fmt("BadAppInd(%d)", appIndValue);
 			return DecodeStatus::FormatError;
-		}
+        }
 	}
 
 	std::string symbologyIdentifier("]Q" + std::to_string(symbologyIdModifier));
@@ -443,14 +460,14 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 
 static DecoderResult DoDecode(const BitMatrix& bits, const Version& version, const std::string& hintedCharset, bool mirrored)
 {
-	auto formatInfo = ReadFormatInformation(bits, mirrored);
+	auto formatInfo = ReadFormatInformation(bits, mirrored, version.isMicroQRCode());
 	if (!formatInfo.isValid())
 		return DecodeStatus::FormatError;
 	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %d)\n", bits.height(), bits.width(), (bits.width() - 17) / 4);
 	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask());
 
 	// Read codewords
-	ByteArray codewords = ReadCodewords(bits, version, formatInfo.dataMask(), mirrored);
+	ByteArray codewords = ReadCodewords(bits, version, formatInfo, mirrored);
 	if (codewords.empty())
 		return DecodeStatus::FormatError;
 

@@ -60,9 +60,10 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format)
 	: _status(decodeResult.errorCode()),
 	  _format(format),
-	  _text(std::move(decodeResult).text()),
+	  _content(std::move(decodeResult.content())),
+	  _text(std::move(decodeResult.text())),
 	  _position(std::move(position)),
-	  _rawBytes(std::move(decodeResult).rawBytes()),
+	  _rawBytes(std::move(decodeResult.rawBytes())),
 	  _numBits(decodeResult.numBits()),
 	  _ecLevel(decodeResult.ecLevel()),
 	  _symbologyIdentifier(decodeResult.symbologyIdentifier()),
@@ -70,6 +71,9 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit())
 {
+	if (_content.isFinalized()) {
+		_text = _content.getResultText();
+	}
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

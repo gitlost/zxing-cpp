@@ -17,6 +17,7 @@
 */
 
 #include "ByteArray.h"
+#include "Content.h"
 #include "DecodeStatus.h"
 #include "StructuredAppend.h"
 #include "ZXContainerAlgorithms.h"
@@ -41,6 +42,7 @@ class DecoderResult
 	DecodeStatus _status = DecodeStatus::NoError;
 	ByteArray _rawBytes;
 	int _numBits = 0;
+	Content _content;
 	std::wstring _text;
 	std::wstring _ecLevel;
 	int _errorsCorrected = -1;
@@ -60,6 +62,13 @@ public:
 	{
 		_numBits = 8 * Size(_rawBytes);
 	}
+	DecoderResult(ByteArray&& rawBytes, Content&& content) : _rawBytes(std::move(rawBytes)), _content(std::move(content))
+	{
+		_numBits = 8 * Size(_rawBytes);
+		if (_content.isFinalized()) {
+			_text = _content.getResultText(); // Hack to get unit tests to pass
+		}
+	}
 
 	DecoderResult() = default;
 	DecoderResult(DecoderResult&&) noexcept = default;
@@ -72,6 +81,7 @@ public:
 	ByteArray&& rawBytes() && { return std::move(_rawBytes); }
 	const std::wstring& text() const & { return _text; }
 	std::wstring&& text() && { return std::move(_text); }
+	const Content& content() const { return _content; }
 
 	// Simple macro to set up getter/setter methods that save lots of boilerplate.
 	// It sets up a standard 'const & () const', 2 setters for setting lvalues via

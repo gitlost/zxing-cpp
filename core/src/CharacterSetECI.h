@@ -1,20 +1,10 @@
-#pragma once
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
 
 #include "CharacterSet.h"
 
@@ -33,13 +23,13 @@ namespace CharacterSetECI {
  * @param value character set ECI value
  * @return {@code CharacterSet} representing ECI of given value, or {@code CharacterSet::Unknown} if it is unsupported
  */
-CharacterSet CharsetFromValue(int value);
+CharacterSet ECI2CharacterSet(int value);
 
 /**
  * @param charset {@code CharacterSet} representing ECI
  * @return ECI of given {@code CharacterSet}, or -1 if it is unsupported
  */
-int ValueForCharset(CharacterSet charset);
+int Charset2ECI(CharacterSet charset);
 
 /**
  * @param name character set ECI encoding name

@@ -1,21 +1,11 @@
-#pragma once
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
 * Copyright 2020 Axel Waggershauser
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
 
 #include "BarcodeFormat.h"
 #include "ByteArray.h"
@@ -44,10 +34,6 @@ class Result
 public:
 	explicit Result(DecodeStatus status);
 
-	Result(std::wstring&& text, Position&& position, BarcodeFormat format, std::string&& symbologyIdentifier = "",
-		   ByteArray&& rawBytes = {}, StructuredAppendInfo&& sai = {}, const bool readerInit = false,
-		   int lineCount = 0);
-
 	// 1D convenience constructor
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
 		   std::string&& symbologyIdentifier = "", ByteArray&& rawBytes = {}, const bool readerInit = false);
@@ -67,6 +53,9 @@ public:
 	 * For EAN-13, UPC-A, UPC-E and EAN-8 with add-on, the add-on is appended separated by a space.
 	 */
 	const std::wstring& text() const { return _text; }
+
+	// WARNING: this is an experimental API and may change/disappear
+	const ByteArray& binary() const { return _binary; }
 
 	const Position& position() const { return _position; }
 	void setPosition(Position pos) { _position = pos; }
@@ -149,6 +138,7 @@ private:
 	DecodeStatus _status = DecodeStatus::NoError;
 	BarcodeFormat _format = BarcodeFormat::None;
 	std::wstring _text;
+	ByteArray _binary;
 	Position _position;
 	ByteArray _rawBytes;
 	int _numBits = 0;

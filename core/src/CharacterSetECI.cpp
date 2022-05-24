@@ -1,19 +1,8 @@
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "CharacterSetECI.h"
 #include "Diagnostics.h"
@@ -147,7 +136,7 @@ static const std::map<const char *, CharacterSet, CompareNoCase> ECI_NAME_TO_CHA
 	{"BINARY",		CharacterSet::BINARY},
 };
 
-CharacterSet CharsetFromValue(int value)
+CharacterSet ECI2CharacterSet(int value)
 {
 	auto it = ECI_VALUE_TO_CHARSET.find(value);
 	if (it != ECI_VALUE_TO_CHARSET.end()) {
@@ -156,7 +145,7 @@ CharacterSet CharsetFromValue(int value)
 	return CharacterSet::Unknown;
 }
 
-int ValueForCharset(CharacterSet charset)
+int Charset2ECI(CharacterSet charset)
 {
 	// Special case ISO8859_1 to avoid obsolete ECI 1
 	if (charset == CharacterSet::ISO8859_1) {
@@ -197,7 +186,7 @@ CharacterSet OnChangeAppendReset(const int eci, std::wstring& encoded, std::stri
 {
 	// Character set ECIs only
 	if (eci >= 0 && eci <= 899) {
-		auto encodingNew = CharacterSetECI::CharsetFromValue(eci);
+		auto encodingNew = CharacterSetECI::ECI2CharacterSet(eci);
 		if (encodingNew != CharacterSet::Unknown && encodingNew != encoding) {
 			// Encode data so far in current encoding and reset
 			TextDecoder::Append(encoded, reinterpret_cast<const uint8_t*>(data.data()), data.size(), encoding);

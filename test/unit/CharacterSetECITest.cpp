@@ -1,18 +1,7 @@
 /*
 * Copyright 2021 gitlost
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "CharacterSetECI.h"
 
@@ -23,20 +12,20 @@ using namespace ZXing;
 using namespace ZXing::CharacterSetECI;
 using namespace testing;
 
-TEST(CharacterSetECITest, ValueForCharset)
+TEST(CharacterSetECITest, Charset2ECI)
 {
-	EXPECT_EQ(ValueForCharset(CharacterSet::ISO8859_1), 3);
-	EXPECT_EQ(ValueForCharset(CharacterSet::ISO8859_2), 4);
-	EXPECT_EQ(ValueForCharset(CharacterSet::UTF16BE), 25);
-	EXPECT_EQ(ValueForCharset(CharacterSet::ASCII), 27);
-	EXPECT_EQ(ValueForCharset(CharacterSet::EUC_KR), 30);
-	EXPECT_EQ(ValueForCharset(CharacterSet::GBK), 31);
-	EXPECT_EQ(ValueForCharset(CharacterSet::GB18030), 32);
-	EXPECT_EQ(ValueForCharset(CharacterSet::UTF16LE), 33);
-	EXPECT_EQ(ValueForCharset(CharacterSet::UTF32BE), 34);
-	EXPECT_EQ(ValueForCharset(CharacterSet::UTF32LE), 35);
-	EXPECT_EQ(ValueForCharset(CharacterSet::BINARY), 899);
-	EXPECT_EQ(ValueForCharset(CharacterSet::Unknown), -1);
+	EXPECT_EQ(Charset2ECI(CharacterSet::ISO8859_1), 3);
+	EXPECT_EQ(Charset2ECI(CharacterSet::ISO8859_2), 4);
+	EXPECT_EQ(Charset2ECI(CharacterSet::UTF16BE), 25);
+	EXPECT_EQ(Charset2ECI(CharacterSet::ASCII), 27);
+	EXPECT_EQ(Charset2ECI(CharacterSet::EUC_KR), 30);
+	EXPECT_EQ(Charset2ECI(CharacterSet::GBK), 31);
+	EXPECT_EQ(Charset2ECI(CharacterSet::GB18030), 32);
+	EXPECT_EQ(Charset2ECI(CharacterSet::UTF16LE), 33);
+	EXPECT_EQ(Charset2ECI(CharacterSet::UTF32BE), 34);
+	EXPECT_EQ(Charset2ECI(CharacterSet::UTF32LE), 35);
+	EXPECT_EQ(Charset2ECI(CharacterSet::BINARY), 899);
+	EXPECT_EQ(Charset2ECI(CharacterSet::Unknown), -1);
 }
 
 TEST(CharacterSetECITest, InitEncoding)

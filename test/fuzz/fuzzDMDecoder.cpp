@@ -1,3 +1,8 @@
+/*
+ * Copyright 2021 Axel Waggershauser
+ */
+// SPDX-License-Identifier: Apache-2.0
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -7,7 +12,7 @@
 using namespace ZXing;
 
 namespace ZXing::DataMatrix::DecodedBitStreamParser {
-DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet);
+DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const bool isDMRE);
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
@@ -18,7 +23,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 	ByteArray ba;
 	ba.insert(ba.begin(), data, data + size);
 	try {
-		DataMatrix::DecodedBitStreamParser::Decode(std::move(ba), "");
+		DataMatrix::DecodedBitStreamParser::Decode(std::move(ba), "", false);
 	} catch (...) {
 	}
 

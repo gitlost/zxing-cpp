@@ -2,23 +2,13 @@
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
 * Copyright 2020 Axel Waggershauser
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "ODDataBarReader.h"
 
 #include "BarcodeFormat.h"
+#include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GTIN.h"
 #include "ODDataBarCommon.h"
@@ -170,7 +160,7 @@ Result DataBarReader::decodePattern(int rowNumber, PatternView& next,
 									std::unique_ptr<RowReader::DecodingState>& state) const
 {
 #if 0 // non-stacked version
-	next = next.subView(-1, FULL_PAIR_SIZE);
+	next = next.subView(-1, FULL_PAIR_SIZE + 1); // +1 reflects the guard pattern on the right, see IsRightPair());
 	// yes: the first view we test is at index 1 (black bar at 0 would be the guard pattern)
 	while (next.shift(2)) {
 		if (IsLeftPair(next)) {
@@ -187,7 +177,7 @@ Result DataBarReader::decodePattern(int rowNumber, PatternView& next,
 		state.reset(new State);
 	auto* prevState = static_cast<State*>(state.get());
 
-	next = next.subView(0, FULL_PAIR_SIZE);
+	next = next.subView(0, FULL_PAIR_SIZE + 1); // +1 reflects the guard pattern on the right, see IsRightPair()
 	// yes: the first view we test is at index 1 (black bar at 0 would be the guard pattern)
 	while (next.shift(1)) {
 		if (IsLeftPair(next)) {
@@ -211,12 +201,10 @@ Result DataBarReader::decodePattern(int rowNumber, PatternView& next,
 		for (const auto& rightPair : prevState->rightPairs)
 			if (ChecksumIsValid(leftPair, rightPair)) {
 				// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
-				std::string symbologyIdentifier("]e0");
-
-				Result res{TextDecoder::FromLatin1(ConstructText(leftPair, rightPair)),
-						   EstimatePosition(leftPair, rightPair), BarcodeFormat::DataBar,
-						   std::move(symbologyIdentifier), {}, {}, false,
-						   EstimateLineCount(leftPair, rightPair)};
+				Result res{DecoderResult({}, TextDecoder::FromLatin1(ConstructText(leftPair, rightPair)))
+							   .setSymbologyIdentifier("]e0")
+							   .setLineCount(EstimateLineCount(leftPair, rightPair)),
+						   EstimatePosition(leftPair, rightPair), BarcodeFormat::DataBar};
 
 				prevState->leftPairs.erase(leftPair);
 				prevState->rightPairs.erase(rightPair);

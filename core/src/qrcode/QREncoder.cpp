@@ -1,19 +1,8 @@
 /*
 * Copyright 2016 Huy Cuong Nguyen
 * Copyright 2016 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "QREncoder.h"
 
@@ -114,7 +103,7 @@ CodecMode ChooseMode(const std::wstring& content, CharacterSet encoding)
 */
 static void AppendECI(CharacterSet eci, BitArray& bits)
 {
-	int eciValue = CharacterSetECI::ValueForCharset(eci);
+	int eciValue = CharacterSetECI::Charset2ECI(eci);
 	if (eciValue >= 0 && eciValue <= 999999) {
 		bits.appendBits(static_cast<int>(CodecMode::ECI), 4);
 		if (eciValue <= 127) {

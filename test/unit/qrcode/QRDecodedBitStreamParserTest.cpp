@@ -1,19 +1,8 @@
 /*
 * Copyright 2017 Huy Cuong Nguyen
 * Copyright 2008 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "BitArray.h"
 #include "ByteArray.h"
@@ -114,7 +103,7 @@ TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 	EXPECT_EQ(result.symbologyIdentifier(), "]Q3");
 	EXPECT_EQ(result.text(), L"2001"); // "(20)01"
 
-	// GS1 "NUM(4) 2001 FNC1(1st) 301" - FNC1(1st) can occur anywhere
+	// GS1 "NUM(4) 2001 FNC1(1st) 301" - FNC1(1st) can occur anywhere (this actually violates the specification)
 	result = DecodeBitStream({0x10, 0x10, 0xC8, 0x15, 0x10, 0x0D, 0x2D, 0x00}, version, ecLevel, "");
 	EXPECT_EQ(result.symbologyIdentifier(), "]Q3");
 	EXPECT_EQ(result.text(), L"2001301"); // "(20)01(30)1"
@@ -125,10 +114,10 @@ TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 	EXPECT_EQ(result.text(), L"99A");
 
 	// AIM "BYTE(1) A FNC1(2nd) 99 (0x63) BYTE(1) B" - FNC1(2nd) can occur anywhere
-	result = DecodeBitStream({0x40, 0x14, 0x19, 0x63, 0x40, 0x14, 0x20, 0x00}, version, ecLevel, "");
-	//Diagnostics::setEnabled(false);
-	EXPECT_EQ(result.symbologyIdentifier(), "]Q5");
-	EXPECT_EQ(result.text(), L"99AB"); // Application Indicator prefixed to data
+	// Disabled this test, since this violates the specification and the code does support it anymore
+//	result = DecodeBitStream({0x40, 0x14, 0x19, 0x63, 0x40, 0x14, 0x20, 0x00}, version, ecLevel, "");
+//	EXPECT_EQ(result.symbologyIdentifier(), "]Q5");
+//	EXPECT_EQ(result.text(), L"99AB"); // Application Indicator prefixed to data
 
 	// AIM "FNC1(2nd) A (100 + 61 = 0xA5) ANUM(1) B"
 	result = DecodeBitStream({0x9A, 0x52, 0x00, 0x96, 0x00}, version, ecLevel, "");

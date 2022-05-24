@@ -1,19 +1,8 @@
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "QRDecoder.h"
 
@@ -70,17 +59,13 @@ static bool CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 /**
 * See specification GBT 18284-2000
 */
-static DecodeStatus DecodeHanziSegment(BitSource& bits, int count, std::wstring& resultEncoded)
+static void DecodeHanziSegment(BitSource& bits, int count, Content& result)
 {
 	Diagnostics::fmt("HAN(%d)", count);
-	// Don't crash trying to read more bits than we have available.
-	if (count * 13 > bits.available())
-		return DecodeStatus::FormatError;
+	// Each character will require 2 bytes, decode as GB2312
+	result.switchEncoding(CharacterSet::GB2312);
+	result.reserve(2 * count);
 
-	// Each character will require 2 bytes. Read the characters as 2-byte pairs
-	// and decode as GB2312 afterwards
-	ByteArray buffer;
-	buffer.reserve(2 * count);
 	while (count > 0) {
 		// Each 13 bits encodes a 2-byte character
 		int twoBytes = bits.readBits(13);
@@ -92,26 +77,20 @@ static DecodeStatus DecodeHanziSegment(BitSource& bits, int count, std::wstring&
 			// In the 0xB0A1 to 0xFAFE range
 			assembledTwoBytes += 0x0A6A1;
 		}
-		buffer.push_back(static_cast<uint8_t>((assembledTwoBytes >> 8) & 0xFF));
-		buffer.push_back(static_cast<uint8_t>(assembledTwoBytes & 0xFF));
+		result += static_cast<uint8_t>((assembledTwoBytes >> 8) & 0xFF);
+		result += static_cast<uint8_t>(assembledTwoBytes & 0xFF);
 		count--;
 	}
-
-	TextDecoder::Append(resultEncoded, buffer.data(), Size(buffer), CharacterSet::GB2312);
-	return DecodeStatus::NoError;
 }
 
-static DecodeStatus DecodeKanjiSegment(BitSource& bits, int count, CharacterSet currentCharset, std::wstring& resultEncoded)
+static void DecodeKanjiSegment(BitSource& bits, int count, Content& result)
 {
 	Diagnostics::fmt("KAN(%d)", count);
-	// Don't crash trying to read more bits than we have available.
-	if (count * 13 > bits.available())
-		return DecodeStatus::FormatError;
-
 	// Each character will require 2 bytes. Read the characters as 2-byte pairs
 	// and decode as Shift_JIS afterwards
-	ByteArray buffer;
-	buffer.reserve(2 * count);
+	result.switchEncoding(CharacterSet::Shift_JIS);
+	result.reserve(2 * count);
+
 	while (count > 0) {
 		// Each 13 bits encodes a 2-byte character
 		int twoBytes = bits.readBits(13);
@@ -123,51 +102,21 @@ static DecodeStatus DecodeKanjiSegment(BitSource& bits, int count, CharacterSet 
 			// In the 0xE040 to 0xEBBF range
 			assembledTwoBytes += 0x0C140;
 		}
-		buffer.push_back(static_cast<uint8_t>(assembledTwoBytes >> 8));
-		buffer.push_back(static_cast<uint8_t>(assembledTwoBytes));
+		result += static_cast<uint8_t>(assembledTwoBytes >> 8);
+		result += static_cast<uint8_t>(assembledTwoBytes);
 		count--;
 	}
-
-	if (currentCharset == CharacterSet::Unknown) {
-		currentCharset = CharacterSet::Shift_JIS;
-	}
-	TextDecoder::Append(resultEncoded, buffer.data(), Size(buffer), currentCharset);
-	return DecodeStatus::NoError;
 }
 
-static DecodeStatus DecodeByteSegment(BitSource& bits, int count, CharacterSet currentCharset, const std::string& hintedCharset,
-									  std::wstring& resultEncoded)
+
+static void DecodeByteSegment(BitSource& bits, int count, Content& result)
 {
 	Diagnostics::fmt("BYTE(%d)", count);
-	// Don't crash trying to read more bits than we have available.
-	if (8 * count > bits.available())
-		return DecodeStatus::FormatError;
+	result.switchEncoding(CharacterSet::Unknown);
+	result.reserve(count);
 
-	ByteArray readBytes(count);
 	for (int i = 0; i < count; i++)
-		readBytes[i] = static_cast<uint8_t>(bits.readBits(8));
-
-	if (currentCharset == CharacterSet::Unknown) {
-		// The spec isn't clear on this mode; see
-		// section 6.4.5: t does not say which encoding to assuming
-		// upon decoding. I have seen ISO-8859-1 used as well as
-		// Shift_JIS -- without anything like an ECI designator to
-		// give a hint.
-		if (!hintedCharset.empty())
-        {
-			currentCharset = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
-			Diagnostics::fmt("HINTENC(%d)", (int)currentCharset);
-		}
-
-		if (currentCharset == CharacterSet::Unknown)
-        {
-			currentCharset = TextDecoder::GuessEncoding(readBytes.data(), Size(readBytes));
-			Diagnostics::fmt("GUESSENC(%d)", (int)currentCharset);
-		}
-	}
-	Diagnostics::put(readBytes);
-	TextDecoder::Append(resultEncoded, readBytes.data(), Size(readBytes), currentCharset);
-	return DecodeStatus::NoError;
+		result += static_cast<uint8_t>(bits.readBits(8));
 }
 
 static char ToAlphaNumericChar(int value)
@@ -188,14 +137,12 @@ static char ToAlphaNumericChar(int value)
 	return ALPHANUMERIC_CHARS[value];
 }
 
-static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, std::wstring& resultEncoded)
+static void DecodeAlphanumericSegment(BitSource& bits, int count, bool fc1InEffect, Content& result)
 {
 	Diagnostics::fmt("ANUM(%d)", count);
 	// Read two characters at a time
 	std::string buffer;
 	while (count > 1) {
-		if (bits.available() < 11)
-			return DecodeStatus::FormatError;
 		int nextTwoCharsBits = bits.readBits(11);
 		buffer += ToAlphaNumericChar(nextTwoCharsBits / 45);
 		buffer += ToAlphaNumericChar(nextTwoCharsBits % 45);
@@ -203,8 +150,6 @@ static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool f
 	}
 	if (count == 1) {
 		// special case: one character left
-		if (bits.available() < 6)
-			return DecodeStatus::FormatError;
 		buffer += ToAlphaNumericChar(bits.readBits(6));
 	}
 	// See section 6.4.8.1, 6.4.8.2
@@ -222,80 +167,66 @@ static DecodeStatus DecodeAlphanumericSegment(BitSource& bits, int count, bool f
 			}
 		}
 	}
-	Diagnostics::put(buffer);
-	TextDecoder::AppendLatin1(resultEncoded, buffer);
-	return DecodeStatus::NoError;
+
+	result.switchEncoding(CharacterSet::ASCII);
+	result += buffer;
 }
 
-static DecodeStatus DecodeNumericSegment(BitSource& bits, int count, std::wstring& resultEncoded)
+static void DecodeNumericSegment(BitSource& bits, int count, Content& result)
 {
 	Diagnostics::fmt("NUM(%d)", count);
+	result.switchEncoding(CharacterSet::ASCII);
+	result.reserve(count);
+
 	// Read three digits at a time
-	std::string buffer;
 	while (count >= 3) {
 		// Each 10 bits encodes three digits
-		if (bits.available() < 10)
-			return DecodeStatus::FormatError;
-
 		int threeDigitsBits = bits.readBits(10);
 		if (threeDigitsBits >= 1000)
-			return DecodeStatus::FormatError;
+			throw std::runtime_error("Invalid value in numeric segment");
 
-		buffer += ToAlphaNumericChar(threeDigitsBits / 100);
-		buffer += ToAlphaNumericChar((threeDigitsBits / 10) % 10);
-		buffer += ToAlphaNumericChar(threeDigitsBits % 10);
+		result += ToAlphaNumericChar(threeDigitsBits / 100);
+		result += ToAlphaNumericChar((threeDigitsBits / 10) % 10);
+		result += ToAlphaNumericChar(threeDigitsBits % 10);
 		count -= 3;
 	}
 
 	if (count == 2) {
 		// Two digits left over to read, encoded in 7 bits
-		if (bits.available() < 7)
-			return DecodeStatus::FormatError;
-
 		int twoDigitsBits = bits.readBits(7);
 		if (twoDigitsBits >= 100)
-			return DecodeStatus::FormatError;
+			throw std::runtime_error("Invalid value in numeric segment");
 
-		buffer += ToAlphaNumericChar(twoDigitsBits / 10);
-		buffer += ToAlphaNumericChar(twoDigitsBits % 10);
+		result += ToAlphaNumericChar(twoDigitsBits / 10);
+		result += ToAlphaNumericChar(twoDigitsBits % 10);
 	} else if (count == 1) {
 		// One digit left over to read
-		if (bits.available() < 4)
-			return DecodeStatus::FormatError;
-
 		int digitBits = bits.readBits(4);
 		if (digitBits >= 10)
-			return DecodeStatus::FormatError;
+			throw std::runtime_error("Invalid value in numeric segment");
 
-		buffer += ToAlphaNumericChar(digitBits);
+		result += ToAlphaNumericChar(digitBits);
 	}
-
-	Diagnostics::put(buffer);
-	TextDecoder::AppendLatin1(resultEncoded, buffer);
-	return DecodeStatus::NoError;
 }
 
-static DecodeStatus ParseECIValue(BitSource& bits, int& outValue)
+static int ParseECIValue(BitSource& bits)
 {
 	int firstByte = bits.readBits(8);
 	if ((firstByte & 0x80) == 0) {
 		// just one byte
-		outValue = firstByte & 0x7F;
-		return DecodeStatus::NoError;
+		return firstByte & 0x7F;
 	}
 	if ((firstByte & 0xC0) == 0x80) {
 		// two bytes
 		int secondByte = bits.readBits(8);
-		outValue = ((firstByte & 0x3F) << 8) | secondByte;
-		return DecodeStatus::NoError;
+		return ((firstByte & 0x3F) << 8) | secondByte;
 	}
 	if ((firstByte & 0xE0) == 0xC0) {
 		// three bytes
 		int secondThirdBytes = bits.readBits(16);
-		outValue = ((firstByte & 0x1F) << 16) | secondThirdBytes;
-		return DecodeStatus::NoError;
+		return ((firstByte & 0x1F) << 16) | secondThirdBytes;
 	}
-	return DecodeStatus::FormatError;
+	throw std::runtime_error("ParseECIValue: invalid value");
 }
 
 /**
@@ -315,11 +246,11 @@ static DecodeStatus ParseECIValue(BitSource& bits, int& outValue)
  * @param bits the stream of bits that might have a terminator code
  * @param version the QR or micro QR code version
  */
-bool IsTerminator(const BitSource& bits, const Version& version)
+bool IsEndOfStream(const BitSource& bits, const Version& version)
 {
 	const int bitsRequired = TerminatorBitsLength(version);
 	const int bitsAvailable = std::min(bits.available(), bitsRequired);
-	return bits.peakBits(bitsAvailable) == 0;
+	return bitsAvailable == 0 || bits.peakBits(bitsAvailable) == 0;
 }
 
 /**
@@ -333,36 +264,30 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 							  const std::string& hintedCharset)
 {
 	BitSource bits(bytes);
-	std::wstring resultEncoded;
+	Content result;
+	result.hintedCharset = hintedCharset.empty() ? "Auto" : hintedCharset;
 	int symbologyIdModifier = 1; // ISO/IEC 18004:2015 Annex F Table F.1
-	int appIndValue = -1; // ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position)
 	StructuredAppendInfo structuredAppend;
-	static const int GB2312_SUBSET = 1;
 	const int modeBitLength = CodecModeBitsLength(version);
-	const int minimumBitsRequired = modeBitLength + CharacterCountBits(CodecMode::NUMERIC, version);
+	bool fc1InEffect = false;
+	int appInd;
 
 	try
 	{
-		CharacterSet currentCharset = CharacterSet::Unknown;
-		bool fc1InEffect = false;
-		CodecMode mode;
-		do {
-			// While still another segment to read...
-			if (bits.available() < minimumBitsRequired || IsTerminator(bits, version)) {
-				// OK, assume we're done. Really, a TERMINATOR mode should have been recorded here
-				mode = CodecMode::TERMINATOR;
-				Diagnostics::put("AVAIL(<4)");
-			} else if (modeBitLength == 0) {
-				// MicroQRCode version 1 is always NUMERIC and modeBitLength is 0
-				mode = CodecMode::NUMERIC;
-			} else {
+		while(!IsEndOfStream(bits, version)) {
+			CodecMode mode;
+			if (modeBitLength == 0)
+				mode = CodecMode::NUMERIC; // MicroQRCode version 1 is always NUMERIC and modeBitLength is 0
+			else
 				mode = CodecModeForBits(bits.readBits(modeBitLength), version.isMicroQRCode());
-			}
+
 			switch (mode) {
 			case CodecMode::TERMINATOR:
 				Diagnostics::put("TERM");
 				break;
 			case CodecMode::FNC1_FIRST_POSITION:
+//				if (!result.empty()) // uncomment to enforce specification
+//					throw std::runtime_error("GS1 Indicator (FNC1 in first position) at illegal position");
 				fc1InEffect = true; // In Alphanumeric mode undouble doubled percents and treat single percent as <GS>
 				// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
 				// modifiers that indicate ECI protocol (ISO/IEC 18004:2015 Annex F Table F.1)
@@ -370,11 +295,21 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				Diagnostics::put("FNC1(1st)");
 				break;
 			case CodecMode::FNC1_SECOND_POSITION:
+				if (!result.empty())
+					throw std::runtime_error("AIM Application Indicator (FNC1 in second position) at illegal position");
 				fc1InEffect = true; // As above
 				symbologyIdModifier = 5; // As above
-				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator "00-99" or "A-Za-z"
-				appIndValue = bits.readBits(8); // Number 00-99 or ASCII value + 100; prefixed to data below
-				Diagnostics::fmt("FNC1(2nd,%d)", appIndValue);
+				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position), "00-99" or "A-Za-z"
+				appInd = bits.readBits(8); // Number 00-99 or ASCII value + 100
+				Diagnostics::fmt("FNC1(2nd,%d)", appInd);
+				if (appInd < 10) // "00-09"
+					result += '0' + std::to_string(appInd);
+				else if (appInd < 100) // "10-99"
+					result += std::to_string(appInd);
+				else if ((appInd >= 165 && appInd <= 190) || (appInd >= 197 && appInd <= 222)) // "A-Za-z"
+					result += static_cast<uint8_t>(appInd - 100);
+				else
+					throw std::runtime_error("Invalid AIM Application Indicator");
 				break;
 			case CodecMode::STRUCTURED_APPEND:
 				// sequence number and parity is added later to the result metadata
@@ -386,75 +321,52 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				break;
 			case CodecMode::ECI: {
 				// Count doesn't apply to ECI
-				int value = 0;
-				auto status = ParseECIValue(bits, value);
+				int value = ParseECIValue(bits);
 				Diagnostics::fmt("ECI(%d)", value);
-				if (StatusIsError(status)) {
-					return status;
-				}
 				if (value >= 0 && value <= 899) { // Character set ECIs
-					currentCharset = CharacterSetECI::CharsetFromValue(value);
-					if (currentCharset == CharacterSet::Unknown) {
+					auto charset = CharacterSetECI::ECI2CharacterSet(value);
+					if (charset == CharacterSet::Unknown)
 						return DecodeStatus::FormatError;
-					}
+					result.switchEncoding(charset, true);
 				}
 				break;
 			}
 			case CodecMode::HANZI: {
 				// First handle Hanzi mode which does not start with character count
 				// chinese mode contains a sub set indicator right after mode indicator
-				int subset = bits.readBits(4);
-				int countHanzi = bits.readBits(CharacterCountBits(mode, version));
-				if (subset == GB2312_SUBSET) {
-					auto status = DecodeHanziSegment(bits, countHanzi, resultEncoded);
-					if (StatusIsError(status))
-						return status;
-				}
+				if (int subset = bits.readBits(4); subset != 1) // GB2312_SUBSET is the only supported one right now
+					return DecodeStatus::FormatError;
+				int count = bits.readBits(CharacterCountBits(mode, version));
+				DecodeHanziSegment(bits, count, result);
 				break;
 			}
 			default: {
 				// "Normal" QR code modes:
 				// How many characters will follow, encoded in this mode?
 				int count = bits.readBits(CharacterCountBits(mode, version));
-				DecodeStatus status;
 				switch (mode) {
-				case CodecMode::NUMERIC:      status = DecodeNumericSegment(bits, count, resultEncoded); break;
-				case CodecMode::ALPHANUMERIC: status = DecodeAlphanumericSegment(bits, count, fc1InEffect, resultEncoded); break;
-				case CodecMode::BYTE:         status = DecodeByteSegment(bits, count, currentCharset, hintedCharset, resultEncoded); break;
-				case CodecMode::KANJI:        status = DecodeKanjiSegment(bits, count, currentCharset, resultEncoded); break;
-				default:                      Diagnostics::put("FormatError"); status = DecodeStatus::FormatError;
+				case CodecMode::NUMERIC:      DecodeNumericSegment(bits, count, result); break;
+				case CodecMode::ALPHANUMERIC: DecodeAlphanumericSegment(bits, count, fc1InEffect, result); break;
+				case CodecMode::BYTE:         DecodeByteSegment(bits, count, result); break;
+				case CodecMode::KANJI:        DecodeKanjiSegment(bits, count, result); break;
+				default:                      Diagnostics::put("FormatError"); return DecodeStatus::FormatError;
 				}
-				if (StatusIsError(status))
-					return status;
 				break;
 			}
 			}
-		} while (mode != CodecMode::TERMINATOR);
+		}
 	}
-	catch (const std::exception &)
+	catch (const std::exception& e)
 	{
-		// from readBits() calls
+#ifndef NDEBUG
+		printf("QRDecoder error: %s\n", e.what());
+#endif
 		return DecodeStatus::FormatError;
 	}
 
-	if (appIndValue >= 0) {
-		if (appIndValue < 10) // "00-09"
-			resultEncoded.insert(0, L'0' + std::to_wstring(appIndValue));
-		else if (appIndValue < 100) // "10-99"
-			resultEncoded.insert(0, std::to_wstring(appIndValue));
-		else if ((appIndValue >= 165 && appIndValue <= 190) || (appIndValue >= 197 && appIndValue <= 222)) // "A-Za-z"
-			resultEncoded.insert(0, 1, static_cast<wchar_t>(appIndValue - 100));
-		else {
-			Diagnostics::fmt("BadAppInd(%d)", appIndValue);
-			return DecodeStatus::FormatError;
-        }
-	}
-
-	std::string symbologyIdentifier("]Q" + std::to_string(symbologyIdModifier));
-
-	return DecoderResult(std::move(bytes), std::move(resultEncoded))
+	return DecoderResult(std::move(bytes), {}, std::move(result))
 		.setEcLevel(ToString(ecLevel))
-		.setSymbologyIdentifier(std::move(symbologyIdentifier))
+		.setSymbologyIdentifier("]Q" + std::to_string(symbologyIdModifier))
 		.setStructuredAppend(structuredAppend);
 }
 

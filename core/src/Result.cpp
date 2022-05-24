@@ -1,19 +1,8 @@
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "Result.h"
 
@@ -32,17 +21,18 @@ Result::Result(DecodeStatus status) : _status(status)
 		Diagnostics::moveTo(_diagnostics);
 	}
 }
-
-Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, std::string&& symbologyIdentifier,
-			   ByteArray&& rawBytes, StructuredAppendInfo&& sai, const bool readerInit, int lineCount)
-	: _format(format),
-	  _text(std::move(text)),
-	  _position(std::move(position)),
+Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
+			   std::string&& symbologyIdentifier, ByteArray&& rawBytes, const bool readerInit)
+	:
+	  _format(format),
+	  _text(TextDecoder::FromLatin1(text)),
+	  _binary(text),
+	  _position(Line(y, xStart, xStop)),
 	  _rawBytes(std::move(rawBytes)),
+	  _numBits(Size(_rawBytes) * 8),
 	  _symbologyIdentifier(std::move(symbologyIdentifier)),
-	  _sai(std::move(sai)),
 	  _readerInit(readerInit),
-	  _lineCount(lineCount)
+	  _lineCount(0)
 {
 	_numBits = Size(_rawBytes) * 8;
 
@@ -51,16 +41,11 @@ Result::Result(std::wstring&& text, Position&& position, BarcodeFormat format, s
 	}
 }
 
-Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
-			   std::string&& symbologyIdentifier, ByteArray&& rawBytes, const bool readerInit)
-	: Result(TextDecoder::FromLatin1(text), Line(y, xStart, xStop), format, std::move(symbologyIdentifier),
-			 std::move(rawBytes), {}, readerInit)
-{}
-
 Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format)
 	: _status(decodeResult.errorCode()),
 	  _format(format),
 	  _text(std::move(decodeResult).text()),
+	  _binary(std::move(decodeResult).binary()),
 	  _position(std::move(position)),
 	  _rawBytes(std::move(decodeResult).rawBytes()),
 	  _numBits(decodeResult.numBits()),
@@ -68,7 +53,8 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _symbologyIdentifier(decodeResult.symbologyIdentifier()),
 	  _sai(decodeResult.structuredAppend()),
 	  _isMirrored(decodeResult.isMirrored()),
-	  _readerInit(decodeResult.readerInit())
+	  _readerInit(decodeResult.readerInit()),
+	  _lineCount(decodeResult.lineCount())
 {
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push

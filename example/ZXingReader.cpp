@@ -1,18 +1,8 @@
 /*
 * Copyright 2016 Nu-book Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
+* Copyright 2019 Axel Waggershauser
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "Diagnostics.h"
 #include "pdf417/PDFDecoderResultExtra.h"
@@ -50,6 +40,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -ispure                 Assume the image contains only a 'pure'/perfect code (faster)\n"
 			  << "    -1                      Print only file name, format, identifier, text and status on one line per file\n"
 			  << "    -escape                 Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
+			  << "    -binary                 Write (only) the binary content of the symbol(s) to stdout\n"
 			  << "    -pngout <png out path>  Write a copy of the input image with barcodes outlined by a green line\n"
 			  << "    -binarizer <BINARIZER>  Use specific binarizer\n"
 			  << "    -charset <CHARSET>      Default character set\n"
@@ -68,7 +59,7 @@ static void PrintUsage(const char* exePath)
 	std::cout << "\n";
 }
 
-static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLine, bool& angleEscape,
+static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLine, bool& angleEscape, bool& binaryOutput,
 						 std::vector<std::string>& filePaths, std::string& outPath)
 {
 	for (int i = 1; i < argc; ++i) {
@@ -117,6 +108,8 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 			oneLine = true;
 		} else if (strcmp(argv[i], "-escape") == 0) {
 			angleEscape = true;
+		} else if (strcmp(argv[i], "-binary") == 0) {
+			binaryOutput = true;
 		} else if (strcmp(argv[i], "-pngout") == 0) {
 			if (++i == argc)
 				return false;
@@ -162,10 +155,11 @@ int main(int argc, char* argv[])
 	std::string outPath;
 	bool oneLine = false;
 	bool angleEscape = false;
+	bool binaryOutput = false;
 	int ret = 0;
 
 
-	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, filePaths, outPath)) {
+	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, binaryOutput, filePaths, outPath)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
@@ -201,6 +195,11 @@ int main(int argc, char* argv[])
 
 			ret |= static_cast<int>(result.status());
 
+			if (binaryOutput) {
+				std::cout.write(reinterpret_cast<const char*>(result.binary().data()), result.binary().size());
+				continue;
+			}
+
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
 							<< " \"" << ToUtf8(result.text(), angleEscape) << "\" " << ToString(result.status());
@@ -231,6 +230,7 @@ int main(int argc, char* argv[])
 				firstFile = false;
 			}
 			std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
+					  << "Binary:     \"" << ToHex(result.binary()) << "\"\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
 					  << "Position:   " << result.position() << "\n"

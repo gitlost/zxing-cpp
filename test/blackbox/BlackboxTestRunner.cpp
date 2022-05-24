@@ -1,22 +1,12 @@
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2019 Axel Waggershauser
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "BlackboxTestRunner.h"
 
+#include "DecoderResult.h"
 #include "ImageLoader.h"
 #include "ReadBarcode.h"
 #include "TextUtfEncoding.h"
@@ -152,9 +142,10 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 	}
 
 	if (auto expected = readFile(".bin")) {
-		std::string latin1Result(result.text().length(), '\0');
-		std::transform(result.text().begin(), result.text().end(), latin1Result.begin(), [](wchar_t c) { return static_cast<char>(c); });
-		return latin1Result != *expected ? fmt::format("Content mismatch: expected '{}' but got '{}'", *expected, latin1Result) : "";
+		ByteArray binaryExpected(*expected);
+		return result.binary() != binaryExpected
+				   ? fmt::format("Content mismatch: expected '{}' but got '{}'", ToHex(binaryExpected), ToHex(result.binary()))
+				   : "";
 	}
 
 	return "Error reading file";
@@ -282,12 +273,19 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 		return Result(DecodeStatus::FormatError);
 
 	std::wstring text;
-	for (const auto& r : allResults)
+	Content content;
+	for (const auto& r : allResults) {
 		text.append(r.text());
+		content.append(r.binary());
+	}
 
 	const auto& first = allResults.front();
-	StructuredAppendInfo sai{first.sequenceIndex(), first.sequenceSize(), first.sequenceId()};
-	return {std::move(text), {}, first.format(), std::string(first.symbologyIdentifier()), {}, std::move(sai), first.readerInit()};
+	return {DecoderResult({}, std::move(text), std::move(content))
+				.setStructuredAppend({first.sequenceIndex(), first.sequenceSize(), first.sequenceId()})
+				.setSymbologyIdentifier(first.symbologyIdentifier())
+				.setReaderInit(first.readerInit()),
+			{},
+			first.format()};
 }
 
 static void doRunStructuredAppendTest(const fs::path& directory, std::string_view format, int totalTests,

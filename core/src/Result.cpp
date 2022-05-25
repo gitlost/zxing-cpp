@@ -35,8 +35,6 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 	  _readerInit(readerInit),
 	  _lineCount(0)
 {
-	_numBits = Size(_rawBytes) * 8;
-
 	if (Diagnostics::enabled()) {
 		Diagnostics::moveTo(_diagnostics);
 	}
@@ -57,9 +55,6 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _readerInit(decodeResult.readerInit()),
 	  _lineCount(decodeResult.lineCount())
 {
-	if (_content.isFinalized()) {
-		_text = _content.getResultText();
-	}
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

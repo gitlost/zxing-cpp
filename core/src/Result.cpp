@@ -48,7 +48,7 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _content(std::move(decodeResult).content()),
 	  _text(std::move(decodeResult).text()),
 	  _position(std::move(position)),
-	  _rawBytes(std::move(decodeResult).rawBytes()),
+	  _rawBytes(std::move(decodeResult.rawBytes())),
 	  _numBits(decodeResult.numBits()),
 	  _ecLevel(decodeResult.ecLevel()),
 	  _symbologyIdentifier(decodeResult.symbologyIdentifier()),
@@ -57,6 +57,9 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	  _readerInit(decodeResult.readerInit()),
 	  _lineCount(decodeResult.lineCount())
 {
+	if (_content.isFinalized()) {
+		_text = _content.getResultText();
+	}
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

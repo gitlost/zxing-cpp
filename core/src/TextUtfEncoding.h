@@ -21,6 +21,10 @@ void AppendUtf16(std::wstring& str, const uint16_t* utf16, size_t length);
 void AppendUtf8(std::wstring& str, const uint8_t* utf8, size_t length);
 void AppendUtf32(std::wstring& str, const uint32_t* utf32, size_t length);
 
+constexpr uint32_t kAccepted = 0;
+constexpr uint32_t kError = 12;
+uint32_t Utf8Decode(uint8_t byte, uint32_t& state, uint32_t& codep);
+
 template <typename T>
 bool IsUtf16HighSurrogate(T c)
 {

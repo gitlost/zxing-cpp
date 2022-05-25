@@ -48,7 +48,7 @@ public:
 	BarcodeFormat format() const { return _format; }
 
 	/**
-	 * @brief text Content of symbol.
+	 * @brief text Text represention of symbol's content.
 	 *
 	 * For UPC-A and UPC-E, the content is 12 and 8 digits respectively, i.e. is not expanded to 13 digits.
 	 * For EAN-13, UPC-A, UPC-E and EAN-8 with add-on, the add-on is appended separated by a space.

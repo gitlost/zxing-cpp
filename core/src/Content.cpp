@@ -20,13 +20,16 @@ void Content::ForEachECIBlock(FUNC func) const
 		auto [eci, start] = encodings[i];
 		int end = i + 1 == Size(encodings) ? Size(binary) : encodings[i + 1].pos;
 
-		func(eci, start, end);
+		if (start != end)
+			func(eci, start, end);
 	}
 }
 
 void Content::switchEncoding(ECI eci, bool isECI)
 {
-	// TODO: replace non-ECI entries on first ECI entry with default ECI
+	// replace all non-ECI entries on first ECI entry with default ECI
+	if (isECI && !hasECI)
+		encodings = {{ECI::ISO8859_1, 0}};
 	if (isECI || !hasECI) {
 		if (encodings.back().pos == Size(binary))
 			encodings.back().eci = eci; // no point in recording 0 length segments
@@ -57,9 +60,7 @@ std::wstring Content::text() const
 
 	std::wstring wstr;
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
-		CharacterSet cs = ToCharacterSet(eci);
-		if (cs == CharacterSet::Unknown)
-			cs = ToInt(eci) > 899 ? CharacterSet::BINARY : fallbackCS;
+		CharacterSet cs = eci == ECI::Unknown ? fallbackCS : ToCharacterSet(eci);
 
 		TextDecoder::Append(wstr, binary.data() + begin, end - begin, cs);
 	});
@@ -70,17 +71,19 @@ std::string Content::utf8Protocol() const
 {
 	std::wstring res;
 	ECI lastECI = ECI::Unknown;
+	auto fallbackCS = guessEncoding();
 
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
-		if (!hasECI)
-			eci = ToECI(guessEncoding());
-		CharacterSet cs = ToCharacterSet(eci);
-		if (cs == CharacterSet::Unknown)
-			cs = CharacterSet::BINARY;
-		if (eci == ECI::Unknown)
-			eci = ECI::Binary;
-		else if (IsText(eci))
+		// first determine how to decode the content (choose character set)
+		//  * eci == ECI::Unknown implies !hasECI and we guess
+		//  * if !IsText(eci) the ToCharcterSet(eci) will return Unknown and we decode as binary
+		CharacterSet cs = eci == ECI::Unknown ? fallbackCS : ToCharacterSet(eci);
+
+		// then find the eci to report back in the ECI designator
+		if (IsText(ToECI(cs))) // everything decoded as text is reported as utf8
 			eci = ECI::UTF8;
+		else if (eci == ECI::Unknown) // implies !hasECI and fallbackCS is Unknown or Binary
+			eci = ECI::Binary;
 
 		if (lastECI != eci)
 			TextDecoder::AppendLatin1(res, ToString(eci));

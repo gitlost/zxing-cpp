@@ -349,7 +349,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 	}
 
 	return DecoderResult(std::move(codewords), std::move(resultEncoded))
-			.setEcLevel(L"L" + std::to_wstring(ecLevel))
+			.setEcLevel("L" + std::to_string(ecLevel))
 			.setSymbologyIdentifier(std::move(symbologyIdentifier));
 }
 

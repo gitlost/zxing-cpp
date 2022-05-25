@@ -397,7 +397,7 @@ DetectorResult DetectPureMQR(const BitMatrix& image)
 #endif
 
 	// Now just read off the bits (this is a crop + subsample)
-	return {Deflate(image, dimension, dimension, top + moduleSize / 2, left + moduleSize / 2, moduleSize),
+	return {Deflate(image, (int)dimension, (int)dimension, top + moduleSize / 2, left + moduleSize / 2, moduleSize),
 			{{left, top}, {right, top}, {right, bottom}, {left, bottom}}};
 }
 

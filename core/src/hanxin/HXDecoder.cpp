@@ -140,7 +140,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 							Diagnostics::fmt("NERR(%d)", bits.available());
 							return DecodeStatus::FormatError;
 						}
-						char buf[4];
+						char buf[32];
 						int num = bits.readBits(10);
 						if (num >= 0x3FD) {
 							if (prevNum == -1) {

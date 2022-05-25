@@ -352,6 +352,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 #ifndef NDEBUG
 		printf("QRDecoder error: %s\n", e.what());
 #endif
+		Diagnostics::fmt("FMTError(%s)", e.what());
 		return DecodeStatus::FormatError;
 	}
 

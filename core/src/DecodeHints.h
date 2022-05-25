@@ -146,7 +146,7 @@ public:
 
 	/// NOTE: used to affect FNC1 handling for Code 128 (aka GS1-128) but behavior now based on position of FNC1.
 	[[deprecated]] bool assumeGS1() const noexcept { return true; }
-	[[deprecated]] DecodeHints& setAssumeGS1(bool v [[maybe_unused]]) { return *this; }
+	[[deprecated]] DecodeHints& setAssumeGS1(bool /*v [[maybe_unused]]*/) { return *this; }
 
 	/// NOTE: use validateCode39CheckSum
 	[[deprecated]] bool assumeCode39CheckDigit() const noexcept { return validateCode39CheckSum(); }

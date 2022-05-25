@@ -82,10 +82,10 @@ constexpr int C_BINARY_LATCH = 112;
 
 // Binary, Table 3
 constexpr int BIN_2SHIFT_C = 103;
-constexpr int BIN_3SHIFT_C = 104;
-constexpr int BIN_4SHIFT_C = 105;
-constexpr int BIN_5SHIFT_C = 106;
-constexpr int BIN_6SHIFT_C = 107;
+//constexpr int BIN_3SHIFT_C = 104;
+//constexpr int BIN_4SHIFT_C = 105;
+//constexpr int BIN_5SHIFT_C = 106;
+//constexpr int BIN_6SHIFT_C = 107;
 constexpr int BIN_7SHIFT_C = 108;
 constexpr int BIN_TERM_A = 109;
 constexpr int BIN_TERM_B = 110;

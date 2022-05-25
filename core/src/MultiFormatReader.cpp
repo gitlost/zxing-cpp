@@ -79,7 +79,7 @@ Results MultiFormatReader::readMultiple(const BinaryBitmap& image, int maxSymbol
 
 	for (const auto& reader : _readers) {
 		auto r = reader->decode(image, maxSymbols);
-		maxSymbols -= r.size();
+		maxSymbols -= Size(r);
 		res.insert(res.end(), std::move_iterator(r.begin()), std::move_iterator(r.end()));
 		if (maxSymbols <= 0)
 			break;

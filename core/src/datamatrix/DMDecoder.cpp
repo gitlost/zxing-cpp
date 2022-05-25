@@ -407,7 +407,7 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 #ifndef NDEBUG
 		printf("DMDecoder error: %s\n", e.what());
 #endif
-		Diagnostics::put("FMTError");
+		Diagnostics::fmt("FMTError(%s)", e.what());
 		return DecodeStatus::FormatError;
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");

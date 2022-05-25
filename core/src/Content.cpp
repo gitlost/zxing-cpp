@@ -8,19 +8,38 @@
 #include "CharacterSetECI.h"
 #include "Diagnostics.h"
 #include "TextDecoder.h"
+#include "TextUtfEncoding.h"
 #include "ZXContainerAlgorithms.h"
 
 namespace ZXing {
 
-void Content::switchEncoding(CharacterSet cs, bool isECI)
+template <typename FUNC>
+void Content::ForEachECIBlock(FUNC func) const
 {
+	for (int i = 0; i < Size(encodings); ++i) {
+		auto [eci, start] = encodings[i];
+		int end = i + 1 == Size(encodings) ? Size(binary) : encodings[i + 1].pos;
+
+		func(eci, start, end);
+	}
+}
+
+void Content::switchEncoding(ECI eci, bool isECI)
+{
+	// TODO: replace non-ECI entries on first ECI entry with default ECI
 	if (isECI || !hasECI) {
-		if (encodings.back().second == Size(binary))
-			encodings.back().first = cs; // no point in recording 0 length segments
+		if (encodings.back().pos == Size(binary))
+			encodings.back().eci = eci; // no point in recording 0 length segments
 		else
-			encodings.emplace_back(cs, Size(binary));
+			encodings.push_back({eci, Size(binary)});
+		Diagnostics::fmt("%s(%d)", isECI ? "ECI" : "NonECI", ToInt(eci));
 	}
 	hasECI |= isECI;
+}
+
+void Content::switchEncoding(CharacterSet cs)
+{
+	 switchEncoding(ToECI(cs), false);
 }
 
 std::wstring Content::text() const
@@ -29,36 +48,64 @@ std::wstring Content::text() const
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;
-			Diagnostics::fmt("DefEnc(%d,%d)", fallbackCS, CharacterSetECI::Charset2ECI(fallbackCS));
+			Diagnostics::fmt("DefEnc(%d,%d)", (int)fallbackCS, ToInt(ToECI(fallbackCS)));
 		} else {
 			fallbackCS = guessEncoding();
-			Diagnostics::fmt("GuessEnc(%d,%d)", fallbackCS, CharacterSetECI::Charset2ECI(fallbackCS));
+			Diagnostics::fmt("GuessEnc(%d,%d)", (int)fallbackCS, ToInt(ToECI(fallbackCS)));
 		}
 	}
 
 	std::wstring wstr;
-	for (int i = 0; i < Size(encodings); ++i) {
-		auto [cs, start] = encodings[i];
-		int end          = i + 1 == Size(encodings) ? Size(binary) : encodings[i + 1].second;
-
+	ForEachECIBlock([&](ECI eci, int begin, int end) {
+		CharacterSet cs = ToCharacterSet(eci);
 		if (cs == CharacterSet::Unknown)
-			cs = fallbackCS;
+			cs = ToInt(eci) > 899 ? CharacterSet::BINARY : fallbackCS;
 
-		TextDecoder::Append(wstr, binary.data() + start, end - start, cs);
-	}
+		TextDecoder::Append(wstr, binary.data() + begin, end - begin, cs);
+	});
 	return wstr;
+}
+
+std::string Content::utf8Protocol() const
+{
+	std::wstring res;
+	ECI lastECI = ECI::Unknown;
+
+	ForEachECIBlock([&](ECI eci, int begin, int end) {
+		if (!hasECI)
+			eci = ToECI(guessEncoding());
+		CharacterSet cs = ToCharacterSet(eci);
+		if (cs == CharacterSet::Unknown)
+			cs = CharacterSet::BINARY;
+		if (eci == ECI::Unknown)
+			eci = ECI::Binary;
+		else if (IsText(eci))
+			eci = ECI::UTF8;
+
+		if (lastECI != eci)
+			TextDecoder::AppendLatin1(res, ToString(eci));
+		lastECI = eci;
+
+		std::wstring tmp;
+		TextDecoder::Append(tmp, binary.data() + begin, end - begin, cs);
+		for (auto c : tmp) {
+			res += c;
+			if (c == L'\\') // in the ECI protocol a '\' has to be doubled
+				res += c;
+		}
+	});
+
+	return TextUtfEncoding::ToUtf8(res);
 }
 
 CharacterSet Content::guessEncoding() const
 {
 	// assemble all blocks with unknown encoding
 	ByteArray input;
-	for (int i = 0; i < Size(encodings); ++i) {
-		auto [cs, start] = encodings[i];
-		int end          = i + 1 == Size(encodings) ? Size(binary) : encodings[i + 1].second;
-		if (cs == CharacterSet::Unknown)
-			input.insert(input.end(), binary.begin() + start, binary.begin() + end);
-	}
+	ForEachECIBlock([&](ECI eci, int begin, int end) {
+		if (eci == ECI::Unknown)
+			input.insert(input.end(), binary.begin() + begin, binary.begin() + end);
+	});
 
 	if (input.empty())
 		return CharacterSet::Unknown;
@@ -68,7 +115,7 @@ CharacterSet Content::guessEncoding() const
 
 ContentType Content::type() const
 {
-	auto isBinary = [](Encoding e) { return e.first == CharacterSet::BINARY || e.first == CharacterSet::Unknown; };
+	auto isBinary = [](Encoding e) { return !IsText(e.eci); };
 
 	if (hasECI) {
 		if (std::none_of(encodings.begin(), encodings.end(), isBinary))

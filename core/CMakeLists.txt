@@ -58,6 +58,8 @@ set (COMMON_FILES
     src/CustomData.h
     src/Diagnostics.h
     src/Diagnostics.cpp
+    src/ECI.h
+    src/ECI.cpp
     src/Flags.h
     src/GenericGF.h
     src/GenericGF.cpp

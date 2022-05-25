@@ -6,8 +6,8 @@
 #pragma once
 
 #include "ByteArray.h"
-#include "CharacterSet.h"
 #include "Diagnostics.h"
+#include "ECI.h"
 
 namespace ZXing {
 
@@ -17,14 +17,29 @@ class Content
 {
 	bool hasECI = false;
 
+	template <typename FUNC>
+	void ForEachECIBlock(FUNC f) const;
+
+	void switchEncoding(ECI eci, bool isECI);
+
 public:
+	struct Encoding
+	{
+		ECI eci;
+		int pos;
+	};
+
 	ByteArray binary;
-	using Encoding = std::pair<CharacterSet, int>;
-	std::vector<Encoding> encodings = {{CharacterSet::Unknown, 0}};
+	std::vector<Encoding> encodings = {{ECI::Unknown, 0}};
 	std::string hintedCharset;
+	std::string applicationIndicator;
 	CharacterSet defaultCharset = CharacterSet::Unknown;
 
-	void switchEncoding(CharacterSet cs, bool isECI = false);
+	Content() = default;
+	Content(ByteArray&& binary, ECI defaultECI) : binary(binary), encodings{{defaultECI, 0}} {}
+
+	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
+	void switchEncoding(CharacterSet cs);
 
 	void reserve(int count) { binary.reserve(binary.size() + count); }
 
@@ -38,6 +53,7 @@ public:
 	bool empty() const { return binary.empty(); }
 
 	std::wstring text() const;
+	std::string utf8Protocol() const;
 	CharacterSet guessEncoding() const;
 	ContentType type() const;
 };

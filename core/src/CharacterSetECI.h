@@ -20,18 +20,6 @@ namespace ZXing {
 namespace CharacterSetECI {
 
 /**
- * @param value character set ECI value
- * @return {@code CharacterSet} representing ECI of given value, or {@code CharacterSet::Unknown} if it is unsupported
- */
-CharacterSet ECI2CharacterSet(int value);
-
-/**
- * @param charset {@code CharacterSet} representing ECI
- * @return ECI of given {@code CharacterSet}, or -1 if it is unsupported
- */
-int Charset2ECI(CharacterSet charset);
-
-/**
  * @param name character set ECI encoding name
  * @return {@code CharacterSet} representing ECI of given value, or {@code CharacterSet::Unknown} if it is
  *   unsupported

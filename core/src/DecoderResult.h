@@ -37,7 +37,7 @@ class DecoderResult
 	std::wstring _ecLevel;
 	int _errorsCorrected = -1;
 	int _erasures = -1;
-	int _lineCount = -1;
+	int _lineCount = 0;
 	std::string _symbologyIdentifier;
 	StructuredAppendInfo _structuredAppend;
 	bool _isMirrored = false;
@@ -71,8 +71,8 @@ public:
 	ByteArray&& rawBytes() && { return std::move(_rawBytes); }
 	const std::wstring& text() const & { return _text; }
 	std::wstring&& text() && { return std::move(_text); }
-	const ByteArray& binary() const & { return _content.binary; }
-	ByteArray&& binary() && { return std::move(_content.binary); }
+	const Content& content() const & { return _content; }
+	Content&& content() && { return std::move(_content); }
 
 	// Simple macro to set up getter/setter methods that save lots of boilerplate.
 	// It sets up a standard 'const & () const', 2 setters for setting lvalues via

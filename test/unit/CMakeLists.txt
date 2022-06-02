@@ -15,6 +15,7 @@ add_executable (UnitTest
     CharacterSetECITest.cpp
     GTINTest.cpp
     ReedSolomonTest.cpp
+    TextEncoderTest.cpp
     TextDecoderTest.cpp
     TextUtfEncodingTest.cpp
     ThresholdBinarizerTest.cpp

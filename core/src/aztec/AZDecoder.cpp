@@ -1,6 +1,7 @@
 /*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
+* Copyright 2022 Axel Waggershauser
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -10,13 +11,11 @@
 #include "BitArray.h"
 #include "BitMatrix.h"
 #include "CharacterSetECI.h"
-#include "DecoderResult.h"
 #include "DecodeStatus.h"
+#include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
-#include "TextDecoder.h"
-#include "TextUtfEncoding.h"
 #include "ZXCType.h"
 #include "ZXTestSupport.h"
 
@@ -25,6 +24,7 @@
 #include <cstring>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace ZXing::Aztec {
@@ -216,20 +216,21 @@ static const char* GetCharacter(Table table, int code)
 /**
 * See ISO/IEC 24778:2008 Section 10.1
 */
-static int ParseECIValue(BitArray::Range& bits, const int flg)
+static ECI ParseECIValue(BitArray::Range& bits, const int flg)
 {
 	int eci = 0;
-	for (int i = 0; i < flg && bits.size() >= 4; i++)
+	for (int i = 0; i < flg; i++)
 		eci = 10 * eci + ReadBits(bits, 4) - 2;
-	return eci;
+	return ECI(eci);
 }
 
 /**
 * See ISO/IEC 24778:2008 Section 8
 */
-static StructuredAppendInfo ParseStructuredAppend(std::wstring& text)
+static StructuredAppendInfo ParseStructuredAppend(ByteArray& binary)
 {
-	std::wstring id;
+	std::string text(binary.begin(), binary.end());
+	StructuredAppendInfo sai;
 	std::string::size_type i = 0;
 
 	if (text[0] == ' ') { // Space-delimited id
@@ -239,7 +240,7 @@ static StructuredAppendInfo ParseStructuredAppend(std::wstring& text)
 			return {};
 		}
 
-		id = text.substr(1, sp - 1); // Strip space delimiters
+		sai.id = text.substr(1, sp - 1); // Strip space delimiters
 		i = sp + 1;
 	}
 	if (i + 1 >= text.size() || !zx_isupper(text[i]) || !zx_isupper(text[i + 1])) {
@@ -247,7 +248,6 @@ static StructuredAppendInfo ParseStructuredAppend(std::wstring& text)
 		return {};
 	}
 
-	StructuredAppendInfo sai;
 	sai.index = text[i] - 'A';
 	sai.count = text[i + 1] - 'A' + 1;
 
@@ -256,71 +256,33 @@ static StructuredAppendInfo ParseStructuredAppend(std::wstring& text)
 		Diagnostics::put("SAIError(BadCount)");
 	}
 
-	if (!id.empty())
-		TextUtfEncoding::ToUtf8(id, sai.id);
-
 	Diagnostics::fmt("SAI(%d,%d,%s)", sai.index, sai.count, sai.id.c_str());
 
 	text.erase(0, i + 2); // Remove
+	binary = ByteArray(text);
 
 	return sai;
 }
 
-struct AztecData
+static void DecodeContent(const BitArray& bits, Content& res)
 {
-	std::wstring text;
-	std::string symbologyIdentifier;
-	StructuredAppendInfo sai;
-};
-
-/**
-* Gets the string encoded in the aztec code bits
-*
-* @return the decoded string
-*/
-ZXING_EXPORT_TEST_ONLY
-AztecData GetEncodedData(const BitArray& bits, const std::string& characterSet)
-{
-	AztecData res;
 	Table latchTable = Table::UPPER; // table most recently latched to
 	Table shiftTable = Table::UPPER; // table to use for the next read
-	std::string text;
-	text.reserve(20);
-	int symbologyIdModifier = 0;
-	CharacterSet encoding = CharacterSetECI::InitEncoding(characterSet);
 
-	// Check for Structured Append - need 4 5-bit words, beginning with ML UL, ending with index and count
-	bool haveStructuredAppend = Size(bits) > 20 && ToInt(bits, 0, 5) == 29 // latch to MIXED (from UPPER)
-								&& ToInt(bits, 5, 5) == 29;                // latch back to UPPER (from MIXED)
-	bool haveFNC1 = false;
 	auto remBits = bits.range();
 
-	while (remBits) {
+	while (remBits.size() >= (shiftTable == Table::DIGIT ? 4 : 5)) { // see ISO/IEC 24778:2008 7.3.1.2 regarding padding bits
 		if (shiftTable == Table::BINARY) {
-			if (remBits.size() < 5)
-				break;
 			int length = ReadBits(remBits, 5);
-			if (length == 0) {
-				if (remBits.size() < 11)
-					break;
+			if (length == 0)
 				length = ReadBits(remBits, 11) + 31;
-			}
 			Diagnostics::fmt("(%d)", length);
-			for (int charCount = 0; charCount < length; charCount++) {
-				if (remBits.size() < 8) {
-					remBits.begin = remBits.end;  // Force outer loop to exit
-					break;
-				}
-				int code = ReadBits(remBits, 8);
-				Diagnostics::chr((char)code, "B", true /*appendHex*/);
-				text.push_back((char)code);
-			}
+			for (int i = 0; i < length; i++)
+				res.push_back(ReadBits(remBits, 8));
 			// Go back to whatever mode we had been in
 			shiftTable = latchTable;
 		} else {
 			int size = shiftTable == Table::DIGIT ? 4 : 5;
-			if (remBits.size() < size)
-				break;
 			int code = ReadBits(remBits, size);
 			const char* str = GetCharacter(shiftTable, code);
 			if (std::strncmp(str, "CTRL_", 5) == 0) {
@@ -334,66 +296,75 @@ AztecData GetEncodedData(const BitArray& bits, const std::string& characterSet)
 					latchTable = shiftTable;
 				Diagnostics::fmt("%c%c", str[5], str[6]);
 			} else if (std::strcmp(str, "FLGN") == 0) {
-				if (remBits.size() < 3)
-					break;
 				int flg = ReadBits(remBits, 3);
 				if (flg == 0) { // FNC1
-					haveFNC1 = true; // Will process first/second FNC1 at end after any Structured Append
-					text.push_back((char)29); // May be removed at end if first/second FNC1
+					res.push_back(29); // May be removed at end if first/second FNC1
 				} else if (flg <= 6) {
 					// FLG(1) to FLG(6) ECI
 					Diagnostics::fmt("FLG%d", flg);
-					encoding =
-						CharacterSetECI::OnChangeAppendReset(ParseECIValue(remBits, flg), res.text, text, encoding);
+					res.switchEncoding(ParseECIValue(remBits, flg));
 				} else {
 					// FLG(7) is invalid
 					Diagnostics::put("FLG7Warn");
 				}
 				shiftTable = latchTable;
 			} else {
-				text.append(str);
+				res.append(str);
 				// Go back to whatever mode we had been in
 				shiftTable = latchTable;
-				while (*str) {
-					Diagnostics::chr(*str++);
-				}
 			}
 		}
 	}
 	Diagnostics::put("EOD");
+}
 
-	TextDecoder::Append(res.text, reinterpret_cast<const uint8_t*>(text.data()), text.size(), encoding);
+ZXING_EXPORT_TEST_ONLY
+DecoderResult Decode(const BitArray& bits, const std::string& characterSet)
+{
+	Content res;
+	res.symbology = {'z', '0', 3};
+	res.hintedCharset = characterSet;
 
-	if (!res.text.empty()) {
-		if (haveStructuredAppend)
-			res.sai = ParseStructuredAppend(res.text);
-		if (haveFNC1) {
-			// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
-			// modifiers that indicate ECI protocol (ISO/IEC 24778:2008 Annex F Table F.1)
-			if (res.text.front() == 29) {
-				symbologyIdModifier = 1; // GS1
-				res.text.erase(0, 1); // Remove FNC1
-				Diagnostics::put("FLG0(GS1)");
-			} else if (res.text.size() > 2 && zx_isupper(res.text[0]) && res.text[1] == 29) {
-				// FNC1 following single uppercase letter (the AIM Application Indicator)
-				symbologyIdModifier = 2; // AIM
-				res.text.erase(1, 1); // Remove FNC1
-				// The AIM Application Indicator character "A"-"Z" is left in the stream (ISO/IEC 24778:2008 16.2)
-				Diagnostics::fmt("FLG0(AIM %c)", res.text[0]);
-			} else if (res.text.size() > 3 && zx_isdigit(res.text[0]) && zx_isdigit(res.text[1]) &&
-					   res.text[2] == 29) {
-				// FNC1 following 2 digits (the AIM Application Indicator)
-				symbologyIdModifier = 2; // AIM
-				res.text.erase(2, 1); // Remove FNC1
-				// The AIM Application Indicator characters "00"-"99" are left in the stream (ISO/IEC 24778:2008 16.2)
-				Diagnostics::fmt("FLG0(AIM %c%c)", res.text[0], res.text[1]);
-			}
-		}
+	try {
+		DecodeContent(bits, res);
+	} catch (const std::out_of_range&) { // see ReadBits()
+		return DecodeStatus::FormatError;
 	}
 
-	res.symbologyIdentifier = "]z" + std::to_string(symbologyIdModifier + (res.sai.index > -1 ? 6 : 0));
+	if (res.binary.empty())
+		return DecodeStatus::FormatError;
 
-	return res;
+	// Check for Structured Append - need 4 5-bit words, beginning with ML UL, ending with index and count
+	bool haveStructuredAppend = Size(bits) > 20 && ToInt(bits, 0, 5) == 29 // latch to MIXED (from UPPER)
+								&& ToInt(bits, 5, 5) == 29;                // latch back to UPPER (from MIXED)
+
+	StructuredAppendInfo sai = haveStructuredAppend ? ParseStructuredAppend(res.binary) : StructuredAppendInfo();
+
+	// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
+	// modifiers that indicate ECI protocol (ISO/IEC 24778:2008 Annex F Table F.1)
+	if (res.binary[0] == 29) {
+		res.symbology.modifier = '1'; // GS1
+		res.applicationIndicator = "GS1";
+		res.erase(0, 1); // Remove FNC1
+	} else if (res.binary.size() > 2 && std::isupper(res.binary[0]) && res.binary[1] == 29) {
+		// FNC1 following single uppercase letter (the AIM Application Indicator)
+		res.symbology.modifier = '2'; // AIM
+		// TODO: remove the AI from the content?
+		res.applicationIndicator = res.binary.asString(0, 1);
+		res.erase(1, 1); // Remove FNC1,
+						 // The AIM Application Indicator character "A"-"Z" is left in the stream (ISO/IEC 24778:2008 16.2)
+	} else if (res.binary.size() > 3 && std::isdigit(res.binary[0]) && std::isdigit(res.binary[1]) && res.binary[2] == 29) {
+		// FNC1 following 2 digits (the AIM Application Indicator)
+		res.symbology.modifier = '2'; // AIM
+		res.applicationIndicator = res.binary.asString(0, 2);
+		res.erase(2, 1); // Remove FNC1
+						 // The AIM Application Indicator characters "00"-"99" are left in the stream (ISO/IEC 24778:2008 16.2)
+	}
+
+	if (sai.index != -1)
+		res.symbology.modifier += 6; // TODO: this is wrong as long as we remove the sai info from the content in ParseStructuredAppend
+
+	return DecoderResult(bits.toBytes(), {}, std::move(res)).setNumBits(Size(bits)).setStructuredAppend(sai);
 }
 
 DecoderResult Decode(const DetectorResult& detectorResult, const std::string& characterSet)
@@ -412,16 +383,7 @@ DecoderResult Decode(const DetectorResult& detectorResult, const std::string& ch
 	Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
 	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
 	Diagnostics::put("  Decode:      ");
-
-	auto data = GetEncodedData(bits, characterSet);
-	if (data.text.empty())
-		return DecodeStatus::FormatError;
-
-	return DecoderResult(bits.toBytes(), std::move(data.text))
-		.setNumBits(Size(bits))
-		.setSymbologyIdentifier(std::move(data.symbologyIdentifier))
-		.setStructuredAppend(data.sai)
-		.setReaderInit(detectorResult.readerInit());
+	return Decode(bits, characterSet).setReaderInit(detectorResult.readerInit());
 }
 
 } // namespace ZXing::Aztec

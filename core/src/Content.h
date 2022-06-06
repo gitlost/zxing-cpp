@@ -13,10 +13,21 @@ namespace ZXing {
 
 enum class ContentType { Text, Binary, Mixed };
 
+std::string ToString(ContentType type);
+
+struct SymbologyIdentifier
+{
+	char code = 0, modifier = 0;
+	int eciModifierOffset = 0;
+
+	std::string toString(bool hasECI = false) const
+	{
+		return code ? ']' + std::string(1, code) + static_cast<char>(modifier + eciModifierOffset * hasECI) : std::string();
+	}
+};
+
 class Content
 {
-	bool hasECI = false;
-
 	template <typename FUNC>
 	void ForEachECIBlock(FUNC f) const;
 
@@ -34,9 +45,11 @@ public:
 	std::string hintedCharset;
 	std::string applicationIndicator;
 	CharacterSet defaultCharset = CharacterSet::Unknown;
+	SymbologyIdentifier symbology;
+	bool hasECI = false;
 
 	Content() = default;
-	Content(ByteArray&& binary, ECI defaultECI) : binary(binary), encodings{{defaultECI, 0}} {}
+	Content(ByteArray&& binary) : binary(std::move(binary)), encodings{{ECI::ISO8859_1, 0}} {}
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);
@@ -50,10 +63,15 @@ public:
 	void operator+=(char val) { push_back(val); }
 	void operator+=(const std::string& str) { append(str); }
 
+	void erase(int pos, int n);
+	void insert(int pos, const std::string& str);
+
 	bool empty() const { return binary.empty(); }
+	bool canProcess() const;
 
 	std::wstring text() const;
 	std::string utf8Protocol() const;
+	ByteArray binaryECI() const;
 	CharacterSet guessEncoding() const;
 	ContentType type() const;
 };

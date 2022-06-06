@@ -313,11 +313,11 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 {
 	BitSource bits(bytes);
 	Content result;
+	result.symbology = {'d', '1', 3}; // ECC 200 (ISO 16022:2006 Annex N Table N.1)
 	result.hintedCharset = characterSet;
 	result.defaultCharset = CharacterSet::ISO8859_1;
 	std::string resultTrailer;
 
-	int symbologyIdModifier = 1; // ECC 200 (ISO 16022:2006 Annex N Table N.1)
 	struct StructuredAppendInfo sai;
 	bool readerInit = false;
 	bool firstCodeword = true;
@@ -336,17 +336,14 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 			case 230: DecodeC40OrTextSegment(bits, result, Mode::C40); break;
 			case 231: DecodeBase256Segment(bits, result); break;
 			case 232: // FNC1
-				// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
-				// modifiers that indicate ECI protocol (ISO 16022:2006 Annex N Table N.1, ISO 21471:2020 Annex G Table G.1)
-
 				// Only recognizing an FNC1 as first/second by codeword position (aka symbol character position), not
 				// by decoded character position, i.e. not recognizing a C40/Text encoded FNC1 (which requires a latch
 				// and a shift)
 				if (bits.byteOffset() == firstFNC1Position) {
-					symbologyIdModifier = 2; // GS1
+					result.symbology.modifier = '2'; // GS1
 					Diagnostics::put("FNC1(GS1)");
 				} else if (bits.byteOffset() == firstFNC1Position + 1) {
-					symbologyIdModifier = 3; // AIM, note no AIM Application Indicator format defined, ISO 16022:2006 11.2
+					result.symbology.modifier = '3'; // AIM, note no AIM Application Indicator format defined, ISO 16022:2006 11.2
 					Diagnostics::put("FNC1(2ndPos)");
 				} else {
 					result.push_back((char)29); // translate as ASCII 29 <GS>
@@ -413,9 +410,9 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 
 	result.append(resultTrailer);
+	result.symbology.modifier += isDMRE * 6;
 
 	return DecoderResult(std::move(bytes), {}, std::move(result))
-			.setSymbologyIdentifier("]d" + std::to_string(symbologyIdModifier + (isDMRE ? 6 : 0)))
 			.setStructuredAppend(sai)
 			.setReaderInit(readerInit);
 }

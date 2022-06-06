@@ -23,15 +23,15 @@ Result::Result(DecodeStatus status) : _status(status)
 }
 
 Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
-			   std::string&& symbologyIdentifier, ByteArray&& rawBytes, const bool readerInit)
+			   SymbologyIdentifier si, ByteArray&& rawBytes, const bool readerInit)
 	:
 	  _format(format),
-	  _content({ByteArray(text), ECI::ISO8859_1}),
+	  _content({ByteArray(text)}),
 	  _text(TextDecoder::FromLatin1(text)),
 	  _position(Line(y, xStart, xStop)),
 	  _rawBytes(std::move(rawBytes)),
 	  _numBits(Size(_rawBytes) * 8),
-	  _symbologyIdentifier(std::move(symbologyIdentifier)),
+	  _symbologyIdentifier(si.toString()),
 	  _readerInit(readerInit),
 	  _lineCount(0)
 {

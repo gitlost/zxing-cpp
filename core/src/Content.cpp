@@ -13,6 +13,12 @@
 
 namespace ZXing {
 
+std::string ToString(ContentType type)
+{
+	const char* t2s[] = {"Text", "Binary", "Mixed"};
+	return t2s[static_cast<int>(type)];
+}
+
 template <typename FUNC>
 void Content::ForEachECIBlock(FUNC func) const
 {
@@ -42,19 +48,43 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 void Content::switchEncoding(CharacterSet cs)
 {
-	 switchEncoding(ToECI(cs), false);
+	switchEncoding(ToECI(cs), false);
+}
+
+void Content::erase(int pos, int n)
+{
+	binary.erase(binary.begin() + pos, binary.begin() + pos + n);
+	for (auto& e : encodings)
+		if (e.pos > pos)
+			pos -= n;
+}
+
+void Content::insert(int pos, const std::string& str)
+{
+	binary.insert(binary.begin() + pos, str.begin(), str.end());
+	for (auto& e : encodings)
+		if (e.pos > pos)
+			pos += Size(str);
+}
+
+bool Content::canProcess() const
+{
+	return std::all_of(encodings.begin(), encodings.end(), [](Encoding e) { return CanProcess(e.eci); });
 }
 
 std::wstring Content::text() const
 {
+	if (!canProcess())
+		return {};
+
 	auto fallbackCS = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;
-			Diagnostics::fmt("DefEnc(%d,%d)", (int)fallbackCS, ToInt(ToECI(fallbackCS)));
+			Diagnostics::fmt("DefEnc(%d)", ToInt(ToECI(fallbackCS)));
 		} else {
 			fallbackCS = guessEncoding();
-			Diagnostics::fmt("GuessEnc(%d,%d)", (int)fallbackCS, ToInt(ToECI(fallbackCS)));
+			Diagnostics::fmt("GuessEnc(%d)", ToInt(ToECI(fallbackCS)));
 		}
 	}
 
@@ -69,9 +99,14 @@ std::wstring Content::text() const
 
 std::string Content::utf8Protocol() const
 {
-	std::wstring res;
+	if (empty() || !canProcess())
+		return {};
+
+	std::wstring res = TextDecoder::FromLatin1(symbology.toString(true));
 	ECI lastECI = ECI::Unknown;
-	auto fallbackCS = guessEncoding();
+	auto fallbackCS = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
+	if (!hasECI && fallbackCS == CharacterSet::Unknown)
+		fallbackCS = guessEncoding();
 
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
 		// first determine how to decode the content (choose character set)
@@ -101,6 +136,28 @@ std::string Content::utf8Protocol() const
 	return TextUtfEncoding::ToUtf8(res);
 }
 
+ByteArray Content::binaryECI() const
+{
+	if (empty())
+		return {};
+
+	std::string res = symbology.toString(true);
+
+	ForEachECIBlock([&](ECI eci, int begin, int end) {
+		if (hasECI)
+			res += ToString(eci);
+
+		for (int i = begin; i != end; ++i) {
+			char c = static_cast<char>(binary[i]);
+			res += c;
+			if (c == '\\') // in the ECI protocol a '\' has to be doubled
+				res += c;
+		}
+	});
+
+	return ByteArray(res);
+}
+
 CharacterSet Content::guessEncoding() const
 {
 	// assemble all blocks with unknown encoding
@@ -119,19 +176,16 @@ CharacterSet Content::guessEncoding() const
 ContentType Content::type() const
 {
 	auto isBinary = [](Encoding e) { return !IsText(e.eci); };
+	auto es = encodings;
 
-	if (hasECI) {
-		if (std::none_of(encodings.begin(), encodings.end(), isBinary))
-			return ContentType::Text;
-		if (std::all_of(encodings.begin(), encodings.end(), isBinary))
-			return ContentType::Binary;
-	} else {
-		if (std::none_of(encodings.begin(), encodings.end(), isBinary))
-			return ContentType::Text;
-		auto cs = guessEncoding();
-		if (cs == CharacterSet::BINARY)
-			return ContentType::Binary;
-	}
+	for (auto& e : es)
+		if (e.eci == ECI::Unknown)
+			e.eci = ToECI(guessEncoding());
+
+	if (std::none_of(es.begin(), es.end(), isBinary))
+		return ContentType::Text;
+	if (std::all_of(es.begin(), es.end(), isBinary))
+		return ContentType::Binary;
 
 	return ContentType::Mixed;
 }

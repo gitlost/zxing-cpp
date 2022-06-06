@@ -21,7 +21,6 @@ if (BUILD_WRITERS)
     add_test(NAME ZXingWriterTest COMMAND ZXingWriter qrcode "I have the best words." test.png)
 endif()
 
-
 if (BUILD_READERS)
     find_package(Qt5 COMPONENTS Gui Multimedia Quick)
     set(CMAKE_AUTOMOC ON)

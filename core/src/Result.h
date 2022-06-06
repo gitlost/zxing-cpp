@@ -37,7 +37,7 @@ public:
 
 	// 1D convenience constructor
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
-		   std::string&& symbologyIdentifier = "", ByteArray&& rawBytes = {}, const bool readerInit = false);
+		   SymbologyIdentifier si, ByteArray&& rawBytes = {}, const bool readerInit = false);
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
@@ -57,8 +57,12 @@ public:
 
 	// WARNING: this is an experimental API and may change/disappear
 	const ByteArray& binary() const { return _content.binary; }
+	const ByteArray binaryECI() const { return _content.binaryECI(); }
 	const std::string utf8Protocol() const { return _content.utf8Protocol(); }
-	const std::string applicationIndicator() const { return _content.applicationIndicator; }
+	const std::string& applicationIndicator() const { return _content.applicationIndicator; }
+	ContentType contentType() const { return _content.type(); }
+	bool hasECI() const { return _content.hasECI; }
+	// END WARNING
 
 	const Position& position() const { return _position; }
 	void setPosition(Position pos) { _position = pos; }
@@ -115,7 +119,7 @@ public:
 	/**
 	 * @brief sequenceLastECI Character set ECI in effect at end of symbol if part of a structured append sequence.
 	 */
-	int sequenceLastECI() const { return _sai.lastECI; }
+	int sequenceLastECI() const { return Size(_content.encodings) ? ToInt(_content.encodings.back().eci) : 0; }
 
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
 	bool isPartOfSequence() const { return sequenceSize() > -1; }

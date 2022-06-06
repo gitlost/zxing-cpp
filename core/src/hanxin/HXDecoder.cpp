@@ -20,6 +20,7 @@
 #include "BitSource.h"
 #include "ByteArray.h"
 #include "CharacterSetECI.h"
+#include "Content.h"
 #include "DecoderResult.h"
 #include "DecodeStatus.h"
 #include "Diagnostics.h"
@@ -37,22 +38,22 @@ namespace ZXing::HanXin {
 namespace DecodedBitStreamParser {
 
 // Table 1
-constexpr int PAD       = 0x0;
-constexpr int NUMERIC   = 0x1;
-constexpr int TEXT      = 0x2;
-constexpr int BINARY    = 0x3;
-constexpr int REGION1   = 0x4;
-constexpr int REGION2   = 0x5;
-constexpr int BYTE2     = 0x6;
-constexpr int BYTE4     = 0x7;
-constexpr int ECI       = 0x8;
-constexpr int UNIC      = 0x9;
-constexpr int RESERVED2 = 0xA;
-constexpr int RESERVED3 = 0xB;
-constexpr int RESERVED4 = 0xC;
-constexpr int RESERVED5 = 0xD;
-constexpr int GS1_URI   = 0xE;
-constexpr int RESERVED6 = 0xF;
+constexpr int M_PAD       = 0x0;
+constexpr int M_NUMERIC   = 0x1;
+constexpr int M_TEXT      = 0x2;
+constexpr int M_BINARY    = 0x3;
+constexpr int M_REGION1   = 0x4;
+constexpr int M_REGION2   = 0x5;
+constexpr int M_BYTE2     = 0x6;
+constexpr int M_BYTE4     = 0x7;
+constexpr int M_ECI       = 0x8;
+constexpr int M_UNIC      = 0x9;
+constexpr int M_RESERVED2 = 0xA;
+constexpr int M_RESERVED3 = 0xB;
+constexpr int M_RESERVED4 = 0xC;
+constexpr int M_RESERVED5 = 0xD;
+constexpr int M_GS1_URI   = 0xE;
+constexpr int M_RESERVED6 = 0xF;
 
 const char text1[62] = {
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -71,68 +72,68 @@ const char text2[62] = {
 	   '`',    '{',    '|',    '}',    '~', '\x7F'
 };
 
-static int ParseECIValue(BitSource& bits)
+static ECI ParseECIValue(BitSource& bits)
 {
 	if (bits.available() < 8) {
 		Diagnostics::put("Error(ECI)");
-		return 0;
+		throw std::runtime_error("ParseECIValue: first byte bits");
 	}
 	int firstByte = bits.readBits(8);
 	if (firstByte < 0x80) {
-		return firstByte;
+		return ECI(firstByte);
 	}
 	if (bits.available() < 8) {
 		Diagnostics::put("Error(ECI2)");
-		return 0;
+		throw std::runtime_error("ParseECIValue: second byte bits");
 	}
 	int secondByte = bits.readBits(8);
 	if (firstByte < 0xc0) {
-		return (firstByte << 8) | secondByte;
+		return ECI((firstByte << 8) | secondByte);
 	}
 	if (bits.available() < 8) {
 		Diagnostics::put("Error(ECI3)");
-		return 0;
+		throw std::runtime_error("ParseECIValue: third byte bits");
 	}
 	int thirdByte = bits.readBits(8);
-	return (firstByte << 16) | (secondByte << 8) | thirdByte;
+	return ECI((firstByte << 16) | (secondByte << 8) | thirdByte);
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, const int ecLevel)
+DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, const int ecLevel)
 {
 	BitSource bits(codewords);
-	std::string result;
-	std::wstring resultEncoded;
+	Content result;
+	result.hintedCharset = hintedCharset;
+	result.defaultCharset = CharacterSet::ISO8859_1;
 	bool gs1 = false, uri = false, uni = false;
-	CharacterSet encoding = CharacterSetECI::InitEncoding(characterSet);
 
 	try
 	{
 		while (bits.available() >= 4) {
 			int mode = bits.readBits(4);
 			switch (mode) {
-			case PAD: {
+			case M_PAD: {
 					int padding = 0;
 					while (bits.available() >= 4) {
 						mode = bits.readBits(4);
-						if (mode != PAD) {
+						if (mode != M_PAD) {
 							Diagnostics::fmt("PERR(%d)", mode);
 							return DecodeStatus::FormatError; // Ignore for now
 						}
 						padding++;
 					}
-					Diagnostics::fmt("PAD(%d)", padding);
+					Diagnostics::fmt("M_PAD(%d)", padding);
 				}
 				break;
-			case RESERVED2:
-			case RESERVED3:
-			case RESERVED4:
-			case RESERVED5:
-			case RESERVED6:
+			case M_RESERVED2:
+			case M_RESERVED3:
+			case M_RESERVED4:
+			case M_RESERVED5:
+			case M_RESERVED6:
 				Diagnostics::fmt("RERR(0x%X)", mode);
 				return DecodeStatus::FormatError;
 				break;
-			case NUMERIC: {
+			case M_NUMERIC: {
 					Diagnostics::put("NUM");
 					int prevNum = -1;
 					for (;;) {
@@ -149,20 +150,18 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 							}
 							sprintf(buf, num == 0x3FD ? "%d" : num == 0x3FE ? "%02d" : "%03d", prevNum);
 							result.append(buf);
-							Diagnostics::put(buf);
 							Diagnostics::put("NTERM");
 							break;
 						}
 						if (prevNum != -1) {
 							sprintf(buf, "%03d", prevNum);
 							result.append(buf);
-							Diagnostics::put(buf);
 						}
 						prevNum = num;
 					}
 				}
 				break;
-			case TEXT: {
+			case M_TEXT: {
 					Diagnostics::put("TXT");
 					bool submode = false;
 					for (;;) {
@@ -179,12 +178,11 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 							submode = !submode;
 						} else {
 							result.push_back(submode ? text2[code] : text1[code]);
-							Diagnostics::chr(result.back());
 						}
 					}
 				}
 				break;
-			case BINARY: {
+			case M_BINARY: {
 					if (bits.available() < 13) {
 						Diagnostics::fmt("BCERR(%d)", bits.available());
 						return DecodeStatus::FormatError;
@@ -197,15 +195,14 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 							return DecodeStatus::FormatError;
 						}
 						result.push_back(bits.readBits(8));
-						Diagnostics::chr(result.back());
 					}
 					Diagnostics::put("BTERM");
 				}
 				break;
-			case REGION1:
-			case REGION2: {
-					Diagnostics::put(mode == REGION2 ? "RG2" : "RG1");
-					bool submode = mode == REGION2;
+			case M_REGION1:
+			case M_REGION2: {
+					Diagnostics::put(mode == M_REGION2 ? "RG2" : "RG1");
+					bool submode = mode == M_REGION2;
 					for (;;) {
 						if (bits.available() < 12) {
 							Diagnostics::fmt("BCERR(%d)", bits.available());
@@ -222,33 +219,25 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 						} else {
 							if (submode) {
 								result.push_back(code / 0x5E + 0xD8);
-								Diagnostics::chr(result.back());
 								result.push_back(code % 0x5E + 0xA1);
-								Diagnostics::chr(result.back());
 							} else {
 								if (code < 0xEB0) {
 									result.push_back(code / 0x5E + 0xB0);
-									Diagnostics::chr(result.back());
 									result.push_back(code % 0x5E + 0xA1);
-									Diagnostics::chr(result.back());
 								} else if (code < 0xFCA) {
 									result.push_back((code - 0xEB0) / 0x5E + 0xA1);
-									Diagnostics::chr(result.back());
 									result.push_back((code - 0xEB0) % 0x5E + 0xA1);
-									Diagnostics::chr(result.back());
 								} else {
 									code = code - 0xFCA + 0xA8A1;
 									result.push_back(code >> 8);
-									Diagnostics::chr(result.back());
 									result.push_back(code & 0xFF);
-									Diagnostics::chr(result.back());
 								}
 							}
 						}
 					}
 				}
 				break;
-			case BYTE2: {
+			case M_BYTE2: {
 					Diagnostics::put("BY2");
 					for (;;) {
 						if (bits.available() < 15) {
@@ -261,18 +250,12 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 							break;
 						}
 						result.push_back(code / 0xBE + 0x81);
-						Diagnostics::chr(result.back());
 						int secondByte = code % 0xBe;
-						if (secondByte < 0x3F) {
-							result.push_back(secondByte + 0x40);
-						} else {
-							result.push_back(secondByte + 0x41);
-						}
-						Diagnostics::chr(result.back());
+						result.push_back(secondByte + 0x40 + (int)(secondByte >= 0x3F));
 					}
 				}
 				break;
-			case BYTE4: {
+			case M_BYTE4: {
 					Diagnostics::put("BY4");
 					if (bits.available() < 21) {
 						Diagnostics::fmt("BY4ERR(%d)", bits.available());
@@ -280,26 +263,21 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 					}
 					int code = bits.readBits(21);
 					result.push_back(code / 0x3138 + 0x81);
-					Diagnostics::chr(result.back());
 					result.push_back((code % 0x3138) / 0x4EC + 0x30);
-					Diagnostics::chr(result.back());
 					result.push_back((code % 0x4EC) / 0x0A + 0x81);
-					Diagnostics::chr(result.back());
 					result.push_back((code % 0x0A) + 0x30);
-					Diagnostics::chr(result.back());
 				}
 				break;
-			case ECI:
-				encoding = CharacterSetECI::OnChangeAppendReset(ParseECIValue(bits),
-																resultEncoded, result, encoding);
+			case M_ECI:
+				result.switchEncoding(ParseECIValue(bits));
 				break;
-			case UNIC:
+			case M_UNIC:
 				Diagnostics::put("UNIC");
 				uni = true;
 				// Not implemented
 				return DecodeStatus::FormatError;
 				break;
-			case GS1_URI: {
+			case M_GS1_URI: {
 					Diagnostics::put("GS1URI");
 					if (bits.available() < 4) {
 						Diagnostics::fmt("GS1URIERR(%d)", bits.available());
@@ -333,24 +311,20 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& characterSet, con
 		return DecodeStatus::FormatError;
 	}
 
-	TextDecoder::Append(resultEncoded, reinterpret_cast<const uint8_t*>(result.data()), result.size(), encoding);
-
-	// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using the modifier
-	// that indicates ECI protocol "]h1" (ISO/IEC 20830:2021 Annex L Table L1)
-	std::string symbologyIdentifier;
+	char modifier;
 	if (gs1) {
-		symbologyIdentifier = "]h2";
+		modifier = '2';
 	} else if (uri) {
-		symbologyIdentifier = "]h4";
+		modifier = '4';
 	} else if (uni) {
-		symbologyIdentifier = "]h8";
+		modifier = '8';
 	} else {
-		symbologyIdentifier = "]h0";
+		modifier = '0';
 	}
+	result.symbology = {'h', modifier, '1' - modifier /*eciModifierOffset*/}; // If ECI always '1'
 
-	return DecoderResult(std::move(codewords), std::move(resultEncoded))
-			.setEcLevel("L" + std::to_string(ecLevel))
-			.setSymbologyIdentifier(std::move(symbologyIdentifier));
+	return DecoderResult(std::move(codewords), {}, std::move(result))
+			.setEcLevel("L" + std::to_string(ecLevel));
 }
 
 } // DecodedBitStreamParser
@@ -375,7 +349,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 }
 
 DecoderResult
-Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
+Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 {
 	int version;
 	int ecLevel;
@@ -412,7 +386,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& characterSet)
 	Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), characterSet, ecLevel);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), hintedCharset, ecLevel);
 }
 
 } // namespace ZXing::HanXin

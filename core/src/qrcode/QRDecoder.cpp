@@ -266,7 +266,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 	BitSource bits(bytes);
 	Content result;
 	result.hintedCharset = hintedCharset;
-	int symbologyIdModifier = 1; // ISO/IEC 18004:2015 Annex F Table F.1
+	result.symbology = {'Q', '1', 1};
 	StructuredAppendInfo structuredAppend;
 	const int modeBitLength = CodecModeBitsLength(version);
 	int appInd;
@@ -287,16 +287,14 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			case CodecMode::FNC1_FIRST_POSITION:
 //				if (!result.empty()) // uncomment to enforce specification
 //					throw std::runtime_error("GS1 Indicator (FNC1 in first position) at illegal position");
-				// As converting character set ECIs ourselves and ignoring/skipping non-character ECIs, not using
-				// modifiers that indicate ECI protocol (ISO/IEC 18004:2015 Annex F Table F.1)
-				symbologyIdModifier = 3;
+				result.symbology.modifier = '3';
 				result.applicationIndicator = "GS1"; // In Alphanumeric mode undouble doubled percents and treat single percent as <GS>
 				Diagnostics::put("FNC1(1st)");
 				break;
 			case CodecMode::FNC1_SECOND_POSITION:
 				if (!result.empty())
 					throw std::runtime_error("AIM Application Indicator (FNC1 in second position) at illegal position");
-				symbologyIdModifier = 5; // As above
+				result.symbology.modifier = '5'; // As above
 				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position), "00-99" or "A-Za-z"
 				appInd = bits.readBits(8); // Number 00-99 or ASCII value + 100
 				Diagnostics::fmt("FNC1(2nd,%d)", appInd);
@@ -308,7 +306,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 					result += static_cast<uint8_t>(appInd - 100);
 				else
 					throw std::runtime_error("Invalid AIM Application Indicator");
-				result.applicationIndicator = std::string(result.binary.begin(), result.binary.end()); // see also above
+				result.applicationIndicator = result.binary.asString(); // see also above
 				break;
 			case CodecMode::STRUCTURED_APPEND:
 				// sequence number and parity is added later to the result metadata
@@ -358,7 +356,6 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 
 	return DecoderResult(std::move(bytes), {}, std::move(result))
 		.setEcLevel(ToString(ecLevel))
-		.setSymbologyIdentifier("]Q" + std::to_string(symbologyIdModifier))
 		.setStructuredAppend(structuredAppend);
 }
 

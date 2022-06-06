@@ -110,39 +110,4 @@ CharacterSet CharsetFromName(const char* name)
 	return CharacterSet::Unknown;
 }
 
-CharacterSet InitEncoding(const std::string& name, CharacterSet encodingDefault)
-{
-	if (!name.empty()) {
-		auto encodingInit = CharacterSetECI::CharsetFromName(name.c_str());
-		if (encodingInit != CharacterSet::Unknown) {
-			encodingDefault = encodingInit;
-		}
-	}
-
-	return encodingDefault;
-}
-
-#ifdef ZXING_BUILD_READERS
-CharacterSet OnChangeAppendReset(const int eci, std::wstring& encoded, std::string& data, CharacterSet encoding,
-								 int* eciChanged)
-{
-	// Character set ECIs only
-	if (eci >= 0 && eci <= 899) {
-		auto encodingNew = ToCharacterSet(ECI(eci));
-		if (encodingNew != CharacterSet::Unknown && encodingNew != encoding) {
-			// Encode data so far in current encoding and reset
-			TextDecoder::Append(encoded, reinterpret_cast<const uint8_t*>(data.data()), data.size(), encoding);
-			data.clear();
-			encoding = encodingNew;
-			if (eciChanged) {
-				*eciChanged = eci;
-			}
-		}
-	}
-	Diagnostics::fmt(eciChanged ? "ECI(%d,%d)" : "ECI(%d)", eci, eciChanged ? *eciChanged : -1, eci);
-
-	return encoding;
-}
-#endif
-
 } // namespace ZXing::CharacterSetECI

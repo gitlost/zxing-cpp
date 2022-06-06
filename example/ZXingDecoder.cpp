@@ -18,6 +18,7 @@
 #include "CharacterSetECI.h"
 #include "Diagnostics.h"
 #include "ReadBarcode.h"
+#include "TextDecoder.h"
 #include "TextUtfEncoding.h"
 #include "ThresholdBinarizer.h"
 #include "aztec/AZReader.h"
@@ -381,13 +382,17 @@ int main(int argc, char* argv[])
 
 	if (textOnly) {
 		if (ret == 0) {
-			std::cout << ToUtf8(result.text(), angleEscape);
+			std::wstring text = result.text();
+			if (text.empty() && !result.binary().empty()) {
+				TextDecoder::Append(text, result.binary().data(), result.binary().size(), CharacterSet::BINARY);
+			}
+			std::cout << ToUtf8(text, angleEscape);
 		}
 		return ret;
 	}
 
 	std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-			  << "Binary:     \"" << ToHex(result.binary()) << "\"\n"
+			  << "Binary:     0x\"" << ToHex(result.binary()) << "\"\n"
 			  << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
 			  << "Position:   " << result.position() << "\n"

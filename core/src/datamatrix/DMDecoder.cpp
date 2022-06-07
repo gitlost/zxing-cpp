@@ -367,12 +367,12 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 				readerInit = true;
 				break;
 			case 235: Diagnostics::put("UpSh"); upperShift.set = true; break; // Upper Shift (shift to Extended ASCII)
-			case 236: // 05 Macro
+			case 236: // ISO 15434 format "05" Macro
 				result.append("[)>\x1E" "05\x1D");
 				resultTrailer.insert(0, "\x1E\x04");
 				Diagnostics::put("Macro05");
 				break;
-			case 237: // 06 Macro
+			case 237: // ISO 15434 format "06" Macro
 				result.append("[)>\x1E" "06\x1D");
 				resultTrailer.insert(0, "\x1E\x04");
 				Diagnostics::put("Macro06");
@@ -410,6 +410,7 @@ DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const b
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 
 	result.append(resultTrailer);
+	result.applicationIndicator = result.symbology.modifier == '2' ? "GS1" : "";
 	result.symbology.modifier += isDMRE * 6;
 
 	return DecoderResult(std::move(bytes), {}, std::move(result))

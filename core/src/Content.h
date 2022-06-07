@@ -6,10 +6,13 @@
 #pragma once
 
 #include "ByteArray.h"
+#include "CharacterSet.h"
 #include "Diagnostics.h"
-#include "ECI.h"
 
 namespace ZXing {
+
+enum class ECI : int;
+enum class CharacterSet;
 
 enum class ContentType { Text, Binary, Mixed };
 
@@ -41,15 +44,15 @@ public:
 	};
 
 	ByteArray binary;
-	std::vector<Encoding> encodings = {{ECI::Unknown, 0}};
+	std::vector<Encoding> encodings;
 	std::string hintedCharset;
 	std::string applicationIndicator;
 	CharacterSet defaultCharset = CharacterSet::Unknown;
 	SymbologyIdentifier symbology;
 	bool hasECI = false;
 
-	Content() = default;
-	Content(ByteArray&& binary) : binary(std::move(binary)), encodings{{ECI::ISO8859_1, 0}} {}
+	Content();
+	Content(ByteArray&& binary);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);

@@ -119,7 +119,7 @@ public:
 	/**
 	 * @brief sequenceLastECI Character set ECI in effect at end of symbol if part of a structured append sequence.
 	 */
-	int sequenceLastECI() const { return Size(_content.encodings) ? ToInt(_content.encodings.back().eci) : 0; }
+	int sequenceLastECI() const;
 
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
 	bool isPartOfSequence() const { return sequenceSize() > -1; }

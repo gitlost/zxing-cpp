@@ -6,6 +6,7 @@
 
 #include "Result.h"
 
+#include "ECI.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "TextDecoder.h"
@@ -85,6 +86,11 @@ int Result::orientation() const
 {
 	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
 	return std::lround(_position.orientation() * 180 / std_numbers_pi_v);
+}
+
+int Result::sequenceLastECI() const
+{
+    return Size(_content.encodings) ? ToInt(_content.encodings.back().eci) : 0;
 }
 
 bool Result::operator==(const Result& o) const

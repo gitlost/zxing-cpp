@@ -5,8 +5,8 @@
 
 #include "Content.h"
 
-#include "CharacterSetECI.h"
 #include "Diagnostics.h"
+#include "ECI.h"
 #include "TextDecoder.h"
 #include "TextUtfEncoding.h"
 #include "ZXContainerAlgorithms.h"
@@ -46,6 +46,10 @@ void Content::switchEncoding(ECI eci, bool isECI)
 	hasECI |= isECI;
 }
 
+Content::Content() : encodings({{ECI::Unknown, 0}}) {}
+
+Content::Content(ByteArray&& binary) : binary(std::move(binary)), encodings{{ECI::ISO8859_1, 0}} {}
+
 void Content::switchEncoding(CharacterSet cs)
 {
 	switchEncoding(ToECI(cs), false);
@@ -77,7 +81,7 @@ std::wstring Content::text() const
 	if (!canProcess())
 		return {};
 
-	auto fallbackCS = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
+	auto fallbackCS = CharacterSetFromString(hintedCharset.c_str());
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;
@@ -104,7 +108,7 @@ std::string Content::utf8Protocol() const
 
 	std::wstring res = TextDecoder::FromLatin1(symbology.toString(true));
 	ECI lastECI = ECI::Unknown;
-	auto fallbackCS = CharacterSetECI::CharsetFromName(hintedCharset.c_str());
+	auto fallbackCS = CharacterSetFromString(hintedCharset);
 	if (!hasECI && fallbackCS == CharacterSet::Unknown)
 		fallbackCS = guessEncoding();
 

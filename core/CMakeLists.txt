@@ -51,8 +51,8 @@ set (COMMON_FILES
     src/ByteArray.h
     src/ByteMatrix.h
     src/CharacterSet.h
+    src/CharacterSet.cpp
     src/CharacterSetECI.h
-    src/CharacterSetECI.cpp
     src/ConcentricFinder.h
     src/ConcentricFinder.cpp
     src/CustomData.h
@@ -139,6 +139,41 @@ if (BUILD_WRITERS)
     )
 endif()
 
+# define subset of public headers that get distributed with the binaries
+set (PUBLIC_HEADERS
+    src/BarcodeFormat.h
+    src/BitHacks.h
+    src/ByteArray.h
+    src/CharacterSet.h
+    src/CharacterSetECI.h # deprecated
+    src/Flags.h
+    src/GTIN.h
+    src/TextUtfEncoding.h
+    src/ZXConfig.h
+    src/ZXContainerAlgorithms.h
+)
+if (BUILD_READERS)
+    set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        src/Content.h
+        src/DecodeHints.h
+        src/DecodeStatus.h
+        src/ImageView.h
+        src/Point.h
+        src/Quadrilateral.h
+        src/ReadBarcode.h
+        src/Result.h
+        src/StructuredAppend.h
+    )
+endif()
+if (BUILD_WRITERS)
+    set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        src/BitMatrix.h
+        src/BitMatrixIO.h
+        src/Matrix.h
+        src/MultiFormatWriter.h
+    )
+endif()
+# end of public header set
 
 set (AZTEC_FILES
 )
@@ -474,7 +509,7 @@ add_library (ZXing
 
 target_include_directories (ZXing
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-    INTERFACE "$<INSTALL_INTERFACE:include>"
+    INTERFACE "$<INSTALL_INTERFACE:include/ZXing>"
 )
 
 target_compile_options (ZXing
@@ -510,6 +545,8 @@ if (PROJECT_VERSION)
     set_target_properties(ZXing PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
 endif()
 
+set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
+
 include (GNUInstallDirs)
 
 install (
@@ -517,7 +554,15 @@ install (
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION include
+#    INCLUDES DESTINATION include
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ZXing"
+)
+
+configure_file (ZXVersion.h.in ZXVersion.h)
+
+install (
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/ZXVersion.h"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/ZXing"
 )
 
 if(MSVC)

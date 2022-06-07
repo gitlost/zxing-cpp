@@ -3,15 +3,7 @@ set (CMAKE_CXX_STANDARD 11)
 
 zxing_add_package_stb()
 
-if (BUILD_READERS)
-    add_executable (ZXingReader ZXingReader.cpp)
-
-    target_link_libraries (ZXingReader ZXing::ZXing stb::stb)
-
-    add_test(NAME ZXingReaderTest COMMAND ZXingReader -fast -format qrcode "${CMAKE_SOURCE_DIR}/test/samples/qrcode-1/1.png")
-
-    install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/ZXingReader" DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME zxingcppreader)
-endif()
+include (GNUInstallDirs)
 
 if (BUILD_WRITERS)
     add_executable (ZXingWriter ZXingWriter.cpp)
@@ -19,6 +11,18 @@ if (BUILD_WRITERS)
     target_link_libraries (ZXingWriter ZXing::ZXing stb::stb)
 
     add_test(NAME ZXingWriterTest COMMAND ZXingWriter qrcode "I have the best words." test.png)
+
+    install(TARGETS ZXingWriter DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+
+if (BUILD_READERS)
+    add_executable (ZXingReader ZXingReader.cpp)
+
+    target_link_libraries (ZXingReader ZXing::ZXing stb::stb)
+
+    add_test(NAME ZXingReaderTest COMMAND ZXingReader -fast -format qrcode test.png) # see above
+
+    install(TARGETS ZXingReader DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if (BUILD_READERS)

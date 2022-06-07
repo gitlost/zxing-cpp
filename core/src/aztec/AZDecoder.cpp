@@ -10,7 +10,7 @@
 #include "AZDetectorResult.h"
 #include "BitArray.h"
 #include "BitMatrix.h"
-#include "CharacterSetECI.h"
+#include "CharacterSet.h"
 #include "DecodeStatus.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"

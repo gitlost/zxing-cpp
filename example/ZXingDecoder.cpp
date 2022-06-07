@@ -15,7 +15,7 @@
 */
 
 #include "BitMatrixIO.h"
-#include "CharacterSetECI.h"
+#include "CharacterSet.h"
 #include "Diagnostics.h"
 #include "ReadBarcode.h"
 #include "TextDecoder.h"
@@ -249,7 +249,7 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string
 				std::cerr << "No argument for -charset\n";
 				return false;
 			}
-			if (CharacterSetECI::CharsetFromName(argv[i]) == CharacterSet::Unknown) {
+			if (CharacterSetFromString(argv[i]) == CharacterSet::Unknown) {
 				std::cerr << "Unknown character set '" << argv[i] << "'\n";
 				return false;
 			}
@@ -392,7 +392,7 @@ int main(int argc, char* argv[])
 	}
 
 	std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-			  << "Binary:     0x\"" << ToHex(result.binary()) << "\"\n"
+			  << "Binary:     \"" << ToHex(result.binary()) << "\"\n"
 			  << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
 			  << "Position:   " << result.position() << "\n"

@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 			ret |= static_cast<int>(result.status());
 
 			if (binaryOutput) {
-				std::cout.write(reinterpret_cast<const char*>(result.binary().data()), result.binary().size());
+				std::cout.write(reinterpret_cast<const char*>(result.bytes().data()), result.bytes().size());
 				continue;
 			}
 
@@ -232,16 +232,15 @@ int main(int argc, char* argv[])
 				firstFile = false;
 			}
 			std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-					  << "Binary:     \"" << ToHex(result.binary()) << "\"\n"
+					  << "Bytes:      (" << Size(result.bytes()) << ") \"" << ToHex(result.bytes()) << "\"\n"
 					  << "TextECI:    \"" << result.utf8Protocol() << "\"\n"
-					  << "BinaryECI:  \"" << ToHex(result.binaryECI()) << "\"\n"
+					  << "BytesECI:   \"" << ToHex(result.bytesECI()) << "\"\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(result.contentType()) << "\n"
 					  << "HasECI:     " << result.hasECI() << "\n"
 					  << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
-					  << "No. Bits:   " << result.numBits() << "\n"
 					  << "IsMirrored: " << result.isMirrored() << "\n"
 					  << "Error:      " << ToString(result.status()) << "\n";
 
@@ -274,8 +273,6 @@ int main(int argc, char* argv[])
 					std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
 				if (!result.sequenceId().empty())
 					std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
-				if (result.sequenceLastECI() > -1)
-					std::cout << "    Last ECI: " << result.sequenceLastECI() << "\n";
 			}
 
 			const auto& meta = result.metadata();

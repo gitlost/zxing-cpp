@@ -26,10 +26,8 @@ class DecoderResult;
 using Position = QuadrilateralI;
 
 /**
-* <p>Encapsulates the result of decoding a barcode within an image.</p>
-*
-* @author Sean Owen
-*/
+ * @brief The Result class encapsulates the result of decoding a barcode within an image.
+ */
 class Result
 {
 public:
@@ -56,12 +54,13 @@ public:
 	const std::wstring& text() const { return _text; }
 
 	// WARNING: this is an experimental API and may change/disappear
-	const ByteArray& binary() const { return _content.binary; }
-	const ByteArray binaryECI() const { return _content.binaryECI(); }
+	const ByteArray& bytes() const { return _content.bytes; }
+	const ByteArray bytesECI() const { return _content.bytesECI(); }
 	const std::string utf8Protocol() const { return _content.utf8Protocol(); }
 	const std::string& applicationIndicator() const { return _content.applicationIndicator; }
 	ContentType contentType() const { return _content.type(); }
 	bool hasECI() const { return _content.hasECI; }
+	std::vector<std::pair<int,int>> ECIs() const;
 	// END WARNING
 
 	const Position& position() const { return _position; }
@@ -74,9 +73,9 @@ public:
 	 */
 	bool isMirrored() const { return _isMirrored; }
 
-	const ByteArray& rawBytes() const { return _rawBytes; }
-
-	int numBits() const { return _numBits; }
+	/// see bytes() above for a proper replacement of rawByes
+	[[deprecated]] const ByteArray& rawBytes() const { return _rawBytes; }
+	[[deprecated]] int numBits() const { return _numBits; }
 
 	const std::wstring& ecLevel() const { return _ecLevel; }
 
@@ -115,11 +114,6 @@ public:
 	 * For PDF417 and DataMatrix, this is the "fileId".
 	 */
 	const std::string& sequenceId() const { return _sai.id; }
-
-	/**
-	 * @brief sequenceLastECI Character set ECI in effect at end of symbol if part of a structured append sequence.
-	 */
-	int sequenceLastECI() const;
 
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
 	bool isPartOfSequence() const { return sequenceSize() > -1; }

@@ -285,6 +285,17 @@ std::ostream& operator<<(std::ostream& os, const Position& points) {
 	return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
+	bool not_first = false;
+	for (const auto& e : ecis) {
+		if (not_first)
+			os << " ";
+		os << std::get<0>(e) << "," << std::get<1>(e);
+		not_first = true;
+	}
+	return os;
+}
+
 int main(int argc, char* argv[])
 {
 	DecodeHints hints;
@@ -383,8 +394,8 @@ int main(int argc, char* argv[])
 	if (textOnly) {
 		if (ret == 0) {
 			std::wstring text = result.text();
-			if (text.empty() && !result.binary().empty()) {
-				TextDecoder::Append(text, result.binary().data(), result.binary().size(), CharacterSet::BINARY);
+			if (text.empty() && !result.bytes().empty()) {
+				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
 			}
 			std::cout << ToUtf8(text, angleEscape);
 		}
@@ -392,8 +403,14 @@ int main(int argc, char* argv[])
 	}
 
 	std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-			  << "Binary:     \"" << ToHex(result.binary()) << "\"\n"
-			  << "Format:     " << ToString(result.format()) << "\n"
+			  << "Bytes:      (" << Size(result.bytes()) << ") \"" << ToHex(result.bytes()) << "\"\n";
+
+	if (Size(result.ECIs()))
+		std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
+	else
+		std::cout << "ECIs:       None\n";
+
+	std::cout << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
 			  << "Position:   " << result.position() << "\n"
 			  << "Error:      " << ToString(result.status()) << "\n";
@@ -413,8 +430,6 @@ int main(int argc, char* argv[])
 			std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
 		if (!result.sequenceId().empty())
 			std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
-		if (result.sequenceLastECI() > -1)
-			std::cout << "    Last ECI: " << result.sequenceLastECI() << "\n";
 	}
 
 	const auto& meta = result.metadata();

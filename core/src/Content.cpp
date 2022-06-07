@@ -23,8 +23,8 @@ template <typename FUNC>
 void Content::ForEachECIBlock(FUNC func) const
 {
 	for (int i = 0; i < Size(encodings); ++i) {
-		auto [eci, start] = encodings[i];
-		int end = i + 1 == Size(encodings) ? Size(binary) : encodings[i + 1].pos;
+		auto [eci, start, ignore] = encodings[i];
+		int end = i + 1 == Size(encodings) ? Size(bytes) : encodings[i + 1].pos;
 
 		if (start != end)
 			func(eci, start, end);
@@ -35,20 +35,21 @@ void Content::switchEncoding(ECI eci, bool isECI)
 {
 	// replace all non-ECI entries on first ECI entry with default ECI
 	if (isECI && !hasECI)
-		encodings = {{ECI::ISO8859_1, 0}};
+		encodings = {{ECI::ISO8859_1, 0, isECI}};
 	if (isECI || !hasECI) {
-		if (encodings.back().pos == Size(binary))
+		if (encodings.back().pos == Size(bytes) && isECI) {
 			encodings.back().eci = eci; // no point in recording 0 length segments
-		else
-			encodings.push_back({eci, Size(binary)});
+			encodings.back().isECI = isECI;
+		} else
+			encodings.push_back({eci, Size(bytes), isECI});
 		Diagnostics::fmt("%s(%d)", isECI ? "ECI" : "NonECI", ToInt(eci));
 	}
 	hasECI |= isECI;
 }
 
-Content::Content() : encodings({{ECI::Unknown, 0}}) {}
+Content::Content() : encodings({{ECI::Unknown, 0, false}}) {}
 
-Content::Content(ByteArray&& binary) : binary(std::move(binary)), encodings{{ECI::ISO8859_1, 0}} {}
+Content::Content(ByteArray&& bytes) : bytes(std::move(bytes)), encodings{{ECI::ISO8859_1, 0, false}} {}
 
 void Content::switchEncoding(CharacterSet cs)
 {
@@ -57,7 +58,7 @@ void Content::switchEncoding(CharacterSet cs)
 
 void Content::erase(int pos, int n)
 {
-	binary.erase(binary.begin() + pos, binary.begin() + pos + n);
+	bytes.erase(bytes.begin() + pos, bytes.begin() + pos + n);
 	for (auto& e : encodings)
 		if (e.pos > pos)
 			pos -= n;
@@ -65,7 +66,7 @@ void Content::erase(int pos, int n)
 
 void Content::insert(int pos, const std::string& str)
 {
-	binary.insert(binary.begin() + pos, str.begin(), str.end());
+	bytes.insert(bytes.begin() + pos, str.begin(), str.end());
 	for (auto& e : encodings)
 		if (e.pos > pos)
 			pos += Size(str);
@@ -96,7 +97,7 @@ std::wstring Content::text() const
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
 		CharacterSet cs = eci == ECI::Unknown ? fallbackCS : ToCharacterSet(eci);
 
-		TextDecoder::Append(wstr, binary.data() + begin, end - begin, cs);
+		TextDecoder::Append(wstr, bytes.data() + begin, end - begin, cs);
 	});
 	return wstr;
 }
@@ -129,7 +130,7 @@ std::string Content::utf8Protocol() const
 		lastECI = eci;
 
 		std::wstring tmp;
-		TextDecoder::Append(tmp, binary.data() + begin, end - begin, cs);
+		TextDecoder::Append(tmp, bytes.data() + begin, end - begin, cs);
 		for (auto c : tmp) {
 			res += c;
 			if (c == L'\\') // in the ECI protocol a '\' has to be doubled
@@ -140,7 +141,7 @@ std::string Content::utf8Protocol() const
 	return TextUtfEncoding::ToUtf8(res);
 }
 
-ByteArray Content::binaryECI() const
+ByteArray Content::bytesECI() const
 {
 	if (empty())
 		return {};
@@ -152,7 +153,7 @@ ByteArray Content::binaryECI() const
 			res += ToString(eci);
 
 		for (int i = begin; i != end; ++i) {
-			char c = static_cast<char>(binary[i]);
+			char c = static_cast<char>(bytes[i]);
 			res += c;
 			if (c == '\\') // in the ECI protocol a '\' has to be doubled
 				res += c;
@@ -168,7 +169,7 @@ CharacterSet Content::guessEncoding() const
 	ByteArray input;
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
 		if (eci == ECI::Unknown)
-			input.insert(input.end(), binary.begin() + begin, binary.begin() + end);
+			input.insert(input.end(), bytes.begin() + begin, bytes.begin() + end);
 	});
 
 	if (input.empty())
@@ -186,7 +187,7 @@ ContentType Content::type() const
 		return ContentType::GS1;
 
 	// check for the absolut minimum of a ISO 15434 conforming message ("[)>" + RS + digit + digit)
-	if (binary.size() > 6 && binary.asString(0, 4) == "[)>\x1E" && std::isdigit(binary[4]) && std::isdigit(binary[5]))
+	if (bytes.size() > 6 && bytes.asString(0, 4) == "[)>\x1E" && std::isdigit(bytes[4]) && std::isdigit(bytes[5]))
 		return ContentType::ISO15434;
 
 	ECI fallback = ToECI(guessEncoding());
@@ -196,7 +197,7 @@ ContentType Content::type() const
 			eci = fallback;
 		binaryECIs.push_back((!IsText(eci)
 							  || (ToInt(eci) > 0 && ToInt(eci) < 28 && ToInt(eci) != 25
-								  && std::any_of(binary.begin() + begin, binary.begin() + end,
+								  && std::any_of(bytes.begin() + begin, bytes.begin() + end,
 												 [](auto c) { return c < 0x20 && c != 0xa && c != 0xd; }))));
 	});
 

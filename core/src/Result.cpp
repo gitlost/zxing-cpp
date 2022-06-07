@@ -88,9 +88,14 @@ int Result::orientation() const
 	return std::lround(_position.orientation() * 180 / std_numbers_pi_v);
 }
 
-int Result::sequenceLastECI() const
+std::vector<std::pair<int,int>> Result::ECIs() const
 {
-    return Size(_content.encodings) ? ToInt(_content.encodings.back().eci) : 0;
+    std::vector<std::pair<int,int>> ret;
+    for (int i = 0, cnt = Size(_content.encodings); i < cnt; i++) {
+        if (_content.encodings[i].isECI)
+            ret.push_back(std::pair(ToInt(_content.encodings[i].eci), _content.encodings[i].pos));
+    }
+    return ret;
 }
 
 bool Result::operator==(const Result& o) const

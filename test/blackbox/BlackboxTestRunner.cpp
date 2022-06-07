@@ -68,8 +68,6 @@ static std::string getResultValue(const Result& result, const std::string& key)
 		return TextUtfEncoding::ToUtf8(result.ecLevel());
 	if (key == "orientation")
 		return std::to_string(result.orientation());
-	if (key == "numBits")
-		return std::to_string(result.numBits());
 	if (key == "symbologyIdentifier")
 		return result.symbologyIdentifier();
 	if (key == "sequenceSize")
@@ -143,8 +141,8 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 
 	if (auto expected = readFile(".bin")) {
 		ByteArray binaryExpected(*expected);
-		return result.binary() != binaryExpected
-				   ? fmt::format("Content mismatch: expected '{}' but got '{}'", ToHex(binaryExpected), ToHex(result.binary()))
+		return result.bytes() != binaryExpected
+				   ? fmt::format("Content mismatch: expected '{}' but got '{}'", ToHex(binaryExpected), ToHex(result.bytes()))
 				   : "";
 	}
 
@@ -275,7 +273,7 @@ static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_vi
 	Content content;
 	for (const auto& r : allResults) {
 		text.append(r.text());
-		content.append(r.binary());
+		content.append(r.bytes());
 	}
 
 	const auto& first = allResults.front();

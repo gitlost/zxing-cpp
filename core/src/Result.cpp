@@ -12,6 +12,8 @@
 #include "TextDecoder.h"
 
 #include <cmath>
+#include <list>
+#include <map>
 #include <utility>
 
 namespace ZXing {
@@ -27,7 +29,7 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 			   SymbologyIdentifier si, ByteArray&& rawBytes, const bool readerInit)
 	:
 	  _format(format),
-	  _content({ByteArray(text)}),
+	  _content({ByteArray(text)}, si),
 	  _text(TextDecoder::FromLatin1(text)),
 	  _position(Line(y, xStart, xStop)),
 	  _rawBytes(std::move(rawBytes)),
@@ -45,12 +47,12 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	: _status(decodeResult.errorCode()),
 	  _format(format),
 	  _content(std::move(decodeResult).content()),
-	  _text(std::move(decodeResult).text()),
+	  _text(_content.text()),
 	  _position(std::move(position)),
 	  _rawBytes(std::move(decodeResult.rawBytes())),
 	  _numBits(decodeResult.numBits()),
 	  _ecLevel(TextDecoder::FromLatin1(decodeResult.ecLevel())),
-	  _symbologyIdentifier(decodeResult.symbologyIdentifier()),
+	  _symbologyIdentifier(_content.symbology.toString(false)),
 	  _sai(decodeResult.structuredAppend()),
 	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit()),
@@ -113,6 +115,48 @@ bool Result::operator==(const Result& o) const
 	auto length = maxAbsComponent(position().topLeft() - position().bottomRight());
 
 	return std::min(dTop, dBot) < length / 2;
+}
+
+Result MergeStructuredAppendSequence(const Results& results)
+{
+	if (results.empty())
+		return Result(DecodeStatus::NotFound);
+
+	std::list<Result> allResults(results.begin(), results.end());
+	allResults.sort([](const Result& r1, const Result& r2) { return r1.sequenceIndex() < r2.sequenceIndex(); });
+
+	if (allResults.back().sequenceSize() != Size(allResults) ||
+		!std::all_of(allResults.begin(), allResults.end(),
+					 [&](Result& it) { return it.sequenceId() == allResults.front().sequenceId(); }))
+		return Result(DecodeStatus::FormatError);
+
+	Result res = allResults.front();
+	for (auto i = std::next(allResults.begin()); i != allResults.end(); ++i)
+		res._content.append(i->_content);
+
+	res._text = res._content.text();
+	res._position = {};
+	res._sai.index = -1;
+
+	return res;
+}
+
+Results MergeStructuredAppendSequences(const Results& results)
+{
+	std::map<std::string, Results> sas;
+	for (auto& res : results) {
+		if (res.isPartOfSequence())
+			sas[res.sequenceId()].push_back(res);
+	}
+
+	Results saiResults;
+	for (auto& [id, seq] : sas) {
+		auto res = MergeStructuredAppendSequence(seq);
+		if (res.isValid())
+			saiResults.push_back(std::move(res));
+	}
+
+	return saiResults;
 }
 
 } // ZXing

@@ -152,6 +152,7 @@ int main(int argc, char* argv[])
 {
 	DecodeHints hints;
 	std::vector<std::string> filePaths;
+	Results allResults;
 	std::string outPath;
 	bool oneLine = false;
 	bool angleEscape = false;
@@ -188,6 +189,13 @@ int main(int argc, char* argv[])
 		if (results.empty()) {
 			//printf("----results.empty dummy\n");
 			results.emplace_back(DecodeStatus::NotFound);
+		}
+
+		allResults.insert(allResults.end(), results.begin(), results.end());
+		if (filePath == filePaths.back()) {
+			auto merged = MergeStructuredAppendSequences(allResults);
+			// report all merged sequences as part of the last file to make the logic not overly complicated here
+			results.insert(results.end(), merged.begin(), merged.end());
 		}
 
 		for (auto&& result : results) {

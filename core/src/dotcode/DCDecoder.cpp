@@ -526,7 +526,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset)
 	}
 	result.symbology = {'J', modifier, 3 /*eciModifierOffset*/};
 
-	return DecoderResult(std::move(codewords), {}, std::move(result))
+	return DecoderResult(std::move(codewords), std::move(result))
 			.setStructuredAppend(sai)
 			.setReaderInit(readerInit);
 }

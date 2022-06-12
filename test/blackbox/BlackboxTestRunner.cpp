@@ -252,37 +252,14 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 
 static Result readMultiple(const std::vector<fs::path>& imgPaths, std::string_view format)
 {
-	std::list<Result> allResults;
+	Results allResults;
 	for (const auto& imgPath : imgPaths) {
 		auto results = ReadBarcodes(ImageLoader::load(imgPath),
 									DecodeHints().setFormats(BarcodeFormatFromString(format.data())).setTryDownscale(false));
 		allResults.insert(allResults.end(), results.begin(), results.end());
 	}
 
-	if (allResults.empty())
-		return Result(DecodeStatus::NotFound);
-
-	allResults.sort([](const Result& r1, const Result& r2) { return r1.sequenceIndex() < r2.sequenceIndex(); });
-
-	if (allResults.back().sequenceSize() != Size(allResults) ||
-		!std::all_of(allResults.begin(), allResults.end(),
-					 [&](Result& it) { return it.sequenceId() == allResults.front().sequenceId(); }))
-		return Result(DecodeStatus::FormatError);
-
-	std::wstring text;
-	Content content;
-	for (const auto& r : allResults) {
-		text.append(r.text());
-		content.append(r.bytes());
-	}
-
-	const auto& first = allResults.front();
-	return {DecoderResult({}, std::move(text), std::move(content))
-				.setStructuredAppend({first.sequenceIndex(), first.sequenceSize(), first.sequenceId()})
-				.setSymbologyIdentifier(first.symbologyIdentifier())
-				.setReaderInit(first.readerInit()),
-			{},
-			first.format()};
+	return MergeStructuredAppendSequence(allResults);
 }
 
 static void doRunStructuredAppendTest(const fs::path& directory, std::string_view format, int totalTests,
@@ -655,8 +632,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 7, 0, pure },
 		});
 
-		runStructuredAppendTest("pdf417-4", "PDF417", 2, {
-			{ 2, 2, 0   },
+		runStructuredAppendTest("pdf417-4", "PDF417", 3, {
+			{ 3, 3, 0   },
 		});
 
 		runTests("falsepositives-1", "None", 26, {

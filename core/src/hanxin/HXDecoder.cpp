@@ -323,7 +323,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 	}
 	result.symbology = {'h', modifier, '1' - modifier /*eciModifierOffset*/}; // If ECI always '1'
 
-	return DecoderResult(std::move(codewords), {}, std::move(result))
+	return DecoderResult(std::move(codewords), std::move(result))
 			.setEcLevel("L" + std::to_string(ecLevel));
 }
 

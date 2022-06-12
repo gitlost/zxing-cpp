@@ -116,7 +116,7 @@ public:
 	const std::string& sequenceId() const { return _sai.id; }
 
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
-	bool isPartOfSequence() const { return sequenceSize() > -1; }
+	bool isPartOfSequence() const { return sequenceSize() > -1 && sequenceIndex() > -1; }
 
 	/**
 	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
@@ -134,6 +134,8 @@ public:
 	}
 
 	bool operator==(const Result& o) const;
+
+	friend Result MergeStructuredAppendSequence(const std::vector<Result>& results);
 
 private:
 	DecodeStatus _status = DecodeStatus::NoError;
@@ -154,5 +156,15 @@ private:
 };
 
 using Results = std::vector<Result>;
+
+/**
+ * @brief Merge a list of Results from one Structured Append sequence to a single result
+ */
+Result MergeStructuredAppendSequence(const Results& results);
+
+/**
+ * @brief Automatically merge all structured append sequences found in the given results
+ */
+Results MergeStructuredAppendSequences(const Results& results);
 
 } // ZXing

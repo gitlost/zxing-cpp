@@ -53,7 +53,7 @@ public:
 	bool hasECI = false;
 
 	Content();
-	Content(ByteArray&& bytes);
+	Content(ByteArray&& bytes, SymbologyIdentifier si);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);
@@ -63,6 +63,7 @@ public:
 	void push_back(uint8_t val) { bytes.push_back(val); Diagnostics::chr(val); }
 	void append(const std::string& str) { bytes.insert(bytes.end(), str.begin(), str.end()); Diagnostics::put(str); }
 	void append(const ByteArray& ba) { bytes.insert(bytes.end(), ba.begin(), ba.end()); Diagnostics::put(ba); }
+	void append(const Content& other);
 
 	void operator+=(char val) { push_back(val); }
 	void operator+=(const std::string& str) { append(str); }

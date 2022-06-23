@@ -23,18 +23,17 @@
 #include "gtest/gtest.h"
 
 namespace ZXing { namespace Pdf417 {
-DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures,
-							  const std::string& characterSet);
+DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures);
 }}
 
 using namespace ZXing;
 using namespace ZXing::Pdf417;
 
 // Shorthand for DecodeCodewords()
-static DecoderResult decode(std::vector<int>& codewords, int ecLevel = 0, const std::string& characterSet = "")
+static DecoderResult decode(std::vector<int>& codewords, int ecLevel = 0)
 {
 	std::vector<int> erasures;
-	auto result = DecodeCodewords(codewords, ecLevel, erasures, characterSet);
+	auto result = DecodeCodewords(codewords, ecLevel, erasures);
 
 	return result;
 }

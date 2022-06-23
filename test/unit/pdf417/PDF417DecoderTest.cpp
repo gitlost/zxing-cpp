@@ -20,11 +20,11 @@ using namespace ZXing;
 using namespace ZXing::Pdf417;
 
 // Shorthand for Decode()
-static DecoderResult parse(const std::vector<int>& codewords, int ecLevel = 0, const std::string& characterSet = "")
+static DecoderResult parse(const std::vector<int>& codewords, int ecLevel = 0)
 {
 	//Diagnostics::setEnabled(true);
 
-	auto result = DecodedBitStreamParser::Decode(codewords, ecLevel, characterSet);
+	auto result = DecodedBitStreamParser::Decode(codewords, ecLevel);
 
 	#if 0
 	for (std::string value : Diagnostics::get()) {

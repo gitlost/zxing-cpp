@@ -159,6 +159,7 @@ public:
 
 	// only for internal use
 	void incrementLineCount() { ++_lineCount; }
+	Result& setCharacterSet(const std::string& defaultCS);
 
 	const std::list<std::string>& diagnostics() const {
 		return _diagnostics;

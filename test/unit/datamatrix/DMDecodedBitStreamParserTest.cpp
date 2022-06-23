@@ -13,7 +13,7 @@
 
 namespace ZXing::DataMatrix::DecodedBitStreamParser {
 
-DecoderResult Decode(ByteArray&& bytes, const std::string& characterSet, const bool isDMRE);
+DecoderResult Decode(ByteArray&& bytes, const bool isDMRE);
 
 }
 
@@ -24,7 +24,7 @@ static DecoderResult parse(ByteArray bytes, const bool isDMRE = false)
 {
 	Diagnostics::setEnabled(true);
 
-	auto result = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), "", isDMRE);
+	auto result = DataMatrix::DecodedBitStreamParser::Decode(std::move(bytes), isDMRE);
 
 	#if 0
 	for (auto str : Diagnostics::get()) {

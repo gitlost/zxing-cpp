@@ -37,7 +37,7 @@ namespace ZXing::QRCode {
 *
 * @param codewordBytes data and error correction codewords
 * @param numDataCodewords number of codewords that are data bytes
-* @throws ChecksumException if error correction fails
+* @return false if error correction fails
 */
 static bool CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 {
@@ -258,12 +258,10 @@ bool IsEndOfStream(const BitSource& bits, const Version& version)
 * <p>See ISO 18004:2006, 6.4.3 - 6.4.7</p>
 */
 ZXING_EXPORT_TEST_ONLY
-DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel,
-							  const std::string& hintedCharset)
+DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel)
 {
 	BitSource bits(bytes);
 	Content result;
-	result.hintedCharset = hintedCharset;
 	result.symbology = {'Q', '1', 1};
 	StructuredAppendInfo structuredAppend;
 	const int modeBitLength = CodecModeBitsLength(version);
@@ -322,7 +320,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				// First handle Hanzi mode which does not start with character count
 				// chinese mode contains a sub set indicator right after mode indicator
 				if (int subset = bits.readBits(4); subset != 1) // GB2312_SUBSET is the only supported one right now
-					return DecodeStatus::FormatError;
+					throw std::runtime_error("Unsupported HANZI subset");
 				int count = bits.readBits(CharacterCountBits(mode, version));
 				DecodeHanziSegment(bits, count, result);
 				break;
@@ -336,7 +334,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				case CodecMode::ALPHANUMERIC: DecodeAlphanumericSegment(bits, count, result); break;
 				case CodecMode::BYTE:         DecodeByteSegment(bits, count, result); break;
 				case CodecMode::KANJI:        DecodeKanjiSegment(bits, count, result); break;
-				default:                      Diagnostics::put("FormatError"); return DecodeStatus::FormatError;
+				default:                      throw std::runtime_error("Invalid CodecMode");
 				}
 				break;
 			}
@@ -357,8 +355,13 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 		.setStructuredAppend(structuredAppend);
 }
 
-static DecoderResult DoDecode(const BitMatrix& bits, const Version& version, const std::string& hintedCharset)
+DecoderResult Decode(const BitMatrix& bits)
 {
+	const Version* pversion = ReadVersion(bits);
+	if (!pversion)
+		return DecodeStatus::FormatError;
+	const Version& version = *pversion;
+
 	auto formatInfo = ReadFormatInformation(bits, version.isMicroQRCode());
 	if (!formatInfo.isValid())
 		return DecodeStatus::FormatError;
@@ -395,16 +398,7 @@ static DecoderResult DoDecode(const BitMatrix& bits, const Version& version, con
 
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");
-	return DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, hintedCharset).setIsMirrored(formatInfo.isMirrored);
-}
-
-DecoderResult Decode(const BitMatrix& bits, const std::string& hintedCharset)
-{
-	const Version* version = ReadVersion(bits);
-	if (!version)
-		return DecodeStatus::FormatError;
-
-	return DoDecode(bits, *version, hintedCharset);
+	return DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel).setIsMirrored(formatInfo.isMirrored);
 }
 
 } // namespace ZXing::QRCode

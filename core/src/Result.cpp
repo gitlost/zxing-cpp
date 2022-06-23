@@ -152,6 +152,13 @@ std::string Result::sequenceId() const
 	return _sai.id;
 }
 
+Result& Result::setCharacterSet(const std::string& defaultCS)
+{
+	if (!defaultCS.empty())
+		_content.hintedCharset = defaultCS;
+	return *this;
+}
+
 bool Result::operator==(const Result& o) const
 {
 	if (format() != o.format() || bytes() != o.bytes())

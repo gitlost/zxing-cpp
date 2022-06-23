@@ -21,20 +21,10 @@ namespace ZXing::DataMatrix {
 Reader::Reader(const DecodeHints& hints)
 	: _tryRotate(hints.tryRotate()),
 	  _tryHarder(hints.tryHarder()),
-	  _isPure(hints.isPure()),
-	  _characterSet(hints.characterSet())
+	  _isPure(hints.isPure())
 {}
 
-/**
-* Locates and decodes a Data Matrix code in an image.
-*
-* @return a string representing the content encoded by the Data Matrix code
-* @throws NotFoundException if a Data Matrix code cannot be found
-* @throws FormatException if a Data Matrix code cannot be decoded
-* @throws ChecksumException if error correction fails
-*/
-Result
-Reader::decode(const BinaryBitmap& image) const
+Result Reader::decode(const BinaryBitmap& image) const
 {
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr)
@@ -44,7 +34,7 @@ Reader::decode(const BinaryBitmap& image) const
 	if (!detectorResult.isValid())
 		return Result(DecodeStatus::NotFound);
 
-	return Result(Decode(detectorResult.bits(), _characterSet), std::move(detectorResult).position(), BarcodeFormat::DataMatrix);
+	return Result(Decode(detectorResult.bits()), std::move(detectorResult).position(), BarcodeFormat::DataMatrix);
 }
 
 } // namespace ZXing::DataMatrix

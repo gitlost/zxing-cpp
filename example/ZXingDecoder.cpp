@@ -395,6 +395,10 @@ int main(int argc, char* argv[])
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}
 
+	if (!hints.characterSet().empty()) {
+		result.setCharacterSet(hints.characterSet());
+	}
+
 	if (!result.isValid()) {
 		ret = 1;
 	}

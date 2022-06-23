@@ -50,7 +50,9 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 Content::Content() {}
 
-Content::Content(ByteArray&& bytes, SymbologyIdentifier si) : bytes(std::move(bytes)), symbology(si) {}
+Content::Content(ByteArray&& bytes, SymbologyIdentifier si, std::string ai)
+	: bytes(std::move(bytes)), applicationIndicator(std::move(ai)), symbology(si)
+{}
 
 void Content::switchEncoding(CharacterSet cs)
 {
@@ -90,12 +92,16 @@ bool Content::canProcess() const
 	return std::all_of(encodings.begin(), encodings.end(), [](Encoding e) { return CanProcess(e.eci); });
 }
 
-std::wstring Content::text() const
+std::wstring Content::render(bool withECI) const
 {
-	if (!canProcess())
+	if (empty() || !canProcess())
 		return {};
 
-	auto fallbackCS = CharacterSetFromString(hintedCharset.c_str());
+	std::wstring res;
+	if (withECI)
+		res = TextDecoder::FromLatin1(symbology.toString(true));
+	ECI lastECI = ECI::Unknown;
+	auto fallbackCS = CharacterSetFromString(hintedCharset);
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;
@@ -106,52 +112,51 @@ std::wstring Content::text() const
 		}
 	}
 
-	std::wstring wstr;
-	ForEachECIBlock([&](ECI eci, int begin, int end) {
-		CharacterSet cs = eci == ECI::Unknown ? fallbackCS : ToCharacterSet(eci);
-
-		TextDecoder::Append(wstr, bytes.data() + begin, end - begin, cs);
-	});
-	return wstr;
-}
-
-std::string Content::utf8Protocol() const
-{
-	if (empty() || !canProcess())
-		return {};
-
-	std::wstring res = TextDecoder::FromLatin1(symbology.toString(true));
-	ECI lastECI = ECI::Unknown;
-	auto fallbackCS = CharacterSetFromString(hintedCharset);
-	if (!hasECI && fallbackCS == CharacterSet::Unknown)
-		fallbackCS = guessEncoding();
-
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
 		// first determine how to decode the content (choose character set)
 		//  * eci == ECI::Unknown implies !hasECI and we guess
 		//  * if !IsText(eci) the ToCharcterSet(eci) will return Unknown and we decode as binary
 		CharacterSet cs = eci == ECI::Unknown ? fallbackCS : ToCharacterSet(eci);
 
-		// then find the eci to report back in the ECI designator
-		if (IsText(ToECI(cs))) // everything decoded as text is reported as utf8
-			eci = ECI::UTF8;
-		else if (eci == ECI::Unknown) // implies !hasECI and fallbackCS is Unknown or Binary
-			eci = ECI::Binary;
+		if (withECI) {
+			// then find the eci to report back in the ECI designator
+			if (IsText(ToECI(cs))) // everything decoded as text is reported as utf8
+				eci = ECI::UTF8;
+			else if (eci == ECI::Unknown) // implies !hasECI and fallbackCS is Unknown or Binary
+				eci = ECI::Binary;
 
-		if (lastECI != eci)
-			TextDecoder::AppendLatin1(res, ToString(eci));
-		lastECI = eci;
+			if (lastECI != eci)
+				TextDecoder::AppendLatin1(res, ToString(eci));
+			lastECI = eci;
 
-		std::wstring tmp;
-		TextDecoder::Append(tmp, bytes.data() + begin, end - begin, cs);
-		for (auto c : tmp) {
-			res += c;
-			if (c == L'\\') // in the ECI protocol a '\' has to be doubled
+			std::wstring tmp;
+			TextDecoder::Append(tmp, bytes.data() + begin, end - begin, cs);
+			for (auto c : tmp) {
 				res += c;
+				if (c == L'\\') // in the ECI protocol a '\' has to be doubled
+					res += c;
+			}
+		} else {
+			TextDecoder::Append(res, bytes.data() + begin, end - begin, cs);
 		}
 	});
 
-	return TextUtfEncoding::ToUtf8(res);
+	return res;
+}
+
+std::wstring Content::utf16() const
+{
+	return render(false);
+}
+
+std::string Content::utf8() const
+{
+	return TextUtfEncoding::ToUtf8(render(false));
+}
+
+std::string Content::utf8ECI() const
+{
+	return TextUtfEncoding::ToUtf8(render(true));
 }
 
 ByteArray Content::bytesECI() const
@@ -193,6 +198,9 @@ CharacterSet Content::guessEncoding() const
 
 ContentType Content::type() const
 {
+	if (empty())
+		return ContentType::Text;
+
 	if (!canProcess())
 		return ContentType::UnknownECI;
 

@@ -1,5 +1,5 @@
 /*
-* Copyright 2021 gitlost
+* Copyright 2021-2022 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -13,6 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
+
+#define ZX_USE_UTF8 1 // see Result.h
 
 #include "BitMatrixIO.h"
 #include "CharacterSet.h"
@@ -296,6 +299,11 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>
 	return os;
 }
 
+std::string escapeNonGraphical(const std::string& str)
+{
+	return TextUtfEncoding::ToUtf8(TextUtfEncoding::FromUtf8(str), true);
+}
+
 int main(int argc, char* argv[])
 {
 	DecodeHints hints;
@@ -393,16 +401,18 @@ int main(int argc, char* argv[])
 
 	if (textOnly) {
 		if (ret == 0) {
-			std::wstring text = result.text();
+			std::string text = result.text();
 			if (text.empty() && !result.bytes().empty()) {
-				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
+				std::wstring wtext;
+				TextDecoder::Append(wtext, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
+				text = ToUtf8(wtext);
 			}
-			std::cout << ToUtf8(text, angleEscape);
+			std::cout << (angleEscape ? escapeNonGraphical(text) : text);
 		}
 		return ret;
 	}
 
-	std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
+	std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
 			  << "Bytes:      (" << Size(result.bytes()) << ") \"" << ToHex(result.bytes()) << "\"\n";
 
 	if (Size(result.ECIs()))
@@ -420,7 +430,7 @@ int main(int argc, char* argv[])
 			std::cout << key << v << "\n";
 	};
 
-	printOptional("EC Level:   ", ToUtf8(result.ecLevel()));
+	printOptional("EC Level:   ", result.ecLevel());
 
 	if (result.isPartOfSequence()) {
 		std::cout << "Structured Append\n";

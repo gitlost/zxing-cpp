@@ -1,18 +1,7 @@
 /*
 * Copyright 2016 Nu-book Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #if (_MSC_VER >= 1915)
 #define no_init_all deprecated
@@ -20,6 +9,8 @@
 #endif
 
 #include "BarcodeReader.h"
+
+#define ZX_USE_UTF8 1 // silence deprecation warning in Result.h
 
 #include "BarcodeFormat.h"
 #include "DecodeHints.h"
@@ -202,7 +193,7 @@ BarcodeReader::Read(SoftwareBitmap^ bitmap, int cropWidth, int cropHeight)
 
 			auto result = ReadBarcode(img, *m_hints);
 			if (result.isValid()) {
-				return ref new ReadResult(ToPlatformString(ZXing::ToString(result.format())), ToPlatformString(result.text()), ConvertNativeToRuntime(result.format()));
+				return ref new ReadResult(ToPlatformString(ZXing::ToString(result.format())), ToPlatformString(result.utf16()), ConvertNativeToRuntime(result.format()));
 			}
 		} else {
 			throw std::runtime_error("Failed to read bitmap's data");

@@ -21,6 +21,7 @@ set (ZXING_CORE_LOCAL_DEFINES
     $<$<BOOL:${BUILD_READERS}>:-DZXING_BUILD_READERS>
     $<$<BOOL:${BUILD_WRITERS}>:-DZXING_BUILD_WRITERS>
     $<$<BOOL:${BUILD_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
+    -DZX_USE_UTF8 # silence deprecation warning in Result.h
 )
 if (MSVC)
     set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
@@ -509,7 +510,7 @@ add_library (ZXing
 
 target_include_directories (ZXing
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-    INTERFACE "$<INSTALL_INTERFACE:include/ZXing>"
+    INTERFACE "$<INSTALL_INTERFACE:include>"
 )
 
 target_compile_options (ZXing

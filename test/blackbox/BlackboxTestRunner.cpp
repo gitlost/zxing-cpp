@@ -9,7 +9,6 @@
 #include "DecoderResult.h"
 #include "ImageLoader.h"
 #include "ReadBarcode.h"
-#include "TextUtfEncoding.h"
 #include "ThresholdBinarizer.h"
 #include "ZXContainerAlgorithms.h"
 #include "pdf417/PDFReader.h"
@@ -64,8 +63,10 @@ namespace {
 // Helper for `compareResult()` - map `key` to Result property, converting value to std::string
 static std::string getResultValue(const Result& result, const std::string& key)
 {
+	if (key == "contentType")
+		return ToString(result.contentType());
 	if (key == "ecLevel")
-		return TextUtfEncoding::ToUtf8(result.ecLevel());
+		return result.ecLevel();
 	if (key == "orientation")
 		return std::to_string(result.orientation());
 	if (key == "symbologyIdentifier")
@@ -135,7 +136,7 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 	}
 
 	if (auto expected = readFile(".txt")) {
-		auto utf8Result = TextUtfEncoding::ToUtf8(result.text());
+		auto utf8Result = result.utf8();
 		return utf8Result != *expected ? fmt::format("Content mismatch: expected '{}' but got '{}'", *expected, utf8Result) : "";
 	}
 

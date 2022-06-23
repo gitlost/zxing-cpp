@@ -4,6 +4,8 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
+#define ZX_USE_UTF8 1 // see Result.h
+
 #include "Diagnostics.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 #include "ReadBarcode.h"
@@ -26,7 +28,6 @@
 #include <stb_image_write.h>
 
 using namespace ZXing;
-using namespace TextUtfEncoding;
 
 static const char *binarizers[] = { "LocalAverage", "GlobalHistogram", "FixedThreshold", "BoolCast" };
 
@@ -148,6 +149,11 @@ void drawRect(const ImageView& image, const Position& pos)
 		drawLine(image, pos[i], pos[(i + 1) % 4]);
 }
 
+std::string escapeNonGraphical(const std::string& str)
+{
+	return TextUtfEncoding::ToUtf8(TextUtfEncoding::FromUtf8(str), true);
+}
+
 int main(int argc, char* argv[])
 {
 	DecodeHints hints;
@@ -165,9 +171,6 @@ int main(int argc, char* argv[])
 		return argc == 1 ? 0 : -1;
 	}
 	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
-
-	if (oneLine)
-		angleEscape = true;
 
 	if (angleEscape)
 		std::setlocale(LC_CTYPE, "en_US.UTF-8"); // Needed so `std::iswgraph()` in `ToUtf8(angleEscape)` does not 'swallow' all printable non-ascii utf8 chars
@@ -212,7 +215,7 @@ int main(int argc, char* argv[])
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << ToUtf8(result.text(), angleEscape) << "\" " << ToString(result.status());
+							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.status());
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					bool haveDecode = false;
 					for (std::string value : result.diagnostics()) {
@@ -239,9 +242,9 @@ int main(int argc, char* argv[])
 					std::cout << "File:       " << filePath << "\n";
 				firstFile = false;
 			}
-			std::cout << "Text:       \"" << ToUtf8(result.text(), angleEscape) << "\"\n"
-					  << "Bytes:      (" << Size(result.bytes()) << ") \"" << ToHex(result.bytes()) << "\"\n"
-					  << "TextECI:    \"" << result.utf8Protocol() << "\"\n"
+			std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
+					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
+					  << "Utf8ECI:    \"" << result.utf8ECI() << "\"\n"
 					  << "BytesECI:   \"" << ToHex(result.bytesECI()) << "\"\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
@@ -257,20 +260,19 @@ int main(int argc, char* argv[])
 					std::cout << key << v << "\n";
 			};
 
-			printOptional("EC Level:   ", ToUtf8(result.ecLevel()));
-			printOptional("App-Ind.:   ", result.applicationIndicator());
+			printOptional("EC Level:   ", result.ecLevel());
 
 			if (result.lineCount())
 				std::cout << "Lines:      " << result.lineCount() << "\n";
 
 			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
 					.testFlag(result.format())) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(ToUtf8(result.text()), result.format()));
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(), result.format()));
 				printOptional("Add-On:     ", GTIN::EanAddOn(result));
 				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
 				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
-			} else if (result.format() == BarcodeFormat::ITF && result.text().length() == 14) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(ToUtf8(result.text()), result.format()));
+			} else if (result.format() == BarcodeFormat::ITF && Size(result.bytes()) == 14) {
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(), result.format()));
 			}
 
 			if (result.isPartOfSequence()) {

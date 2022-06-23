@@ -34,8 +34,8 @@ public:
 	explicit Result(DecodeStatus status);
 
 	// 1D convenience constructor
-	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
-		   SymbologyIdentifier si, ByteArray&& rawBytes = {}, const bool readerInit = false);
+	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si,
+		   ByteArray&& rawBytes = {}, bool readerInit = false, const std::string& ai = {});
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
@@ -46,27 +46,58 @@ public:
 	BarcodeFormat format() const { return _format; }
 
 	/**
-	 * @brief text Text represention of symbol's content.
-	 *
-	 * For UPC-A and UPC-E, the content is 12 and 8 digits respectively, i.e. is not expanded to 13 digits.
-	 * For EAN-13, UPC-A, UPC-E and EAN-8 with add-on, the add-on is appended separated by a space.
+	 * @brief bytes is the raw / standard content without any modifications like character set conversions
 	 */
-	const std::wstring& text() const { return _text; }
+	const ByteArray& bytes() const;
 
-	// WARNING: this is an experimental API and may change/disappear
-	const ByteArray& bytes() const { return _content.bytes; }
-	const ByteArray bytesECI() const { return _content.bytesECI(); }
-	const std::string utf8Protocol() const { return _content.utf8Protocol(); }
-	const std::string& applicationIndicator() const { return _content.applicationIndicator; }
-	ContentType contentType() const { return _content.type(); }
-	bool hasECI() const { return _content.hasECI; }
+	/**
+	 * @brief bytesECI is the raw / standard content following the ECI protocol
+	 */
+	ByteArray bytesECI() const;
+
+	/**
+	 * @brief utf8/utf16 is the bytes() content converted to utf8/16 based on ECI or guessed character set information
+	 *
+	 * Note: these two properties might only be available while transitioning text() from std::wstring to std::string. time will tell.
+	 * see https://github.com/nu-book/zxing-cpp/issues/338 for a background discussion on the issue.
+	 */
+	std::string utf8() const;
+	std::wstring utf16() const;
+
+#ifdef ZX_USE_UTF8
+	std::string text() const { return utf8(); }
+	std::string ecLevel() const { return _ecLevel; }
+#else
+#pragma message( \
+	"Warning: the return type of text() and ecLevel() will change to std::string. Please #define ZX_USE_UTF8 to transition before the next release.")
+	std::wstring text() const { return utf16(); }
+	std::wstring ecLevel() const { return {_ecLevel.begin(), _ecLevel.end()}; }
+#endif
+
+	/**
+	 * @brief utf8ECI is the standard content following the ECI protocol with every character set ECI segment transcoded to utf8
+	 */
+	std::string utf8ECI() const;
+
+	/**
+	 * @brief contentType gives a hint to the type of content found (Text/Binary/GS1/etc.)
+	 */
+	ContentType contentType() const;
+
+	/**
+	 * @brief hasECI specifies wheter or not an ECI tag was found
+	 */
+	bool hasECI() const;
+
 	std::vector<std::pair<int,int>> ECIs() const;
-	// END WARNING
 
 	const Position& position() const { return _position; }
 	void setPosition(Position pos) { _position = pos; }
 
-	int orientation() const; //< orientation of barcode in degree, see also Position::orientation()
+	/**
+	 * @brief orientation of barcode in degree, see also Position::orientation()
+	 */
+	int orientation() const;
 
 	/**
 	 * @brief isMirrored is the symbol mirrored (currently only supported by QRCode and DataMatrix)
@@ -76,8 +107,6 @@ public:
 	/// see bytes() above for a proper replacement of rawByes
 	[[deprecated]] const ByteArray& rawBytes() const { return _rawBytes; }
 	[[deprecated]] int numBits() const { return _numBits; }
-
-	const std::wstring& ecLevel() const { return _ecLevel; }
 
 	const ResultMetadata& metadata() const {
 		return _metadata;
@@ -90,7 +119,7 @@ public:
 	/**
 	 * @brief symbologyIdentifier Symbology identifier "]cm" where "c" is symbology code character, "m" the modifier.
 	 */
-	const std::string& symbologyIdentifier() const { return _symbologyIdentifier; }
+	std::string symbologyIdentifier() const;
 
 	/**
 	 * @brief sequenceSize number of symbols in a structured append sequence.
@@ -99,12 +128,12 @@ public:
 	 * If it is a structured append symbol but the total number of symbols is unknown, the
 	 * returned value is 0 (see PDF417 if optional "Segment Count" not given).
 	 */
-	int sequenceSize() const { return _sai.count; }
+	int sequenceSize() const;
 
 	/**
 	 * @brief sequenceIndex the 0-based index of this symbol in a structured append sequence.
 	 */
-	int sequenceIndex() const { return _sai.index; }
+	int sequenceIndex() const;
 
 	/**
 	 * @brief sequenceId id to check if a set of symbols belongs to the same structured append sequence.
@@ -113,7 +142,7 @@ public:
 	 * For QR Code, this is the parity integer converted to a string.
 	 * For PDF417 and DataMatrix, this is the "fileId".
 	 */
-	const std::string& sequenceId() const { return _sai.id; }
+	std::string sequenceId() const;
 
 	bool isLastInSequence() const { return sequenceSize() == sequenceIndex() + 1; }
 	bool isPartOfSequence() const { return sequenceSize() > -1 && sequenceIndex() > -1; }
@@ -127,6 +156,8 @@ public:
 	 * @brief How many lines have been detected with this code (applies only to 1D symbologies)
 	 */
 	int lineCount() const { return _lineCount; }
+
+	// only for internal use
 	void incrementLineCount() { ++_lineCount; }
 
 	const std::list<std::string>& diagnostics() const {
@@ -141,17 +172,15 @@ private:
 	DecodeStatus _status = DecodeStatus::NoError;
 	BarcodeFormat _format = BarcodeFormat::None;
 	Content _content;
-	std::wstring _text;
 	Position _position;
 	ByteArray _rawBytes;
 	int _numBits = 0;
-	std::wstring _ecLevel;
-	ResultMetadata _metadata;
-	std::string _symbologyIdentifier;
+	std::string _ecLevel;
 	StructuredAppendInfo _sai;
 	bool _isMirrored = false;
 	bool _readerInit = false;
 	int _lineCount = 0;
+	ResultMetadata _metadata;
 	std::list<std::string> _diagnostics;
 };
 
@@ -163,7 +192,7 @@ using Results = std::vector<Result>;
 Result MergeStructuredAppendSequence(const Results& results);
 
 /**
- * @brief Automatically merge all structured append sequences found in the given results
+ * @brief Automatically merge all Structured Append sequences found in the given results
  */
 Results MergeStructuredAppendSequences(const Results& results);
 

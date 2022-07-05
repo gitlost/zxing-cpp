@@ -401,7 +401,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			firstCodeword = false;
 		}
 	} catch (Error e) {
-		Diagnostics::fmt("FMTError(%s)", e.msg());
+		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
 		error = std::move(e);
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");

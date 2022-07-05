@@ -342,7 +342,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			}
 		}
 	} catch (Error e) {
-		Diagnostics::fmt("FMTError(%s)", e.msg());
+		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
 		error = std::move(e);
 	}
 

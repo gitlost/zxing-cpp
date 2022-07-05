@@ -117,7 +117,7 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 
 static void AppendNDigits(std::string& s, int v, int n)
 {
-	int div = std::pow(10, n-1);
+	int div = (int) std::pow(10, n-1);
 	while (v / div == 0 && div > 1) {
 		s.push_back('0');
 		div /= 10;

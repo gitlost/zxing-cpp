@@ -8,22 +8,18 @@
 
 #include "ODRowReader.h"
 
-namespace ZXing {
-
-class DecodeHints;
-
-namespace OneD {
+namespace ZXing::OneD {
 
 class CodabarReader : public RowReader
 {
 public:
-	explicit CodabarReader(const DecodeHints& hints);
+	using RowReader::RowReader;
+
 	Result decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>& state) const override;
 
+	CodabarReader(const DecodeHints& hints);
 private:
-	bool _returnStartEnd;
 	bool _formatSpecified;
 };
 
-} // OneD
-} // ZXing
+} // namespace ZXing::OneD

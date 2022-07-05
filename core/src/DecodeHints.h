@@ -147,7 +147,7 @@ public:
 
 	/// NOTE: has not been in effect since at least 1.2 and no one noticed.
 	[[deprecated]] std::vector<int> allowedLengths() const noexcept { return {}; }
-	[[deprecated]] DecodeHints& setAllowedLengths(const std::vector<int> v [[maybe_unused]]) { return *this; }
+	[[deprecated]] DecodeHints& setAllowedLengths(const std::vector<int> /*v [[maybe_unused]]*/) { return *this; }
 
 	/// NOTE: use validateCode39CheckSum
 	[[deprecated]] bool assumeCode39CheckDigit() const noexcept { return validateCode39CheckSum(); }

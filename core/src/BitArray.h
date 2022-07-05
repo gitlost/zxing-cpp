@@ -427,7 +427,7 @@ public:
 
 	int size() const
 	{
-		return bits.end() - cur;
+		return (int) (bits.end() - cur);
 	}
 
 	explicit operator bool() const { return size(); }

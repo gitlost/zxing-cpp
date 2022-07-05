@@ -170,7 +170,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(BASIC_SET_CHARS[cValue]));
 				} else {
 					Diagnostics::fmt("%sErrorShift0(%d)", modeName, cValue);
-					throw std::runtime_error("invalid value in C40 or Text segment");
+					throw FormatError("invalid value in C40 or Text segment");
 				}
 				break;
 			case 1:
@@ -178,7 +178,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(cValue));
 				else {
 					Diagnostics::fmt("%sErrorShift1(%d)", modeName, cValue);
-					throw std::runtime_error("invalid value in C40 or Text segment");
+					throw FormatError("invalid value in C40 or Text segment");
 				}
 				break;
 			case 2:
@@ -189,7 +189,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					Diagnostics::put("UpSh");
 				} else {
 					Diagnostics::fmt("%sErrorShift2(%d)", modeName, cValue);
-					throw std::runtime_error("invalid value in C40 or Text segment");
+					throw FormatError("invalid value in C40 or Text segment");
 				}
 				break;
 			case 3:
@@ -197,12 +197,12 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(isC40 ? cValue + 96 : TEXT_SHIFT3_SET_CHARS[cValue]));
 				else {
 					Diagnostics::fmt("%sErrorShift3(%d)", modeName, cValue);
-					throw std::runtime_error("invalid value in C40 or Text segment");
+					throw FormatError("invalid value in C40 or Text segment");
 				}
 				break;
 			default:
 				Diagnostics::fmt("%sError(Shift)", modeName);
-				throw std::runtime_error("invalid value in C40 or Text segment");
+				throw FormatError("invalid value in C40 or Text segment");
 			}
 		}
 	}
@@ -220,7 +220,7 @@ static void DecodeAnsiX12Segment(BitSource& bits, Content& result)
 			static const char segChars[4] = {'\r', '*', '>', ' '};
 			if (cValue < 0) {
 				Diagnostics::fmt("X12Error(%d)", cValue);
-				throw std::runtime_error("invalid value in AnsiX12 segment");
+				throw FormatError("invalid value in AnsiX12 segment");
 			} else if (cValue < 4)
 				result.push_back(segChars[cValue]);
 			else if (cValue < 14) // 0 - 9
@@ -229,7 +229,7 @@ static void DecodeAnsiX12Segment(BitSource& bits, Content& result)
 				result.push_back((char)(cValue + 51));
 			else {
 				Diagnostics::put("X12Error");
-				throw std::runtime_error("invalid value in AnsiX12 segment");
+				throw FormatError("invalid value in AnsiX12 segment");
 			}
 		}
 	}
@@ -291,7 +291,7 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 	// We're seeing NegativeArraySizeException errors from users.
 	if (count < 0) {
 		Diagnostics::put("BASError(NegCount)");
-		throw std::runtime_error("invalid count in Base256 segment");
+		throw FormatError("invalid count in Base256 segment");
 	}
 	Diagnostics::fmt("Cnt(%d,%d)", count, d1);
 
@@ -301,7 +301,7 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 		// http://www.bcgen.com/demo/IDAutomationStreamingDataMatrix.aspx?MODE=3&D=Fred&PFMT=3&PT=F&X=0.3&O=0&LM=0.2
 		if (bits.available() < 8) {
 			Diagnostics::put("BASError(Incomplete)");
-			throw std::runtime_error("incomplete Base256 segment");
+			throw FormatError("incomplete Base256 segment");
 		}
 
 		result += static_cast<uint8_t>(Unrandomize255State(bits.readBits(8), codewordPosition++));
@@ -313,6 +313,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 {
 	BitSource bits(bytes);
 	Content result;
+	Error error;
 	result.symbology = {'d', '1', 3}; // ECC 200 (ISO 16022:2006 Annex N Table N.1)
 	result.defaultCharset = CharacterSet::ISO8859_1;
 	std::string resultTrailer;
@@ -330,7 +331,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 		while (!done && bits.available() >= 8) {
 			int oneByte = bits.readBits(8);
 			switch (oneByte) {
-			case 0: Diagnostics::put("ASCError(0)"); throw std::runtime_error("invalid 0 code word");
+			case 0: Diagnostics::put("ASCError(0)"); throw FormatError("invalid 0 code word");
 			case 129: Diagnostics::put("PAD"); done = true; break; // Pad -> we are done, ignore the rest of the bits
 			case 230: DecodeC40OrTextSegment(bits, result, Mode::C40); break;
 			case 231: DecodeBase256Segment(bits, result); break;
@@ -352,7 +353,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 233: // Structured Append
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.6.1
 					Diagnostics::put("SAError");
-					throw std::runtime_error("structured append tag must be first code word");
+					throw FormatError("structured append tag must be first code word");
 				}
 				ParseStructuredAppend(bits, sai);
 				firstFNC1Position = 5;
@@ -361,7 +362,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 234: // Reader Programming
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.2.4.9
 					Diagnostics::put("RPError");
-					throw std::runtime_error("reader programming tag must be first code word");
+					throw FormatError("reader programming tag must be first code word");
 				}
 				readerInit = true;
 				break;
@@ -394,17 +395,14 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 					if (oneByte == 254 && bits.available() == 0)
 						break;
 					Diagnostics::fmt("ASCError(%d)", oneByte);
-					throw std::runtime_error("invalid code word");
+					throw FormatError("invalid code word");
 				}
 			}
 			firstCodeword = false;
 		}
-	} catch (const std::exception& e) {
-#ifndef NDEBUG
-		printf("DMDecoder error: %s\n", e.what());
-#endif
-		Diagnostics::fmt("FMTError(%s)", e.what());
-		return DecodeStatus::FormatError;
+	} catch (Error e) {
+		Diagnostics::fmt("FMTError(%s)", e.msg());
+		error = std::move(e);
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 
@@ -413,8 +411,9 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 	result.symbology.modifier += isDMRE * 6;
 
 	return DecoderResult(std::move(bytes), std::move(result))
-			.setStructuredAppend(sai)
-			.setReaderInit(readerInit);
+		.setError(std::move(error))
+		.setStructuredAppend(sai)
+		.setReaderInit(readerInit);
 }
 
 } // namespace DecodedBitStreamParser
@@ -452,18 +451,18 @@ static DecoderResult DoDecode(const BitMatrix& bits)
 	// Construct a parser and read version, error-correction level
 	const Version* version = VersionForDimensionsOf(bits);
 	if (version == nullptr)
-		return DecodeStatus::FormatError;
+		return FormatError("Invalid matrix dimension");
 	Diagnostics::fmt("  Dimensions:    %dx%d (HxW)\n", bits.height(), bits.width());
 
 	// Read codewords
-	ByteArray codewords = CodewordsFromBitMatrix(bits);
+	ByteArray codewords = CodewordsFromBitMatrix(bits, *version);
 	if (codewords.empty())
-		return DecodeStatus::FormatError;
+		return FormatError("Invalid number of code words");
 
 	// Separate into data blocks
 	std::vector<DataBlock> dataBlocks = GetDataBlocks(codewords, *version);
 	if (dataBlocks.empty())
-		return DecodeStatus::FormatError;
+		return FormatError("Invalid number of data blocks");
 
 	// Count total number of data bytes
 	ByteArray resultBytes(TransformReduce(dataBlocks, 0, [](const auto& db) { return db.numDataCodewords; }));
@@ -475,7 +474,7 @@ static DecoderResult DoDecode(const BitMatrix& bits)
 		ByteArray& codewordBytes = dataBlock.codewords;
 		int numDataCodewords = dataBlock.numDataCodewords;
 		if (!CorrectErrors(codewordBytes, numDataCodewords))
-			return DecodeStatus::ChecksumError;
+			return ChecksumError();
 
 		for (int i = 0; i < numDataCodewords; i++) {
 			// De-interlace data blocks.

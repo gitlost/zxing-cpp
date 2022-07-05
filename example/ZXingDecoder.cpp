@@ -381,7 +381,7 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width(), height);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
 
-	} else if (hints.formats().testFlags(BarcodeFormat::OneDCodes)) {
+	} else if (hints.formats().testFlags(BarcodeFormat::LinearCodes)) {
 		hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
@@ -427,7 +427,7 @@ int main(int argc, char* argv[])
 	std::cout << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
 			  << "Position:   " << result.position() << "\n"
-			  << "Error:      " << ToString(result.status()) << "\n";
+			  << "Error:      " << ToString(result.error()) << "\n";
 
 	auto printOptional = [](const char* key, const std::string& v) {
 		if (!v.empty())

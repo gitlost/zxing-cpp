@@ -14,7 +14,9 @@ add_executable (UnitTest
     BitHacksTest.cpp
     CharacterSetECITest.cpp
     ContentTest.cpp
+    ErrorTest.cpp
     GTINTest.cpp
+    GS1Test.cpp
     ReedSolomonTest.cpp
     TextEncoderTest.cpp
     TextDecoderTest.cpp
@@ -45,8 +47,7 @@ add_executable (UnitTest
     oned/ODITFWriterTest.cpp
     oned/ODUPCAWriterTest.cpp
     oned/ODUPCEWriterTest.cpp
-    oned/rss/ODRSSExpandedBinaryDecoderTest.cpp
-    oned/rss/ODRSSFieldParserTest.cpp
+    oned/ODDataBarExpandedBitDecoderTest.cpp
     qrcode/MQRDecoderTest.cpp
     qrcode/QRBitMatrixParserTest.cpp
     qrcode/QRDataMaskTest.cpp

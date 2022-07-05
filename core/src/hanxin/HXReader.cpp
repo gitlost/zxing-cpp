@@ -28,8 +28,10 @@
 namespace ZXing::HanXin {
 
 Reader::Reader(const DecodeHints& hints)
-	: _tryHarder(hints.tryHarder()), _isPure(hints.isPure()),
-	_formatSpecified(hints.hasFormat(BarcodeFormat::HanXin)), _characterSet(hints.characterSet()) {}
+	: ZXing::Reader(hints)
+{
+	_formatSpecified = hints.hasFormat(BarcodeFormat::HanXin);
+}
 
 Result
 Reader::decode(const BinaryBitmap& image) const
@@ -43,11 +45,11 @@ Reader::decode(const BinaryBitmap& image) const
 		return Result(DecodeStatus::NotFound);
 	}
 
-	auto detectorResult = Detect(*binImg, _tryHarder, _isPure);
+	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
 
 	//printf(" HXReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-		return Result(Decoder::Decode(detectorResult.bits(), _characterSet), {}, BarcodeFormat::HanXin);
+		return Result(Decoder::Decode(detectorResult.bits(), _hints.characterSet()), {}, BarcodeFormat::HanXin);
 	}
 	return Result(DecodeStatus::NotFound);
 }

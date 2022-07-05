@@ -29,8 +29,10 @@
 namespace ZXing::DotCode {
 
 Reader::Reader(const DecodeHints& hints)
-	: _tryHarder(hints.tryHarder()), _isPure(hints.isPure()),
-	_formatSpecified(hints.hasFormat(BarcodeFormat::DotCode)), _characterSet(hints.characterSet()) {}
+	: ZXing::Reader(hints)
+{
+	_formatSpecified = hints.hasFormat(BarcodeFormat::DotCode);
+}
 
 Result
 Reader::decode(const BinaryBitmap& image) const
@@ -44,11 +46,11 @@ Reader::decode(const BinaryBitmap& image) const
 		return Result(DecodeStatus::NotFound);
 	}
 
-	auto detectorResult = Detect(*binImg, _tryHarder, _isPure);
+	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
 
 	//printf(" DCReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-        DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _characterSet);
+        DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _hints.characterSet());
         //printf("DecoderResult status %d\n", (int)decoderResult.errorCode());
         if (decoderResult.isValid()) {
 		    return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);

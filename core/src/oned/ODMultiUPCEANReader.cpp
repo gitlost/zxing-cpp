@@ -270,8 +270,10 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 
 	next = FindLeftGuard(next, minSize, END_PATTERN, QUIET_ZONE_LEFT);
 	if (!next.isValid()) {
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
+	if (!next.isValid())
+		return {};
 
 	PartialResult res;
 	auto begin = next;
@@ -279,11 +281,12 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 	if (!(((_hints.hasFormat(BarcodeFormat::EAN13 | BarcodeFormat::UPCA)) && EAN13(res, begin)) ||
 		  (_hints.hasFormat(BarcodeFormat::EAN8) && EAN8(res, begin)) ||
 		  (_hints.hasFormat(BarcodeFormat::UPCE) && UPCE(res, begin)))) {
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 
+	Error error;
 	if (!GTIN::IsCheckDigitValid(res.format == BarcodeFormat::UPCE ? UPCEANCommon::ConvertUPCEtoUPCA(res.txt) : res.txt))
-		return Result(DecodeStatus::ChecksumError);
+		error = ChecksumError();
 
 	//printf("found\n");
 	// If UPC-A was a requested format and we detected a EAN-13 code with a leading '0', then we drop the '0' and call it
@@ -317,9 +320,9 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 	next = res.end;
 
 	if (_hints.eanAddOnSymbol() == EanAddOnSymbol::Require && !addOnRes.isValid())
-		return Result(DecodeStatus::NotFound);
+		return {};
 
-	return {res.txt, rowNumber, begin.pixelsInFront(), res.end.pixelsTillEnd(), res.format, symbologyIdentifier};
+	return Result(res.txt, rowNumber, begin.pixelsInFront(), res.end.pixelsTillEnd(), res.format, symbologyIdentifier, error);
 }
 
 } // namespace ZXing::OneD

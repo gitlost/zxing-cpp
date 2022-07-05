@@ -33,19 +33,23 @@ static const char *binarizers[] = { "LocalAverage", "GlobalHistogram", "FixedThr
 
 static void PrintUsage(const char* exePath)
 {
-	std::cout << "Usage: " << exePath << " [options] <png image path>...\n"
-			  << "    -fast                   Skip some lines/pixels during detection (faster)\n"
-			  << "    -norotate               Don't try rotated image during detection (faster)\n"
-			  << "    -noscale                Don't try downscaled images during detection (faster)\n"
-			  << "    -format <FORMAT[,...]>  Only detect given format(s) (faster)\n"
-			  << "    -ispure                 Assume the image contains only a 'pure'/perfect code (faster)\n"
-			  << "    -1                      Print only file name, format, identifier, text and status on one line per file\n"
-			  << "    -escape                 Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
-			  << "    -binary                 Write (only) the binary content of the symbol(s) to stdout\n"
-			  << "    -pngout <png out path>  Write a copy of the input image with barcodes outlined by a green line\n"
-			  << "    -binarizer <BINARIZER>  Use specific binarizer\n"
-			  << "    -charset <CHARSET>      Default character set\n"
-			  << "    -diagnostics            Print diagnostics\n"
+	std::cout << "Usage: " << exePath << " [options] <image file>...\n"
+			  << "    -fast         Skip some lines/pixels during detection (faster)\n"
+			  << "    -norotate     Don't try rotated image during detection (faster)\n"
+			  << "    -noscale      Don't try downscaled images during detection (faster)\n"
+			  << "    -format <FORMAT[,...]>\n"
+			  << "                  Only detect given format(s) (faster)\n"
+			  << "    -ispure       Assume the image contains only a 'pure'/perfect code (faster)\n"
+			  << "    -1            Print only file name, format, identifier, text and status on one line per file\n"
+			  << "    -escape       Escape non-graphical characters in angle brackets (ignored for -1 option, which always escapes)\n"
+			  << "    -binary       Write (only) the binary content of the symbol(s) to stdout\n"
+			  << "    -pngout <file name>\n"
+			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
+			  << "    -binarizer <BINARIZER>\n"
+			  << "                  Use specific binarizer\n"
+			  << "    -charset <CHARSET>\n"
+			  << "                  Default character set\n"
+			  << "    -diagnostics  Print diagnostics\n"
 			  << "\n"
 			  << "Supported formats are:\n" << "   ";
 	for (auto f : BarcodeFormats::all()) {
@@ -73,6 +77,8 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 		} else if (strcmp(argv[i], "-ispure") == 0) {
 			hints.setIsPure(true);
 			hints.setBinarizer(Binarizer::FixedThreshold);
+		} else if (strcmp(argv[i], "-errors") == 0) {
+			hints.setReturnErrors(true);
 		} else if (strcmp(argv[i], "-format") == 0) {
 			if (++i == argc)
 				return false;
@@ -130,7 +136,7 @@ std::ostream& operator<<(std::ostream& os, const Position& points)
 	return os;
 }
 
-void drawLine(const ImageView& iv, PointI a, PointI b)
+void drawLine(const ImageView& iv, PointI a, PointI b, bool error)
 {
 	int steps = maxAbsComponent(b - a);
 	PointF dir = bresenhamDirection(PointF(b - a));
@@ -138,15 +144,16 @@ void drawLine(const ImageView& iv, PointI a, PointI b)
 	for (int i = 0; i < steps; ++i) {
 		auto p = PointI(centered(a + i * dir));
 		auto* dst = const_cast<uint8_t*>(iv.data(p.x, p.y));
-		dst[R] = dst[B] = 0;
-		dst[G] = 0xff;
+		dst[R] = error ? 0xff : 0;
+		dst[G] = error ? 0 : 0xff;
+		dst[B] = 0;
 	}
 }
 
-void drawRect(const ImageView& image, const Position& pos)
+void drawRect(const ImageView& image, const Position& pos, bool error)
 {
 	for (int i = 0; i < 4; ++i)
-		drawLine(image, pos[i], pos[(i + 1) % 4]);
+		drawLine(image, pos[i], pos[(i + 1) % 4], error);
 }
 
 std::string escapeNonGraphical(const std::string& str)
@@ -204,9 +211,9 @@ int main(int argc, char* argv[])
 		for (auto&& result : results) {
 
 			if (!outPath.empty())
-				drawRect(image, result.position());
+				drawRect(image, result.position(), bool(result.error()));
 
-			ret |= static_cast<int>(result.status());
+			ret |= static_cast<int>(result.error().type());
 
 			if (binaryOutput) {
 				std::cout.write(reinterpret_cast<const char*>(result.bytes().data()), result.bytes().size());
@@ -215,7 +222,7 @@ int main(int argc, char* argv[])
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.status());
+							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.error());
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					bool haveDecode = false;
 					for (std::string value : result.diagnostics()) {
@@ -242,6 +249,12 @@ int main(int argc, char* argv[])
 					std::cout << "File:       " << filePath << "\n";
 				firstFile = false;
 			}
+
+			if (result.format() == BarcodeFormat::None) {
+				std::cout << "No barcode found\n";
+				continue;
+			}
+
 			std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
 					  << "Utf8ECI:    \"" << result.utf8ECI() << "\"\n"
@@ -252,8 +265,7 @@ int main(int argc, char* argv[])
 					  << "HasECI:     " << result.hasECI() << "\n"
 					  << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
-					  << "IsMirrored: " << result.isMirrored() << "\n"
-					  << "Error:      " << ToString(result.status()) << "\n";
+					  << "IsMirrored: " << result.isMirrored() << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {
 				if (!v.empty())
@@ -261,6 +273,7 @@ int main(int argc, char* argv[])
 			};
 
 			printOptional("EC Level:   ", result.ecLevel());
+			printOptional("Error:      ", ToString(result.error()));
 
 			if (result.lineCount())
 				std::cout << "Lines:      " << result.lineCount() << "\n";

@@ -27,10 +27,7 @@ namespace DotCode {
 
 class Reader : public ZXing::Reader
 {
-	bool _tryHarder;
-	bool _isPure;
 	bool _formatSpecified;
-	std::string _characterSet;
 
 public:
 	explicit Reader(const DecodeHints& hints);

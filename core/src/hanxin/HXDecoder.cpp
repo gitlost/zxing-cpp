@@ -118,7 +118,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 						mode = bits.readBits(4);
 						if (mode != M_PAD) {
 							Diagnostics::fmt("PERR(%d)", mode);
-							return DecodeStatus::FormatError; // Ignore for now
+							return FormatError(); // Ignore for now
 						}
 						padding++;
 					}
@@ -131,7 +131,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 			case M_RESERVED5:
 			case M_RESERVED6:
 				Diagnostics::fmt("RERR(0x%X)", mode);
-				return DecodeStatus::FormatError;
+				return FormatError();
 				break;
 			case M_NUMERIC: {
 					Diagnostics::put("NUM");
@@ -139,14 +139,14 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 					for (;;) {
 						if (bits.available() < 10) {
 							Diagnostics::fmt("NERR(%d)", bits.available());
-							return DecodeStatus::FormatError;
+							return FormatError();
 						}
 						char buf[32];
 						int num = bits.readBits(10);
 						if (num >= 0x3FD) {
 							if (prevNum == -1) {
 								Diagnostics::put("NERR0");
-								return DecodeStatus::FormatError;
+								return FormatError();
 							}
 							sprintf(buf, num == 0x3FD ? "%d" : num == 0x3FE ? "%02d" : "%03d", prevNum);
 							result.append(buf);
@@ -167,7 +167,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 					for (;;) {
 						if (bits.available() < 6) {
 							Diagnostics::fmt("TERR(%d)", bits.available());
-							return DecodeStatus::FormatError;
+							return FormatError();
 						}
 						int code = bits.readBits(6);
 						if (code == 0x3F) {
@@ -185,14 +185,14 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 			case M_BINARY: {
 					if (bits.available() < 13) {
 						Diagnostics::fmt("BCERR(%d)", bits.available());
-						return DecodeStatus::FormatError;
+						return FormatError();
 					}
 					int cnt = bits.readBits(13);
 					Diagnostics::fmt("BIN(%d)", cnt);
 					for (int i = 0; i < cnt; i++) {
 						if (bits.available() < 8) {
 							Diagnostics::fmt("BERR(%d)", bits.available());
-							return DecodeStatus::FormatError;
+							return FormatError();
 						}
 						result.push_back(bits.readBits(8));
 					}
@@ -206,7 +206,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 					for (;;) {
 						if (bits.available() < 12) {
 							Diagnostics::fmt("BCERR(%d)", bits.available());
-							return DecodeStatus::FormatError;
+							return FormatError();
 						}
 						int code = bits.readBits(12);
 						if (code == 0xFFF) {
@@ -242,7 +242,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 					for (;;) {
 						if (bits.available() < 15) {
 							Diagnostics::fmt("BY2ERR(%d)", bits.available());
-							return DecodeStatus::FormatError;
+							return FormatError();
 						}
 						int code = bits.readBits(15);
 						if (code == 0x7FFF) {
@@ -259,7 +259,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 					Diagnostics::put("BY4");
 					if (bits.available() < 21) {
 						Diagnostics::fmt("BY4ERR(%d)", bits.available());
-						return DecodeStatus::FormatError;
+						return FormatError();
 					}
 					int code = bits.readBits(21);
 					result.push_back(code / 0x3138 + 0x81);
@@ -275,32 +275,32 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 				Diagnostics::put("UNIC");
 				uni = true;
 				// Not implemented
-				return DecodeStatus::FormatError;
+				return FormatError();
 				break;
 			case M_GS1_URI: {
 					Diagnostics::put("GS1URI");
 					if (bits.available() < 4) {
 						Diagnostics::fmt("GS1URIERR(%d)", bits.available());
-						return DecodeStatus::FormatError;
+						return FormatError();
 					}
 					int submode = bits.readBits(4);
 					if (submode == 1) { // GS1
 						gs1 = true;
 						// Not implemented
-						return DecodeStatus::FormatError;
+						return FormatError();
 					} else if (submode == 2) { // URI
 						uri = true;
 						// Not implemented
-						return DecodeStatus::FormatError;
+						return FormatError();
 					} else {
 						Diagnostics::fmt("GS1URISMERR(%d)", submode);
-						return DecodeStatus::FormatError;
+						return FormatError();
 					}
 				}
 				break;
 			default:
 				Diagnostics::fmt("MERR(%d)", mode);
-				return DecodeStatus::FormatError;
+				return FormatError();
 				break;
 			}
 		}
@@ -308,7 +308,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 	catch (const std::exception &)
 	{
 		// from readBits() calls
-		return DecodeStatus::FormatError;
+		return FormatError();
 	}
 
 	char modifier;
@@ -357,7 +357,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, version, ecLevel, mask);
 	if (codewords.size() == 0) {
-		return DecodeStatus::NotFound;
+		return {};
 	}
 
 	Diagnostics::fmt("  Version:    %d (%dx%d)\n", version, bits.height(), bits.width());
@@ -378,7 +378,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 		const int numDataCodewords = dataBlock.numDataCodewords;
 		if (!CorrectErrors(codewordBytes, numDataCodewords)) {
 			printf(" checksum fail\n");
-			return DecodeStatus::ChecksumError;
+			return ChecksumError();
 		}
 		resultIterator = std::copy_n(codewordBytes.begin(), numDataCodewords, resultIterator);
 	}

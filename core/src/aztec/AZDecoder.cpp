@@ -147,12 +147,12 @@ static BitArray CorrectBits(const DetectorResult& ddata, const BitArray& rawbits
 	int numECCodewords = numCodewords - numDataCodewords;
 
 	if (numCodewords < numDataCodewords)
-		return {};
+		throw FormatError("Invalid number of code words");
 
 	auto dataWords = ToInts<int>(rawbits, codewordSize, numCodewords, Size(rawbits) % codewordSize);
 
 	if (!ReedSolomonDecode(*gf, dataWords, numECCodewords))
-		return {};
+		throw ChecksumError();
 
 	// drop the ECCodewords from the dataWords array
 	dataWords.resize(numDataCodewords);
@@ -213,11 +213,11 @@ static const char* GetCharacter(Table table, int code)
 /**
 * See ISO/IEC 24778:2008 Section 10.1
 */
-static ECI ParseECIValue(BitArray::Range& bits, const int flg)
+static ECI ParseECIValue(BitArrayView& bits, const int flg)
 {
 	int eci = 0;
 	for (int i = 0; i < flg; i++)
-		eci = 10 * eci + ReadBits(bits, 4) - 2;
+		eci = 10 * eci + bits.readBits(4) - 2;
 	return ECI(eci);
 }
 
@@ -266,21 +266,21 @@ static void DecodeContent(const BitArray& bits, Content& res)
 	Table latchTable = Table::UPPER; // table most recently latched to
 	Table shiftTable = Table::UPPER; // table to use for the next read
 
-	auto remBits = bits.range();
+	auto remBits = BitArrayView(bits);
 
 	while (remBits.size() >= (shiftTable == Table::DIGIT ? 4 : 5)) { // see ISO/IEC 24778:2008 7.3.1.2 regarding padding bits
 		if (shiftTable == Table::BINARY) {
-			int length = ReadBits(remBits, 5);
+			int length = remBits.readBits(5);
 			if (length == 0)
-				length = ReadBits(remBits, 11) + 31;
+				length = remBits.readBits(11) + 31;
 			Diagnostics::fmt("(%d)", length);
 			for (int i = 0; i < length; i++)
-				res.push_back(ReadBits(remBits, 8));
+				res.push_back(remBits.readBits(8));
 			// Go back to whatever mode we had been in
 			shiftTable = latchTable;
 		} else {
 			int size = shiftTable == Table::DIGIT ? 4 : 5;
-			int code = ReadBits(remBits, size);
+			int code = remBits.readBits(size);
 			const char* str = GetCharacter(shiftTable, code);
 			if (std::strncmp(str, "CTRL_", 5) == 0) {
 				// Table changes
@@ -293,7 +293,7 @@ static void DecodeContent(const BitArray& bits, Content& res)
 					latchTable = shiftTable;
 				Diagnostics::fmt("%c%c", str[5], str[6]);
 			} else if (std::strcmp(str, "FLGN") == 0) {
-				int flg = ReadBits(remBits, 3);
+				int flg = remBits.readBits(3);
 				if (flg == 0) { // FNC1
 					res.push_back(29); // May be removed at end if first/second FNC1
 				} else if (flg <= 6) {
@@ -323,12 +323,12 @@ DecoderResult Decode(const BitArray& bits)
 
 	try {
 		DecodeContent(bits, res);
-	} catch (const std::out_of_range&) { // see ReadBits()
-		return DecodeStatus::FormatError;
+	} catch (const std::exception&) { // see BitArrayView::readBits
+		return FormatError();
 	}
 
 	if (res.bytes.empty())
-		return DecodeStatus::FormatError;
+		return FormatError("Empty symbol content");
 
 	// Check for Structured Append - need 4 5-bit words, beginning with ML UL, ending with index and count
 	bool haveStructuredAppend = Size(bits) > 20 && ToInt(bits, 0, 5) == 29 // latch to MIXED (from UPPER)
@@ -365,21 +365,23 @@ DecoderResult Decode(const BitArray& bits)
 
 DecoderResult Decode(const DetectorResult& detectorResult)
 {
-	BitArray bits = CorrectBits(detectorResult, ExtractBits(detectorResult));
+	try {
+		auto bits = CorrectBits(detectorResult, ExtractBits(detectorResult));
 
-	if (!bits.size())
-		return DecodeStatus::FormatError;
+		const int layers = detectorResult.nbLayers();
+		const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
+		const int numCodewords = Size(bits) / codewordSize;
+		const int numDataCodewords = detectorResult.nbDatablocks();
 
-	const int layers = detectorResult.nbLayers();
-	const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
-	const int numCodewords = Size(bits) / codewordSize;
-	const int numDataCodewords = detectorResult.nbDatablocks();
+		Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
+		Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
+		Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
+		Diagnostics::put("  Decode:      ");
 
-	Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
-	Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
-	Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
-	Diagnostics::put("  Decode:      ");
-	return Decode(bits).setReaderInit(detectorResult.readerInit());
+		return Decode(bits).setReaderInit(detectorResult.readerInit());
+	} catch (Error e) {
+		return e;
+	}
 }
 
 } // namespace ZXing::Aztec

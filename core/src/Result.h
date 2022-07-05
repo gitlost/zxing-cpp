@@ -11,6 +11,7 @@
 #include "ByteArray.h"
 #include "Content.h"
 #include "DecodeStatus.h"
+#include "Error.h"
 #include "Quadrilateral.h"
 #include "ResultMetadata.h"
 #include "StructuredAppend.h"
@@ -31,17 +32,20 @@ using Position = QuadrilateralI;
 class Result
 {
 public:
+	Result() = default;
 	explicit Result(DecodeStatus status);
 
 	// 1D convenience constructor
-	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si,
+	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
 		   ByteArray&& rawBytes = {}, bool readerInit = false, const std::string& ai = {});
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
-	bool isValid() const { return StatusIsOK(_status); }
+	bool isValid() const { return format() != BarcodeFormat::None && !error(); }
 
-	DecodeStatus status() const { return _status; }
+	const Error& error() const { return _error; }
+
+	[[deprecated]] DecodeStatus status() const;
 
 	BarcodeFormat format() const { return _format; }
 
@@ -170,9 +174,9 @@ public:
 	friend Result MergeStructuredAppendSequence(const std::vector<Result>& results);
 
 private:
-	DecodeStatus _status = DecodeStatus::NoError;
 	BarcodeFormat _format = BarcodeFormat::None;
 	Content _content;
+	Error _error;
 	Position _position;
 	ByteArray _rawBytes;
 	int _numBits = 0;
@@ -186,6 +190,12 @@ private:
 };
 
 using Results = std::vector<Result>;
+
+// Consider this an internal function that can change/disappear anytime without notice
+inline Result FirstOrDefault(Results&& results)
+{
+	return results.empty() ? Result() : std::move(results.front());
+}
 
 /**
  * @brief Merge a list of Results from one Structured Append sequence to a single result

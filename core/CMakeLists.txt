@@ -62,6 +62,7 @@ set (COMMON_FILES
     src/ECI.h
     src/ECI.cpp
     src/Flags.h
+    src/Generator.h
     src/GenericGF.h
     src/GenericGF.cpp
     src/GenericGFPoly.h
@@ -99,10 +100,13 @@ if (BUILD_READERS)
         src/DecodeStatus.cpp
         src/DecoderResult.h
         src/DetectorResult.h
+        src/Error.h
         src/GlobalHistogramBinarizer.h
         src/GlobalHistogramBinarizer.cpp
         src/GridSampler.h
         src/GridSampler.cpp
+        src/GS1.h
+        src/GS1.cpp
         src/HybridBinarizer.h
         src/HybridBinarizer.cpp
         src/ImageView.h
@@ -158,6 +162,7 @@ if (BUILD_READERS)
         src/Content.h
         src/DecodeHints.h
         src/DecodeStatus.h
+        src/Error.h
         src/ImageView.h
         src/Point.h
         src/Quadrilateral.h
@@ -310,6 +315,8 @@ if (BUILD_READERS)
         src/oned/ODDataBarCommon.cpp
         src/oned/ODDataBarReader.h
         src/oned/ODDataBarReader.cpp
+        src/oned/ODDataBarExpandedBitDecoder.h
+        src/oned/ODDataBarExpandedBitDecoder.cpp
         src/oned/ODDataBarExpandedReader.h
         src/oned/ODDataBarExpandedReader.cpp
         src/oned/ODITFReader.h
@@ -344,20 +351,6 @@ if (BUILD_WRITERS)
         src/oned/ODUPCAWriter.cpp
         src/oned/ODWriterHelper.h
         src/oned/ODWriterHelper.cpp
-    )
-endif()
-
-
-set (ONED_RSS_FILES
-)
-if (BUILD_READERS)
-    set (ONED_RSS_FILES ${ONED_RSS_FILES}
-        src/oned/rss/ODRSSExpandedBinaryDecoder.h
-        src/oned/rss/ODRSSExpandedBinaryDecoder.cpp
-        src/oned/rss/ODRSSFieldParser.h
-        src/oned/rss/ODRSSFieldParser.cpp
-        src/oned/rss/ODRSSGenericAppIdDecoder.h
-        src/oned/rss/ODRSSGenericAppIdDecoder.cpp
     )
 endif()
 
@@ -485,7 +478,6 @@ source_group (Sources\\dotcode FILES ${DOTCODE_FILES})
 source_group (Sources\\hanxin FILES ${HANXIN_FILES})
 source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
-source_group (Sources\\oned\\rss FILES ${ONED_RSS_FILES})
 source_group (Sources\\pdf417 FILES ${PDF417_FILES})
 source_group (Sources\\qrcode FILES ${QRCODE_FILES})
 source_group (Sources\\textcodec FILES ${TEXT_CODEC_FILES})
@@ -502,7 +494,6 @@ add_library (ZXing
     ${HANXIN_FILES}
     ${MAXICODE_FILES}
     ${ONED_FILES}
-    ${ONED_RSS_FILES}
     ${PDF417_FILES}
     ${QRCODE_FILES}
     ${TEXT_CODEC_FILES}

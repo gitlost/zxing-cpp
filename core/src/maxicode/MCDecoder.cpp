@@ -324,7 +324,7 @@ DecoderResult Decode(const BitMatrix& bits)
 	Diagnostics::put("  Decode:     ");
 	if (!CorrectErrors(codewords, 0, 10, 10, ALL)) {
 		Diagnostics::put("ChecksumError(primary)");
-		return DecodeStatus::ChecksumError;
+		return ChecksumError();
 	}
 
 	int mode = codewords[0] & 0x0F;
@@ -338,7 +338,7 @@ DecoderResult Decode(const BitMatrix& bits)
 			datawords.resize(94, 0);
 		else {
 			Diagnostics::fmt("ChecksumError(secondary %d)", mode);
-			return DecodeStatus::ChecksumError;
+			return ChecksumError();
 		}
 		break;
 	case 5: // Full ECC
@@ -346,11 +346,10 @@ DecoderResult Decode(const BitMatrix& bits)
 			datawords.resize(78, 0);
 		else {
 			Diagnostics::fmt("ChecksumError(secondary %d)", mode);
-			return DecodeStatus::ChecksumError;
+			return ChecksumError();
 		}
 		break;
-	default:
-		return DecodeStatus::FormatError;
+	default: return FormatError("Invalid mode");
 	}
 
 	std::copy_n(codewords.begin(), 10, datawords.begin());

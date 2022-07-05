@@ -503,7 +503,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset)
 	catch (const std::exception &)
 	{
 		// from readBits() calls
-		return DecodeStatus::FormatError;
+		return FormatError();
 	}
 
 	if (position == position_1710) {
@@ -582,7 +582,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, erasureLocs);
 	if (codewords.size() == 0) {
-		return DecodeStatus::NotFound;
+		return {};
 	}
 
 	Diagnostics::fmt("  Codewords:  (%d)", codewords.size()); Diagnostics::dump(codewords, "\n");
@@ -601,7 +601,7 @@ Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 		if (!CorrectErrors(field, codewordBytes, numDataCodewords)) {
 			//printf(" checksum fail\n");
 			//return DecodeStatus::ChecksumError;
-			return DecodeStatus::NotFound;
+			return {};
 		}
 
 		for (int i = 0; i < numDataCodewords; i++) {

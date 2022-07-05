@@ -9,10 +9,11 @@
 
 #include "BarcodeFormat.h"
 #include "DecoderResult.h"
+#include "GS1.h"
 #include "ODDataBarCommon.h"
+#include "ODDataBarExpandedBitDecoder.h"
 #include "Result.h"
 #include "TextDecoder.h"
-#include "rss/ODRSSExpandedBinaryDecoder.h"
 
 #include <map>
 #include <vector>
@@ -340,7 +341,7 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	auto pairs = ReadRowOfPairs<false>(view, rowNumber);
 
 	if (pairs.empty() || !ChecksumIsValid(pairs))
-		return Result(DecodeStatus::NotFound);
+		return {};
 #else
 	if (!state)
 		state.reset(new DBERState);
@@ -360,18 +361,20 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	//    L R L R    |    r       |     l
 
 	if (!Insert(allPairs, ReadRowOfPairs<true>(view, rowNumber)))
-		return Result(DecodeStatus::NotFound);
+		return {};
 
 	auto pairs = FindValidSequence(allPairs);
 	if (pairs.empty())
-		return Result(DecodeStatus::NotFound);
+		return {};
 #endif
 	//printf("decodePattern: pairs:"); for (int i = 0; i < (int) pairs.size(); i++) printf(" (%d,%d)", pairs[i].left.value, pairs[i].right.value); printf("\n");
 
 	auto txt = DecodeExpandedBits(BuildBitArray(pairs));
+	// TODO: remove this to make it return standard conform content -> needs lots of blackbox test fixes
+	txt = HRIFromGS1(txt);
 	if (txt.empty()) {
 		//printf("DataBarExpandedReader::decodePattern %d txt.empty\n", rowNumber);
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 
 	RemovePairs(allPairs, pairs);

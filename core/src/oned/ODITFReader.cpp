@@ -37,7 +37,7 @@ Result ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_pt
 
 	next = FindLeftGuard(next, 4 + minCharCount/2 + 3, START_PATTERN_, minQuietZone);
 	if (!next.isValid())
-		return Result(DecodeStatus::NotFound);
+		return {};
 
 	std::string txt;
 	txt.reserve(20);
@@ -71,13 +71,14 @@ Result ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_pt
 	next = next.subView(0, 3);
 
 	if (Size(txt) < minCharCount || !next.isValid())
-		return Result(DecodeStatus::NotFound);
+		return {};
 
 	if (!IsRightGuard(next, STOP_PATTERN_1, minQuietZone) && !IsRightGuard(next, STOP_PATTERN_2, minQuietZone))
-		return Result(DecodeStatus::NotFound);
+		return {};
 
+	Error error;
 	if (_validateCheckSum && !GTIN::IsCheckDigitValid(txt))
-		return Result(DecodeStatus::ChecksumError);
+		error = ChecksumError();
 
 	// Symbology identifier ISO/IEC 16390:2007 Annex C Table C.1
 	// See also GS1 General Specifications 5.1.3 Figure 5.1.3-2
@@ -87,7 +88,7 @@ Result ITFReader::decodePattern(int rowNumber, PatternView& next, std::unique_pt
 		symbologyIdentifier.modifier = '1'; // Modulo 10 symbol check character validated and transmitted
 
 	int xStop = next.pixelsTillEnd();
-	return Result(txt, rowNumber, xStart, xStop, BarcodeFormat::ITF, symbologyIdentifier);
+	return Result(txt, rowNumber, xStart, xStop, BarcodeFormat::ITF, symbologyIdentifier, error);
 }
 
 } // namespace ZXing::OneD

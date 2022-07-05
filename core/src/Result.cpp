@@ -19,18 +19,18 @@
 
 namespace ZXing {
 
-Result::Result(DecodeStatus status) : _status(status)
+Result::Result(DecodeStatus status) : _error(Status2Error(status))
 {
 	if (Diagnostics::enabled()) {
 		Diagnostics::moveTo(_diagnostics);
 	}
 }
 
-Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format,
-			   SymbologyIdentifier si, ByteArray&& rawBytes, bool readerInit, const std::string& ai)
-	:
-	  _format(format),
+Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error,
+			   ByteArray&& rawBytes, bool readerInit, const std::string& ai)
+	: _format(format),
 	  _content({ByteArray(text)}, si, ai),
+	  _error(error),
 	  _position(Line(y, xStart, xStop)),
 	  _rawBytes(std::move(rawBytes)),
 	  _numBits(Size(_rawBytes) * 8),
@@ -43,9 +43,9 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 }
 
 Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format)
-	: _status(decodeResult.errorCode()),
-	  _format(format),
+	: _format(decodeResult.content().symbology.code == 0 ? BarcodeFormat::None : format),
 	  _content(std::move(decodeResult).content()),
+	  _error(std::move(decodeResult).error()),
 	  _position(std::move(position)),
 	  _rawBytes(std::move(decodeResult.rawBytes())),
 	  _numBits(decodeResult.numBits()),
@@ -79,6 +79,17 @@ Result::Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat 
 	if (Diagnostics::enabled()) {
 		Diagnostics::moveTo(_diagnostics);
 	}
+}
+
+DecodeStatus Result::status() const
+{
+	switch(_error.type()) {
+	case Error::Format : return DecodeStatus::FormatError;
+	case Error::Checksum : return DecodeStatus::ChecksumError;
+	default: ;
+	}
+
+	return format() == BarcodeFormat::None ? DecodeStatus::NotFound : DecodeStatus::NoError;
 }
 
 const ByteArray& Result::bytes() const
@@ -161,11 +172,15 @@ Result& Result::setCharacterSet(const std::string& defaultCS)
 
 bool Result::operator==(const Result& o) const
 {
-	if (format() != o.format() || bytes() != o.bytes())
+	// two symbols may be considered the same if at least one of them has an error
+	if (!(format() == o.format() && (bytes() == o.bytes() || error() || o.error())))
 		return false;
 
-	if (BarcodeFormats(BarcodeFormat::TwoDCodes).testFlag(format()))
+	if (BarcodeFormats(BarcodeFormat::MatrixCodes).testFlag(format()))
 		return IsInside(Center(o.position()), position());
+
+	// 1D comparisons only implemented for this->lineCount == 1
+	//assert(lineCount() == 1);
 
 	// if one line is less than half the length of the other away from the
 	// latter, we consider it to belong to the same symbol
@@ -179,15 +194,10 @@ bool Result::operator==(const Result& o) const
 Result MergeStructuredAppendSequence(const Results& results)
 {
 	if (results.empty())
-		return Result(DecodeStatus::NotFound);
+		return {};
 
 	std::list<Result> allResults(results.begin(), results.end());
 	allResults.sort([](const Result& r1, const Result& r2) { return r1.sequenceIndex() < r2.sequenceIndex(); });
-
-	if (allResults.back().sequenceSize() != Size(allResults) ||
-		!std::all_of(allResults.begin(), allResults.end(),
-					 [&](Result& it) { return it.sequenceId() == allResults.front().sequenceId(); }))
-		return Result(DecodeStatus::FormatError);
 
 	Result res = allResults.front();
 	for (auto i = std::next(allResults.begin()); i != allResults.end(); ++i)
@@ -195,6 +205,11 @@ Result MergeStructuredAppendSequence(const Results& results)
 
 	res._position = {};
 	res._sai.index = -1;
+
+	if (allResults.back().sequenceSize() != Size(allResults) ||
+		!std::all_of(allResults.begin(), allResults.end(),
+					 [&](Result& it) { return it.sequenceId() == allResults.front().sequenceId(); }))
+		res._error = FormatError("sequenceIDs not matching during structured append sequence merging");
 
 	return res;
 }

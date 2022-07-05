@@ -41,9 +41,9 @@ enum class BarcodeFormat
 	HanXin          = (1 << 17), ///< HanXin (2D)
 	DotCode         = (1 << 18), ///< DotCode (2D)
 
-	OneDCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
-	TwoDCodes = Aztec | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode,
-	Any       = OneDCodes | TwoDCodes,
+	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
+	MatrixCodes = Aztec | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode,
+	Any         = LinearCodes | MatrixCodes,
 
 	// Deprecated names, kept for compatibility at the moment
 	NONE [[deprecated]]         = None,
@@ -62,6 +62,8 @@ enum class BarcodeFormat
 	RSS_EXPANDED [[deprecated]] = DataBarExpanded,
 	UPC_A [[deprecated]]        = UPCA,
 	UPC_E [[deprecated]]        = UPCE,
+	OneDCodes [[deprecated]]    = LinearCodes,
+	TwoDCodes [[deprecated]]    = MatrixCodes,
 
 	_max                        = DotCode, ///> implementation detail, don't use
 };

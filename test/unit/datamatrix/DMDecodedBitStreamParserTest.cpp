@@ -66,13 +66,13 @@ TEST(DMDecodeTest, Ascii)
 TEST(DMDecodeTest, AsciiError)
 {
 	// ASCII err on invalid code word
-	EXPECT_EQ(parse({66, 250, 68}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({66, 250, 68}).error(), Error::Format);
 
 	// ASCII err on invalid code word at end (currently failing)
-	EXPECT_EQ(parse({66, 67, 68, 250}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({66, 67, 68, 250}).error(), Error::Format);
 
 	// ASCII accept extra (illegal) unlatch at end
-	EXPECT_EQ(parse({66, 67, 68, 254}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({66, 67, 68, 254}).error());
 }
 
 // Most of the following examples are taken from the DMHighLevelEncodeTest.cpp tests.
@@ -96,19 +96,19 @@ TEST(DMDecodeTest, C40)
 TEST(DMDecodeTest, C40Error)
 {
 	// Shift-1 31 (in range)
-	EXPECT_EQ(parse({230, 4, 221}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({230, 4, 221}).error());
 	// Shift-1 32 (out of range)
-	EXPECT_EQ(parse({230, 5, 5}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({230, 5, 5}).error(), Error::Format);
 
 	// Shift-2 27 (in range)
-	EXPECT_EQ(parse({230, 10, 125}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({230, 10, 125}).error());
 	// Shift-2 28 (out of range)
-	EXPECT_EQ(parse({230, 10, 165}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({230, 10, 165}).error(), Error::Format);
 
 	// Shift-3 31 (in range)
-	EXPECT_EQ(parse({230, 17, 93}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({230, 17, 93}).error());
 	// Shift-3 32 (out of range)
-	EXPECT_EQ(parse({230, 17, 133}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({230, 17, 133}).error(), Error::Format);
 }
 
 TEST(DMDecodeTest, Text)
@@ -123,19 +123,19 @@ TEST(DMDecodeTest, Text)
 TEST(DMDecodeTest, TextError)
 {
 	// Shift-1 31 (in range)
-	EXPECT_EQ(parse({239, 4, 221}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({239, 4, 221}).error());
 	// Shift-1 32 (out of range)
-	EXPECT_EQ(parse({239, 5, 5}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({239, 5, 5}).error(), Error::Format);
 
 	// Shift-2 27 (in range)
-	EXPECT_EQ(parse({239, 10, 125}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({239, 10, 125}).error());
 	// Shift-2 28 (out of range)
-	EXPECT_EQ(parse({239, 10, 165}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({239, 10, 165}).error(), Error::Format);
 
 	// Shift-3 31 (in range)
-	EXPECT_EQ(parse({239, 17, 93}).errorCode(), DecodeStatus::NoError);
+	EXPECT_FALSE(parse({239, 17, 93}).error());
 	// Shift-3 32 (out of range)
-	EXPECT_EQ(parse({239, 17, 133}).errorCode(), DecodeStatus::FormatError);
+	EXPECT_EQ(parse({239, 17, 133}).error(), Error::Format);
 }
 
 TEST(DMDecodeTest, C40AndTextShiftUpper)

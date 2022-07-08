@@ -21,7 +21,6 @@ set (ZXING_CORE_LOCAL_DEFINES
     $<$<BOOL:${BUILD_READERS}>:-DZXING_BUILD_READERS>
     $<$<BOOL:${BUILD_WRITERS}>:-DZXING_BUILD_WRITERS>
     $<$<BOOL:${BUILD_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
-    -DZX_USE_UTF8 # silence deprecation warning in Result.h
 )
 if (MSVC)
     set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}
@@ -53,7 +52,6 @@ set (COMMON_FILES
     src/ByteMatrix.h
     src/CharacterSet.h
     src/CharacterSet.cpp
-    src/CharacterSetECI.h
     src/ConcentricFinder.h
     src/ConcentricFinder.cpp
     src/CustomData.h
@@ -79,11 +77,11 @@ set (COMMON_FILES
     src/TextUtfEncoding.h
     src/TextUtfEncoding.cpp
     src/TritMatrix.h
+    src/ZXAlgorithms.h
     src/ZXBigInteger.h
     src/ZXBigInteger.cpp
     src/ZXConfig.h
     src/ZXNullable.h
-    src/ZXContainerAlgorithms.h
     src/ZXTestSupport.h
 )
 if (BUILD_READERS)
@@ -96,8 +94,6 @@ if (BUILD_READERS)
         src/Content.cpp
         src/DecodeHints.h
         src/DecodeHints.cpp
-        src/DecodeStatus.h
-        src/DecodeStatus.cpp
         src/DecoderResult.h
         src/DetectorResult.h
         src/Error.h
@@ -150,18 +146,16 @@ set (PUBLIC_HEADERS
     src/BitHacks.h
     src/ByteArray.h
     src/CharacterSet.h
-    src/CharacterSetECI.h # deprecated
     src/Flags.h
     src/GTIN.h
     src/TextUtfEncoding.h
+    src/ZXAlgorithms.h
     src/ZXConfig.h
-    src/ZXContainerAlgorithms.h
 )
 if (BUILD_READERS)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/Content.h
         src/DecodeHints.h
-        src/DecodeStatus.h
         src/Error.h
         src/ImageView.h
         src/Point.h

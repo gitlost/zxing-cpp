@@ -12,13 +12,12 @@
 #include "DMBitLayout.h"
 #include "DMDataBlock.h"
 #include "DMVersion.h"
-#include "DecodeStatus.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
 #include "TextDecoder.h"
-#include "ZXContainerAlgorithms.h"
+#include "ZXAlgorithms.h"
 #include "ZXTestSupport.h"
 
 #include <algorithm>
@@ -304,7 +303,7 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 			throw FormatError("incomplete Base256 segment");
 		}
 
-		result += static_cast<uint8_t>(Unrandomize255State(bits.readBits(8), codewordPosition++));
+		result += narrow_cast<uint8_t>(Unrandomize255State(bits.readBits(8), codewordPosition++));
 	}
 }
 
@@ -407,10 +406,10 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 
 	result.append(resultTrailer);
-	result.applicationIndicator = result.symbology.modifier == '2' ? "GS1" : "";
+	result.symbology.aiFlag = result.symbology.modifier == '2' ? AIFlag::GS1 : AIFlag::None;
 	result.symbology.modifier += isDMRE * 6;
 
-	return DecoderResult(std::move(bytes), std::move(result))
+	return DecoderResult(std::move(result))
 		.setError(std::move(error))
 		.setStructuredAppend(sai)
 		.setReaderInit(readerInit);

@@ -38,11 +38,11 @@ Reader::decode(const BinaryBitmap& image) const
 {
 	if (!_formatSpecified) {
 		(void)image;
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 
 	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
@@ -51,7 +51,7 @@ Reader::decode(const BinaryBitmap& image) const
 	if (detectorResult.isValid()) {
 		return Result(Decoder::Decode(detectorResult.bits(), _hints.characterSet()), {}, BarcodeFormat::HanXin);
 	}
-	return Result(DecodeStatus::NotFound);
+	return {};
 }
 
 } // namespace ZXing::HanXin

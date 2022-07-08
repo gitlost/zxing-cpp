@@ -9,7 +9,6 @@
 #include "ByteArray.h"
 #include "CharacterSet.h"
 #include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
 #include "MCBitMatrixParser.h"
@@ -53,7 +52,7 @@ static bool CorrectErrors(ByteArray& codewordBytes, int start, int dataCodewords
 	// We don't care about errors in the error-correction codewords
 	for (int i = 0; i < dataCodewords; i++) {
 		if ((mode == ALL) || (i % 2 == (mode - 1)))
-			codewordBytes[i + start] = static_cast<uint8_t>(codewordsInts[i / divisor]);
+			codewordBytes[i + start] = narrow_cast<uint8_t>(codewordsInts[i / divisor]);
 	}
 
 	return true;
@@ -308,7 +307,7 @@ DecoderResult Decode(ByteArray&& bytes, const int mode)
 	case 5: GetMessage(bytes, 1, 77, result, sai); break;
 	}
 
-	return DecoderResult(std::move(bytes), std::move(result))
+	return DecoderResult(std::move(result))
 		.setEcLevel(std::to_string(mode))
 		.setStructuredAppend(sai)
 		.setReaderInit(mode == 6);

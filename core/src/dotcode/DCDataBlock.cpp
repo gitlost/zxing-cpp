@@ -17,7 +17,7 @@
 #include "DCDataBlock.h"
 
 #include "DCGField.h"
-#include "ZXContainerAlgorithms.h"
+#include "ZXAlgorithms.h"
 
 namespace ZXing::DotCode {
 

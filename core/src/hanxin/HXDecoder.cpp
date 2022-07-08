@@ -19,10 +19,8 @@
 #include "BitMatrix.h"
 #include "BitSource.h"
 #include "ByteArray.h"
-#include "CharacterSetECI.h"
 #include "Content.h"
 #include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
 #include "HXBitMatrixParser.h"
@@ -99,7 +97,7 @@ static ECI ParseECIValue(BitSource& bits)
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, const int ecLevel)
+DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset, const int ecLevel)
 {
 	BitSource bits(codewords);
 	Content result;
@@ -321,9 +319,9 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset, co
 	} else {
 		modifier = '0';
 	}
-	result.symbology = {'h', modifier, '1' - modifier /*eciModifierOffset*/}; // If ECI always '1'
+	result.symbology = {'h', modifier, narrow_cast<char>('1' - modifier /*eciModifierOffset*/)}; // If ECI always '1'
 
-	return DecoderResult(std::move(codewords), std::move(result))
+	return DecoderResult(std::move(result))
 			.setEcLevel("L" + std::to_string(ecLevel));
 }
 
@@ -349,7 +347,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 }
 
 DecoderResult
-Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
+Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 {
 	int version;
 	int ecLevel;

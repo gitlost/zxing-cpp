@@ -17,10 +17,8 @@
 #include "DCDecoder.h"
 
 #include "ByteArray.h"
-#include "CharacterSetECI.h"
 #include "Content.h"
 #include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
 #include "DCBitMatrixParser.h"
@@ -255,7 +253,7 @@ static void ProcessBinary(const ByteArray& codewords, int& position, Content& re
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset)
+DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset)
 {
 	Content result;
 	result.hintedCharset = hintedCharset;
@@ -526,7 +524,7 @@ DecoderResult Decode(ByteArray&& codewords, const std::string& hintedCharset)
 	}
 	result.symbology = {'J', modifier, 3 /*eciModifierOffset*/};
 
-	return DecoderResult(std::move(codewords), std::move(result))
+	return DecoderResult(std::move(result))
 			.setStructuredAppend(sai)
 			.setReaderInit(readerInit);
 }
@@ -575,7 +573,7 @@ Unmask(ByteArray& codewords)
 }
 
 DecoderResult
-Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
+Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 {
 	static GField field;
 	std::vector<int> erasureLocs;
@@ -600,7 +598,6 @@ Decoder::Decode(const BitMatrix& bits, const std::string& hintedCharset)
 		const int numDataCodewords = dataBlock.numDataCodewords;
 		if (!CorrectErrors(field, codewordBytes, numDataCodewords)) {
 			//printf(" checksum fail\n");
-			//return DecodeStatus::ChecksumError;
 			return {};
 		}
 

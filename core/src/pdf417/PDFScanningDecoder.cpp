@@ -8,7 +8,6 @@
 
 #include "BitMatrix.h"
 #include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "PDFBarcodeMetadata.h"
 #include "PDFBarcodeValue.h"

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "CharacterSet.h"
 #include <string>
 
 namespace ZXing {
@@ -15,7 +16,7 @@ class BitMatrix;
 
 namespace QRCode {
 
-DecoderResult Decode(const BitMatrix& bits);
+DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset = CharacterSet::Unknown);
 
 } // QRCode
 } // ZXing

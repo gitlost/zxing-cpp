@@ -7,7 +7,7 @@
 #include "CharacterSet.h"
 
 #include "Diagnostics.h"
-#include "ZXContainerAlgorithms.h"
+#include "ZXAlgorithms.h"
 
 #include <algorithm>
 
@@ -15,7 +15,7 @@ namespace ZXing {
 
 struct CharacterSetName
 {
-	const char* name;
+	std::string_view name;
 	CharacterSet cs;
 };
 
@@ -70,17 +70,24 @@ static CharacterSetName NAME_TO_CHARSET[] = {
 	{"BINARY",		CharacterSet::BINARY},
 };
 
-static std::string NormalizeName(std::string str)
+static std::string NormalizeName(std::string_view sv)
 {
+	std::string str(sv);
 	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return (char)std::tolower(c); });
 	str.erase(std::remove_if(str.begin(), str.end(), [](char c) { return Contains("_-[] ", c); }), str.end());
 	return str;
 }
 
-CharacterSet CharacterSetFromString(const std::string& name)
+CharacterSet CharacterSetFromString(std::string_view name)
 {
 	auto i = FindIf(NAME_TO_CHARSET, [str = NormalizeName(name)](auto& v) { return NormalizeName(v.name) == str; });
 	return i == std::end(NAME_TO_CHARSET) ? CharacterSet::Unknown : i->cs;
+}
+
+std::string ToString(CharacterSet cs)
+{
+	auto i = FindIf(NAME_TO_CHARSET, [cs](auto& v) { return v.cs == cs; });
+	return i == std::end(NAME_TO_CHARSET) ? "" : std::string(i->name);
 }
 
 } // namespace ZXing

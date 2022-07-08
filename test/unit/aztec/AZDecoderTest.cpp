@@ -7,7 +7,6 @@
 #include "aztec/AZDecoder.h"
 #include "BitArray.h"
 #include "BitMatrixIO.h"
-#include "DecodeStatus.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "aztec/AZDetectorResult.h"

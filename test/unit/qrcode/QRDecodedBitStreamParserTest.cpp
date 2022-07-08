@@ -17,7 +17,8 @@
 
 namespace ZXing {
 	namespace QRCode {
-		DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel);
+        DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel,
+                                      const CharacterSet hintedCharset = CharacterSet::Unknown);
 	}
 }
 

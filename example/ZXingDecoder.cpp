@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 	std::vector<uint8_t> buf;
 	bool angleEscape = false;
 	int ret = 0;
-	Result result(DecodeStatus::NotFound);
+	Result result;
 	std::list<std::string> diagnostics;
 
 	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, angleEscape)) {
@@ -395,7 +395,7 @@ int main(int argc, char* argv[])
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}
 
-	if (!hints.characterSet().empty()) {
+	if (hints.characterSet() == CharacterSet::Unknown) {
 		result.setCharacterSet(hints.characterSet());
 	}
 

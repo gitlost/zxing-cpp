@@ -9,7 +9,6 @@
 #include "ByteArray.h"
 #include "CharacterSet.h"
 #include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "PDFDecoderResultExtra.h"
 #include "TextDecoder.h"
@@ -661,8 +660,8 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 			case MACRO_PDF417_OPTIONAL_FIELD_SEGMENT_COUNT: {
 				uint64_t segmentCount;
 				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, segmentCount);
-				resultMetadata.setSegmentCount(static_cast<int>(segmentCount));
-				Diagnostics::fmt("SegmentCount(%d)", static_cast<int>(segmentCount));
+				resultMetadata.setSegmentCount(narrow_cast<int>(segmentCount));
+				Diagnostics::fmt("SegmentCount(%d)", narrow_cast<int>(segmentCount));
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
@@ -675,7 +674,7 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 			case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
 				uint64_t checksum;
 				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, checksum);
-				resultMetadata.setChecksum(static_cast<int>(checksum));
+				resultMetadata.setChecksum(narrow_cast<int>(checksum));
 				Diagnostics::fmt("Checksum(%d)", static_cast<int>(checksum));
 				break;
 			}
@@ -718,7 +717,7 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 {
 	Diagnostics::fmt("  Codewords:  (%d)", Size(codewords)); Diagnostics::dump(codewords, "\n");
 	Content result;
-	result.symbology = { 'L', '2', -1 };
+	result.symbology = { 'L', '2', char(-1) };
 
 	bool readerInit = false;
 	auto resultMetadata = std::make_shared<DecoderResultExtra>();
@@ -810,7 +809,7 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 		sai.id    = resultMetadata->fileId();
 	}
 
-	return DecoderResult({}, std::move(result))
+	return DecoderResult(std::move(result))
 		.setEcLevel(std::to_string(ecLevel))
 		.setStructuredAppend(sai)
 		.setReaderInit(readerInit)

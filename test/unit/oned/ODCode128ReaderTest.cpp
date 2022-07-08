@@ -40,7 +40,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 2, 2, 1, 2, 3, 1, 2, 2, 2, 1, 2, 2, 3, 1, 1, 2, 2, 2 });
 		auto result = parse('C', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C0");
-		EXPECT_EQ(result.utf8(), "2001");
+		EXPECT_EQ(result.text(), "2001");
 	}
 
 	{
@@ -48,7 +48,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 4, 1, 1, 1, 3, 1, 2, 2, 1, 2, 3, 1, 2, 2, 2, 1, 2, 2, 1, 3, 2, 1, 3, 1 });
 		auto result = parse('C', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C1");
-		EXPECT_EQ(result.utf8(), "2001");
+		EXPECT_EQ(result.text(), "2001");
 	}
 
 	{
@@ -56,7 +56,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 1, 1, 1, 3, 2, 3, 4, 1, 1, 1, 3, 1, 1, 3, 1, 1, 2, 3, 2, 1, 2, 3, 2, 1 });
 		auto result = parse('B', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C2");
-		EXPECT_EQ(result.utf8(), "AB");
+		EXPECT_EQ(result.text(), "AB");
 	}
 
 	{
@@ -64,7 +64,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 2, 1, 4, 1, 2, 1, 4, 1, 1, 1, 3, 1, 1, 3, 1, 1, 2, 3, 4, 2, 1, 2, 1, 1 });
 		auto result = parse('B', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C2");
-		EXPECT_EQ(result.utf8(), "zB");
+		EXPECT_EQ(result.text(), "zB");
 	}
 
 	{
@@ -72,7 +72,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 1, 1, 3, 1, 4, 1, 4, 1, 1, 1, 3, 1, 1, 1, 4, 1, 3, 1, 1, 1, 1, 3, 2, 3, 1, 2, 3, 1, 2, 2 });
 		auto result = parse('C', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C2");
-		EXPECT_EQ(result.utf8(), "99A");
+		EXPECT_EQ(result.text(), "99A");
 	}
 
 	{
@@ -80,7 +80,7 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		PatternRow row({ 2, 1, 2, 3, 2, 1, 4, 1, 1, 1, 3, 1, 1, 3, 1, 1, 2, 3, 3, 2, 2, 2, 1, 1 });
 		auto result = parse('B', row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]C0"); // Just ignoring, not giving FormatError
-		EXPECT_EQ(result.utf8(), "?\u001DB");
+		EXPECT_EQ(result.text(), "?\u001DB");
 	}
 }
 
@@ -91,7 +91,7 @@ TEST(ODCode128ReaderTest, ReaderInit)
 		PatternRow row({ 1, 1, 1, 1, 4, 3, 1, 3, 1, 1, 4, 1 });
 		auto result = parse('C', row);
 		EXPECT_FALSE(result.readerInit());
-		EXPECT_EQ(result.utf8(), "92");
+		EXPECT_EQ(result.text(), "92");
 	}
 
 	{
@@ -99,7 +99,7 @@ TEST(ODCode128ReaderTest, ReaderInit)
 		PatternRow row({ 1, 1, 4, 3, 1, 1, 1, 1, 3, 1, 4, 1, 1, 1, 1, 1, 4, 3, 3, 3, 1, 1, 2, 1 });
 		auto result = parse('B', row);
 		EXPECT_TRUE(result.readerInit());
-		EXPECT_EQ(result.utf8(), "92");
+		EXPECT_EQ(result.text(), "92");
 	}
 
 	{
@@ -107,6 +107,6 @@ TEST(ODCode128ReaderTest, ReaderInit)
 		PatternRow row({ 3, 2, 1, 1, 2, 2, 1, 1, 4, 3, 1, 1, 2, 2, 3, 2, 1, 1, 1, 2, 1, 4, 2, 1 });
 		auto result = parse('B', row);
 		EXPECT_TRUE(result.readerInit());
-		EXPECT_EQ(result.utf8(), "92");
+		EXPECT_EQ(result.text(), "92");
 	}
 }

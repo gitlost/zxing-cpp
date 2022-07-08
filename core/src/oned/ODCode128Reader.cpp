@@ -9,7 +9,7 @@
 #include "Diagnostics.h"
 #include "ODCode128Patterns.h"
 #include "Result.h"
-#include "ZXContainerAlgorithms.h"
+#include "ZXAlgorithms.h"
 
 #include <array>
 #include <cstddef>
@@ -44,7 +44,6 @@ class Raw2TxtDecoder
 	int codeSet = 0;
 	SymbologyIdentifier _symbologyIdentifier = {'C', '0'}; // ISO/IEC 15417:2007 Annex C Table C.1
 	bool _readerInit = false;
-	std::string _applicationIndicator;
 	std::string txt;
 	size_t lastTxtSize = 0;
 
@@ -62,7 +61,7 @@ class Raw2TxtDecoder
 			// "Transmitted data ... is prefixed by the symbology identifier ]C1, if used."
 			// Choosing not to use symbology identifier, i.e. to not prefix to data.
 			Diagnostics::put("FNC1(GS1)");
-			_applicationIndicator = "GS1";
+			_symbologyIdentifier.aiFlag = AIFlag::GS1;
 		}
 		else if ((isCodeSetC && txt.size() == 2 && txt[0] >= '0' && txt[0] <= '9' && txt[1] >= '0' && txt[1] <= '9')
 				|| (!isCodeSetC && txt.size() == 1 && ((txt[0] >= 'A' && txt[0] <= 'Z')
@@ -71,7 +70,7 @@ class Raw2TxtDecoder
 			// FNC1 in second position following Code Set C "00-99" or Code Set A/B "A-Za-z" - AIM
 			_symbologyIdentifier.modifier = '2';
 			Diagnostics::fmt("FNC1(AIM %s)", txt.c_str());
-			_applicationIndicator = txt;
+			_symbologyIdentifier.aiFlag = AIFlag::AIM;
 		}
 		else {
 			// ISO/IEC 15417:2007 Annex B.3. Otherwise FNC1 is returned as ASCII 29 (GS)
@@ -173,7 +172,6 @@ public:
 	}
 
 	SymbologyIdentifier symbologyIdentifier() const { return _symbologyIdentifier; }
-	std::string applicationIndicator() const { return _applicationIndicator; }
 	bool readerInit() const { return _readerInit; }
 };
 
@@ -253,7 +251,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	int xStart = next.pixelsInFront();
 	ByteArray rawCodes;
 	rawCodes.reserve(20);
-	rawCodes.push_back(static_cast<uint8_t>(startCode));
+	rawCodes.push_back(narrow_cast<uint8_t>(startCode));
 	Diagnostics::fmt("    Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
 
 	Raw2TxtDecoder raw2txt(startCode);
@@ -283,7 +281,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 			return {};
 		}
 
-		rawCodes.push_back(static_cast<uint8_t>(code));
+		rawCodes.push_back(narrow_cast<uint8_t>(code));
 	}
 
 	if (Size(rawCodes) < minCharCount - 1) { // stop code is missing in rawCodes
@@ -313,7 +311,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 
 	int xStop = next.pixelsTillEnd();
 	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, raw2txt.symbologyIdentifier(), error,
-				  std::move(rawCodes), raw2txt.readerInit(), raw2txt.applicationIndicator());
+				  raw2txt.readerInit());
 }
 
 } // namespace ZXing::OneD

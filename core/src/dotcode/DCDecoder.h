@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+#include "CharacterSet.h"
 #include <string>
 
 namespace ZXing {
@@ -31,7 +32,7 @@ namespace DotCode {
 class Decoder
 {
 public:
-	static DecoderResult Decode(const BitMatrix& bits, const std::string& characterSet);
+	static DecoderResult Decode(const BitMatrix& bits, const CharacterSet characterSet);
 };
 
 } // DotCode

@@ -39,11 +39,11 @@ Reader::decode(const BinaryBitmap& image) const
 {
 	if (!_formatSpecified) {
 		(void)image;
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
-		return Result(DecodeStatus::NotFound);
+		return {};
 	}
 
 	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
@@ -56,7 +56,7 @@ Reader::decode(const BinaryBitmap& image) const
 		    return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);
         }
 	}
-	return Result(DecodeStatus::NotFound);
+	return {};
 }
 
 } // namespace ZXing::DotCode

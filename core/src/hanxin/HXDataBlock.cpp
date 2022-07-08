@@ -16,7 +16,7 @@
 
 #include "HXDataBlock.h"
 
-#include "ZXContainerAlgorithms.h"
+#include "ZXAlgorithms.h"
 
 namespace ZXing::HanXin {
 

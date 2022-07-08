@@ -15,8 +15,6 @@
 */
 
 #include "DecoderResult.h"
-#include "DecoderResult.h"
-#include "DecodeStatus.h"
 #include "Diagnostics.h"
 #include "pdf417/PDFScanningDecoder.h"
 

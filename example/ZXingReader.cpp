@@ -4,7 +4,6 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-#define ZX_USE_UTF8 1 // see Result.h
 
 #include "Diagnostics.h"
 #include "pdf417/PDFDecoderResultExtra.h"
@@ -199,7 +198,7 @@ int main(int argc, char* argv[])
 		// if we did not find anything, insert a dummy to produce some output for each file
 		if (results.empty()) {
 			//printf("----results.empty dummy\n");
-			results.emplace_back(DecodeStatus::NotFound);
+			results.emplace_back();
 		}
 
 		allResults.insert(allResults.end(), results.begin(), results.end());
@@ -258,7 +257,6 @@ int main(int argc, char* argv[])
 
 			std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
-					  << "Utf8ECI:    \"" << result.utf8ECI() << "\"\n"
 					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"

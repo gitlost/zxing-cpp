@@ -295,10 +295,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position), "00-99" or "A-Za-z"
 				appInd = bits.readBits(8); // Number 00-99 or ASCII value + 100
 				Diagnostics::fmt("FNC1(2nd,%d)", appInd);
-				if (appInd < 10) // "00-09"
-					result += '0' + std::to_string(appInd);
-				else if (appInd < 100) // "10-99"
-					result += std::to_string(appInd);
+				if (appInd < 100) // "00-09"
+					result += ZXing::ToString(appInd, 2);
 				else if ((appInd >= 165 && appInd <= 190) || (appInd >= 197 && appInd <= 222)) // "A-Za-z"
 					result += narrow_cast<uint8_t>(appInd - 100);
 				else

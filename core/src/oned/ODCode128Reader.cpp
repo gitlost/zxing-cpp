@@ -91,9 +91,7 @@ public:
 
 		if (codeSet == CODE_CODE_C) {
 			if (code < 100) {
-				if (code < 10)
-					txt.push_back('0');
-				txt.append(std::to_string(code));
+				txt.append(ToString(code, 2));
 				Diagnostics::fmt("%02d", code);
 			} else if (code == CODE_FNC_1) {
 				fnc1(true /*isCodeSetC*/);

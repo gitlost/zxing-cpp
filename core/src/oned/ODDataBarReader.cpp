@@ -15,8 +15,6 @@
 #include "Result.h"
 #include "TextDecoder.h"
 
-#include <iomanip>
-#include <sstream>
 #include <unordered_set>
 
 namespace ZXing::OneD {
@@ -140,11 +138,10 @@ static std::string ConstructText(Pair leftPair, Pair rightPair)
 	auto value = [](Pair p) { return 1597 * p.left.value + p.right.value; };
 	auto res = 4537077LL * value(leftPair) + value(rightPair);
 	Diagnostics::fmt("    LeftRight %lld", res);
-	std::ostringstream txt;
-	txt << std::setw(13) << std::setfill('0') << res;
-	txt << GTIN::ComputeCheckDigit(txt.str());
-	Diagnostics::fmt("CheckDigit(%c)", txt.str().back());
-	return txt.str();
+	auto txt = ToString(res, 13);
+	auto chkDigit = GTIN::ComputeCheckDigit(txt);
+	Diagnostics::fmt("CheckDigit(%c)", chkDigit);
+	return txt + chkDigit;
 }
 
 struct State : public RowReader::DecodingState

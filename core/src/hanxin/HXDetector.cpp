@@ -69,7 +69,7 @@ static DimensionEstimate EstimateDimension(const BitMatrix& image, PointF a, Poi
 
 	auto moduleSize = (ms_a + ms_b) / 2;
 
-	int dimension = std::lround(distance(a, b) / moduleSize) + 10;
+	int dimension = narrow_cast<int>(std::lround(distance(a, b) / moduleSize) + 10);
 	int error     = 1 - (dimension % 2);
 	//printf("%s(%d), %s: moduleSize %f, dimension %d, error %d\n", __FILE__, __LINE__, __func__, moduleSize, dimension, error);
 

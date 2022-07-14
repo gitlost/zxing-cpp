@@ -157,6 +157,7 @@ if (BUILD_READERS)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/Content.h
         src/DecodeHints.h
+        src/Diagnostics.h
         src/Error.h
         src/ImageView.h
         src/Point.h

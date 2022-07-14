@@ -164,6 +164,7 @@ if (BUILD_READERS)
         src/Quadrilateral.h
         src/ReadBarcode.h
         src/Result.h
+        src/ResultMetadata.h
         src/StructuredAppend.h
     )
 endif()

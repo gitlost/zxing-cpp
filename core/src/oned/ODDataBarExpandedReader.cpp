@@ -367,8 +367,6 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	//printf("decodePattern: pairs:"); for (int i = 0; i < (int) pairs.size(); i++) printf(" (%d,%d)", pairs[i].left.value, pairs[i].right.value); printf("\n");
 
 	auto txt = DecodeExpandedBits(BuildBitArray(pairs));
-	// TODO: remove this to make it return standard conform content -> needs lots of blackbox test fixes
-	txt = HRIFromGS1(txt);
 	if (txt.empty()) {
 		//printf("DataBarExpandedReader::decodePattern %d txt.empty\n", rowNumber);
 		return {};
@@ -379,7 +377,8 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	// TODO: EstimatePosition misses part of the symbol in the stacked case where the last row contains less pairs than
 	// the first
 	// Symbology identifier: ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
-	return {DecoderResult(Content(ByteArray(txt), {'e', '0'})).setLineCount(EstimateLineCount(pairs.front(), pairs.back())),
+	return {DecoderResult(Content(ByteArray(txt), {'e', '0', 0, AIFlag::GS1}))
+				.setLineCount(EstimateLineCount(pairs.front(), pairs.back())),
 			EstimatePosition(pairs.front(), pairs.back()), BarcodeFormat::DataBarExpanded};
 }
 

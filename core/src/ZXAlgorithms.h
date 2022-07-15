@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "Error.h"
+
 #include <algorithm>
 #include <cstring>
 #include <initializer_list>
@@ -78,14 +80,24 @@ Value TransformReduce(const Container& c, Value s, UnaryOp op) {
 	return s;
 }
 
+template <typename T = char>
+T ToDigit(int i)
+{
+	if (i < 0 || i > 9)
+		throw FormatError("Invalid digit value");
+	return static_cast<T>('0' + i);
+}
+
 template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
-std::string ToString(T n, int len)
+std::string ToString(T val, int len)
 {
 	std::string result(len--, '0');
-	for (T val = (n < 0) ? -n : n; len >= 0 && val != 0; --len, val /= 10)
+	if (val < 0)
+		throw FormatError("Invalid value");
+	for (; len >= 0 && val != 0; --len, val /= 10)
 		result[len] = '0' + val % 10;
-	if (len >= 0 && n < 0)
-		result[0] = '-';
+	if (val)
+		throw FormatError("Invalid value");
 	return result;
 }
 

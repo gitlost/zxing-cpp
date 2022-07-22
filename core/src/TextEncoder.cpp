@@ -11,6 +11,8 @@
 #include "ZXAlgorithms.h"
 #include "libzueci/zueci.h"
 
+#include <stdexcept>
+
 namespace ZXing {
 
 void

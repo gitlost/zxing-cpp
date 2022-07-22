@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "BitMatrixIO.h"
+#include "MultiFormatWriter.h"
+#include "TextUtfEncoding.h"
 #include "qrcode/QRWriter.h"
 #include "qrcode/QRErrorCorrectionLevel.h"
 
@@ -153,4 +155,62 @@ TEST(QRWriterTest, RegressionTest)
 		"                                                                                                                                                                                                      \n"
 		"                                                                                                                                                                                                      \n"
 	);
+}
+
+TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
+{
+	{
+		// Following similar to `GenerateQRCode()` in "cui/source/dialogs/QrCodeGenDialog.cxx" at
+		//   https://github.com/LibreOffice/core
+		int bqrEcc = 1;
+		int aQRBorder = 1;
+		// Shortened version of "samples/qrcode-2/29.png"
+		std::string QRText(u8"MEBKM:TITLE:hypeモバイル;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
+		BarcodeFormat format = BarcodeFormat::QRCode;
+		auto writer = MultiFormatWriter(format).setMargin(aQRBorder).setEccLevel(bqrEcc);
+		writer.setEncoding(CharacterSet::UTF8);
+		BitMatrix bitmatrix = writer.encode(TextUtfEncoding::FromUtf8(QRText), 0, 0);
+		auto actual = ToString(bitmatrix, 'X', ' ', true);
+		EXPECT_EQ(actual,
+"                                                                              \n"
+"  X X X X X X X       X   X X X X       X X X X X             X X X X X X X   \n"
+"  X           X   X   X     X X X X X   X     X   X   X X X   X           X   \n"
+"  X   X X X   X           X X   X   X X X       X   X   X X   X   X X X   X   \n"
+"  X   X X X   X   X X X   X   X X     X   X X X   X   X X X   X   X X X   X   \n"
+"  X   X X X   X     X           X X   X   X X X         X X   X   X X X   X   \n"
+"  X           X   X X   X X         X             X X   X X   X           X   \n"
+"  X X X X X X X   X   X   X   X   X   X   X   X   X   X   X   X X X X X X X   \n"
+"                    X X X     X   X X   X X     X   X X X X                   \n"
+"  X X X X X   X X X X   X             X       X   X X   X X X   X   X   X     \n"
+"    X   X X       X X X   X X X X           X   X           X           X     \n"
+"    X X   X X X     X       X X X   X     X   X   X X X   X       X X         \n"
+"  X     X         X X     X X   X       X X     X   X         X X X   X   X   \n"
+"      X X   X X           X   X X X   X   X       X     X X   X X       X X   \n"
+"    X       X     X X X               X     X   X           X   X   X         \n"
+"    X X     X X   X   X X X       X X   X X   X X X X X           X   X   X   \n"
+"  X X X   X       X X   X     X       X X X X X X X   X         X   X X   X   \n"
+"  X X   X X X X X     X X       X X         X         X   X   X     X X X X   \n"
+"  X X   X   X   X X X X   X X X             X                           X X   \n"
+"  X   X   X X X     X       X X   X     X         X X X X   X   X X     X X   \n"
+"  X   X   X X   X         X X       X   X X     X     X X       X         X   \n"
+"              X     X     X   X X   X     X   X   X   X   X   X X   X   X X   \n"
+"  X X   X X X     X   X         X X     X X X X X           X     X     X X   \n"
+"  X     X   X X X     X X X         X   X     X     X X X       X X X   X     \n"
+"  X   X     X     X   X X     X   X     X   X X X     X   X   X X   X X   X   \n"
+"  X X X       X   X   X X       X X         X X               X         X X   \n"
+"  X X X X X X   X   X     X X X X X   X   X X X   X     X X X     X           \n"
+"  X     X X X X     X       X X     X     X     X X   X X         X       X   \n"
+"  X   X X       X         X X     X X X X X     X   X X     X X X       X X   \n"
+"  X     X X   X     X X   X   X X   X         X   X   X   X X X X X X   X X   \n"
+"                  X X           X X     X X X X         X X       X       X   \n"
+"  X X X X X X X   X X X X X     X X X   X     X X X X     X   X   X X   X X   \n"
+"  X           X     X X X     X   X     X X X   X   X X X X       X   X       \n"
+"  X   X X X   X   X X X X       X     X   X X X     X   X X X X X X X         \n"
+"  X   X X X   X   X   X   X X X X     X   X X X X       X     X   X     X X   \n"
+"  X   X X X   X   X X X     X X     X X       X X X X   X X   X   X X     X   \n"
+"  X           X   X   X   X X     X X X X X X X X X X     X X   X X     X     \n"
+"  X X X X X X X   X X X   X   X X   X         X     X X X               X X   \n"
+"                                                                              \n"
+		);
+	}
 }

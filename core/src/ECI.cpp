@@ -12,9 +12,9 @@
 namespace ZXing {
 
 static const std::map<ECI, CharacterSet> ECI_TO_CHARSET = {
-	{ECI(0), CharacterSet::Cp437},     // Obsolete
-	{ECI(1), CharacterSet::ISO8859_1}, // Obsolete
-	{ECI(2), CharacterSet::Cp437},     // Obsolete but still used by PDF417 Macro fields (ISO/IEC 15438:2015 Annex H.2.3)
+	{ECI::Cp437_0, CharacterSet::Cp437},     // Obsolete
+	{ECI::ISO8859_1_1, CharacterSet::ISO8859_1}, // Obsolete
+	{ECI::Cp437_2, CharacterSet::Cp437},     // Obsolete but still used by PDF417 Macro fields (ISO/IEC 15438:2015 Annex H.2.3)
 	{ECI::ISO8859_1, CharacterSet::ISO8859_1},
 	{ECI::ISO8859_2, CharacterSet::ISO8859_2},
 	{ECI::ISO8859_3, CharacterSet::ISO8859_3},
@@ -35,7 +35,7 @@ static const std::map<ECI, CharacterSet> ECI_TO_CHARSET = {
 	{ECI::Cp1251, CharacterSet::Cp1251},
 	{ECI::Cp1252, CharacterSet::Cp1252},
 	{ECI::Cp1256, CharacterSet::Cp1256},
-	{ECI::UTF16BE, CharacterSet::UTF16BE},
+	{ECI::UTF16BE, CharacterSet::UnicodeBig},
 	{ECI::UTF8, CharacterSet::UTF8},
 	{ECI::ASCII, CharacterSet::ASCII},
 	{ECI::Big5, CharacterSet::Big5},
@@ -46,7 +46,7 @@ static const std::map<ECI, CharacterSet> ECI_TO_CHARSET = {
 	{ECI::UTF16LE, CharacterSet::UTF16LE},
 	{ECI::UTF32BE, CharacterSet::UTF32BE},
 	{ECI::UTF32LE, CharacterSet::UTF32LE},
-	{ECI(170), CharacterSet::ASCII},
+	{ECI::ISO646_Inv, CharacterSet::ISO646_Inv},
 	{ECI::Binary, CharacterSet::BINARY},
 };
 
@@ -68,6 +68,9 @@ ECI ToECI(CharacterSet cs)
 	// Special case ISO8859_1 to avoid obsolete ECI 1
 	if (cs == CharacterSet::ISO8859_1)
 		return ECI::ISO8859_1;
+	// Special case Cp437 to avoid obsolete ECI 0 for slightly less obsolete ECI 2
+	if (cs == CharacterSet::Cp437)
+		return ECI::Cp437_2;
 
 	for (auto& [key, value] : ECI_TO_CHARSET)
 		if (value == cs)

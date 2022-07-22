@@ -14,16 +14,17 @@ namespace TextUtfEncoding {
 
 std::string ToUtf8(const std::wstring& str);
 std::string ToUtf8(const std::wstring& str, const bool angleEscape);
+std::string AngleEscape(std::string_view str);
 std::wstring FromUtf8(const std::string& utf8);
 
 void ToUtf8(const std::wstring& str, std::string& utf8);
-void AppendUtf16(std::wstring& str, const uint16_t* utf16, size_t length);
-void AppendUtf8(std::wstring& str, const uint8_t* utf8, size_t length);
-void AppendUtf32(std::wstring& str, const uint32_t* utf32, size_t length);
 
-constexpr uint32_t kAccepted = 0;
-constexpr uint32_t kError = 12;
-uint32_t Utf8Decode(uint8_t byte, uint32_t& state, uint32_t& codep);
+// Returns the UTF-8 sequence in `str` starting at posn `start` as a Unicode codepoint, or -1 on error.
+// `cnt` is set to no. of chars read (including skipped continuation bytes on error).
+int Utf8Next(std::string_view str, const int start, int& cnt);
+
+// Encode Unicode codepoint `utf32` as UTF-8 into `out`, returning no. of UTF-8 chars
+int Utf8Encode(const uint32_t utf32, char* out);
 
 template <typename T>
 bool IsUtf16HighSurrogate(T c)

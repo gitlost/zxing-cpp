@@ -34,9 +34,7 @@
 #include "pdf417/PDFDecoderResultExtra.h"
 #include "qrcode/QRReader.h"
 
-#include <cctype>
 #include <chrono>
-#include <clocale>
 #include <cstring>
 #include <iomanip>
 #include <iostream>
@@ -299,11 +297,6 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>
 	return os;
 }
 
-std::string escapeNonGraphical(const std::string& str)
-{
-	return TextUtfEncoding::ToUtf8(TextUtfEncoding::FromUtf8(str), true);
-}
-
 int main(int argc, char* argv[])
 {
 	DecodeHints hints;
@@ -340,6 +333,8 @@ int main(int argc, char* argv[])
 		PrintUsage(argv[0]);
 		return -1;
 	}
+
+	Diagnostics::begin();
 
 	hints.setIsPure(true);
 
@@ -407,17 +402,19 @@ int main(int argc, char* argv[])
 		if (ret == 0) {
 			std::string text = result.text();
 			if (text.empty() && !result.bytes().empty()) {
-				std::wstring wtext;
-				TextDecoder::Append(wtext, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
-				text = ToUtf8(wtext);
+				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
 			}
-			std::cout << (angleEscape ? escapeNonGraphical(text) : text);
+			std::cout << (angleEscape ? AngleEscape(text) : text);
 		}
 		return ret;
 	}
 
-	std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
-			  << "Bytes:      (" << Size(result.bytes()) << ") \"" << ToHex(result.bytes()) << "\"\n";
+	if (hints.enableDiagnostics()) {
+		result.setContentDiagnostics();
+	}
+
+	std::cout << "Text:       \"" << (angleEscape ? AngleEscape(result.text()) : result.text()) << "\"\n"
+			  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n";
 
 	if (Size(result.ECIs()))
 		std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";

@@ -32,7 +32,9 @@ Writer::encode(const std::wstring& contents, int width, int height) const
 
 BitMatrix Writer::encode(const std::string& contents, int width, int height) const
 {
-	return encode(TextUtfEncoding::FromUtf8(contents), width, height);
+	std::string bytes = TextEncoder::FromUnicode(contents, _encoding);
+	EncodeResult aztec = Encoder::Encode(bytes, _eccPercent, _layers);
+	return Inflate(std::move(aztec.matrix), width, height, _margin);
 }
 
 } // namespace ZXing::Aztec

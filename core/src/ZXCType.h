@@ -1,24 +1,23 @@
 #pragma once
 /*
 * Copyright 2022 gitlost
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
+
+#include <cstdint>
+
+namespace ZXing {
 
 /*
-* Versions of <cctype> functions with no dependence on locale.
-*/
-static inline int zx_isupper(int c) { return c >= 'A' && c <= 'Z'; }
-static inline int zx_islower(int c) { return c >= 'a' && c <= 'z'; }
-static inline int zx_isdigit(int c) { return c <= '9' && c >= '0'; }
-static inline int zx_isspace(int c) { return c == ' ' || (c <= '\r' && c >= '\t'); }
+  Versions of <ctype> functions with no dependence on locale.
+  `u` can be any Unicode codepoint U+0000-10FFFF, though only the `w` versions access non-ASCII.
+ */
+static inline int zx_isupper(uint32_t u) { return u >= 'A' && u <= 'Z'; }
+static inline int zx_islower(uint32_t u) { return u >= 'a' && u <= 'z'; }
+static inline int zx_isdigit(uint32_t u) { return u <= '9' && u >= '0'; }
+static inline int zx_isspace(uint32_t u) { return u == ' ' || (u <= '\r' && u >= '\t'); }
+
+// Note this is dependent on Unicode version used to generate tables (currently uses 15.0.0d6).
+int zx_iswgraph(uint32_t u); /* Returns 1 if is, zero if not */
+
+} // ZXing

@@ -39,14 +39,15 @@ enum class CharacterSet : unsigned char
 	Big5,
 	GB2312,
 	GB18030,
-	EUC_JP,
+	EUC_JP, // Not supported (kept for backwards compatibility)
 	EUC_KR,
-	UTF16BE,
+	UnicodeBig, // UTF16BE (name kept for backwards compatibility)
 	UTF8,
 	GBK,
 	UTF16LE,
 	UTF32BE,
 	UTF32LE,
+	ISO646_Inv,
 
 	BINARY,
 

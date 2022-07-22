@@ -158,7 +158,8 @@ public:
 	void incrementLineCount() { ++_lineCount; }
 	Result& setCharacterSet(CharacterSet defaultCS);
 
-	std::list<std::string> diagnostics() const;
+	const std::list<std::string>& diagnostics() const;
+	void setContentDiagnostics();
 
 	bool operator==(const Result& o) const;
 

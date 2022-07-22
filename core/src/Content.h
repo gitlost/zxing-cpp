@@ -39,7 +39,7 @@ class Content
 	void ForEachECIBlock(FUNC f) const;
 
 	void switchEncoding(ECI eci, bool isECI);
-	std::wstring render(bool withECI) const;
+	std::string render(bool withECI) const;
 
 public:
 	struct Encoding
@@ -51,10 +51,11 @@ public:
 
 	ByteArray bytes;
 	std::vector<Encoding> encodings;
-	CharacterSet hintedCharset = CharacterSet::Unknown;
-	CharacterSet defaultCharset = CharacterSet::Unknown;
 	SymbologyIdentifier symbology;
+	CharacterSet defaultCharset = CharacterSet::Unknown;
+	CharacterSet hintedCharset = CharacterSet::Unknown;
 	bool hasECI = false;
+	std::list<std::string>* p_diagnostics = nullptr;
 
 	Content();
 	Content(ByteArray&& bytes, SymbologyIdentifier si);
@@ -79,8 +80,8 @@ public:
 	bool canProcess() const;
 
 	std::string text(TextMode mode) const;
-	std::wstring utf16() const { return render(false); }
-	std::string utf8() const { return text(TextMode::Utf8); }
+	std::wstring utf16() const;
+	std::string utf8() const { return render(false); }
 
 	ByteArray bytesECI() const;
 	CharacterSet guessEncoding() const;

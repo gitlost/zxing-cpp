@@ -23,6 +23,7 @@ add_executable (UnitTest
     TextUtfEncodingTest.cpp
     ThresholdBinarizerTest.cpp
     ZXAlgorithmsTest.cpp
+    ZXCTypeTest.cpp
     aztec/AZDetectorTest.cpp
     aztec/AZDecoderTest.cpp
     aztec/AZEncoderTest.cpp

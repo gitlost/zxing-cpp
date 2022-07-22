@@ -7,9 +7,12 @@
 #include "BitArrayUtility.h"
 #include "BitMatrixIO.h"
 #include "CharacterSet.h"
+#include "DecoderResult.h"
 #include "TextDecoder.h"
-#include "qrcode/QREncoder.h"
+#include "TextUtfEncoding.h"
 #include "qrcode/QRCodecMode.h"
+#include "qrcode/QRDecoder.h"
+#include "qrcode/QREncoder.h"
 #include "qrcode/QREncodeResult.h"
 #include "qrcode/QRErrorCorrectionLevel.h"
 
@@ -40,9 +43,9 @@ using namespace ZXing::Utility;
 namespace {
 	std::wstring ShiftJISString(const std::vector<uint8_t>& bytes)
 	{
-		std::wstring str;
+		std::string str;
 		TextDecoder::Append(str, bytes.data(), bytes.size(), CharacterSet::Shift_JIS);
-		return str;
+		return TextUtfEncoding::FromUtf8(str);
 	}
 
 	std::string RemoveSpace(std::string s)
@@ -653,4 +656,25 @@ TEST(QREncoderTest, BugInBitVectorNumBytes)
 	//     11745 bits = 1468.125 bytes are needed (i.e. cannot fit in 1468
 	//     bytes).
 	Encode(std::wstring(3518, L'0'), ErrorCorrectionLevel::Low, CharacterSet::Unknown, 0, false, -1);
+}
+
+TEST(QREncoderTest, MEBKM)
+{
+	// According to
+	//   https://www.docomo.ne.jp/service/developer/make/content/barcode/function/application/common/index.html
+	// MECard, MATMSG, MEBKM and LAPL define fields which variously allow certain subsets of ASCII and/or Shift JIS
+	// and thus require special processing to write and read correctly. In particular backslash is used to escape
+	// certain characters, which clashes with Shift JIS (JIS X 0201 Roman).
+	{
+		// Shortened version of "samples/qrcode-2/29.png"
+		std::wstring str(L"MEBKM:TITLE:hypeモバイル;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
+		EXPECT_THROW(Encode(str, ErrorCorrectionLevel::High, CharacterSet::Unknown, 0, false, -1), std::invalid_argument);
+		// Encode adds ECI(20) and maps backslash to Shift JIS 0x815F (full width reverse solidus), both of which
+		// are likely to cause issues for apps that process the MEBKM format. In particular according to above ref
+		// URL: fields are ASCII only and require backslash U+005C to escape the colon.
+		auto qrCode = Encode(str, ErrorCorrectionLevel::High, CharacterSet::Shift_JIS, 0, false, -1);
+		// Decode maps 0x815F to backslash and so round-trips ok here
+		auto content = Decode(qrCode.matrix).content();
+		EXPECT_EQ(content.utf16(), str);
+	}
 }

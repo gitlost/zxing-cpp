@@ -25,7 +25,6 @@
 #include "DCDataBlock.h"
 #include "DCGField.h"
 #include "ReedSolomonDecoder.h"
-#include "TextDecoder.h"
 #include "ZXTestSupport.h"
 
 #include <vector>

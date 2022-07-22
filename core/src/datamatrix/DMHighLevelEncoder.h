@@ -20,8 +20,8 @@ enum class SymbolShape;
 * DataMatrix ECC 200 data encoder following the algorithm described in ISO/IEC 16022:200(E) in
 * annex S.
 */
-ByteArray Encode(const std::wstring& msg);
-ByteArray Encode(const std::wstring& msg, SymbolShape shape, int minWidth, int minHeight, int maxWidth, int maxHeight);
+ByteArray Encode(const std::string& msg);
+ByteArray Encode(const std::string& msg, SymbolShape shape, int minWidth, int minHeight, int maxWidth, int maxHeight);
 
 } // DataMatrix
 } // ZXing

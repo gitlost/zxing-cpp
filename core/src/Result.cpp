@@ -9,9 +9,6 @@
 #include "ECI.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "TextDecoder.h"
-#include "TextUtfEncoding.h"
-#include "ZXAlgorithms.h"
 
 #include <cmath>
 #include <list>
@@ -155,14 +152,14 @@ Result& Result::setCharacterSet(CharacterSet defaultCS)
 	return *this;
 }
 
-std::list<std::string> Result::diagnostics() const
+const std::list<std::string>& Result::diagnostics() const
 {
-	std::list ret = _diagnostics;
-	if (Diagnostics::enabled() && !Diagnostics::get().empty()) {
-		ret.insert(ret.end(), Diagnostics::get().begin(), Diagnostics::get().end());
-		Diagnostics::clear();
-	}
-	return ret;
+	return _diagnostics;
+}
+
+void Result::setContentDiagnostics()
+{
+	_content.p_diagnostics = &_diagnostics;
 }
 
 bool Result::operator==(const Result& o) const
@@ -195,8 +192,13 @@ Result MergeStructuredAppendSequence(const Results& results)
 	allResults.sort([](const Result& r1, const Result& r2) { return r1.sequenceIndex() < r2.sequenceIndex(); });
 
 	Result res = allResults.front();
-	for (auto i = std::next(allResults.begin()); i != allResults.end(); ++i)
+	for (auto i = std::next(allResults.begin()); i != allResults.end(); ++i) {
 		res._content.append(i->_content);
+		if (!res._diagnostics.empty()) {
+			res._diagnostics.push_back("\n");
+		}
+		res._diagnostics.insert(res._diagnostics.end(), i->_diagnostics.begin(), i->_diagnostics.end());
+	}
 
 	res._position = {};
 	res._sai.index = -1;

@@ -28,6 +28,7 @@ namespace Diagnostics {
 bool enabled();
 void setEnabled(const bool enabled);
 
+void begin();
 const std::list<std::string>& get();
 void moveTo(std::list<std::string>& diagnostics);
 void clear();
@@ -39,6 +40,13 @@ void fmt(const char* const format, ...);
 void chr(const unsigned char value, const char* const prefixIfNonASCII = "", const bool appendHex = false);
 void dump(const std::vector<int> value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
 void dump(const ByteArray& value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
+
+void put(std::list<std::string>* p_diagnostics, const std::string& value);
+void put(std::list<std::string>* p_diagnostics, const int value);
+void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begin = -1, int end = -1);
+void fmt(std::list<std::string>* p_diagnostics, const char* const format, ...);
+void chr(std::list<std::string>* p_diagnostics, const unsigned char value, const char* const prefixIfNonASCII = "",
+		 const bool appendHex = false);
 
 } // namespace Diagnostics
 } // namespace ZXing

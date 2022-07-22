@@ -10,6 +10,7 @@
 #include "DecodeHints.h"
 #include "Diagnostics.h"
 #include "Result.h"
+#include "ZXAlgorithms.h"
 #include "aztec/AZReader.h"
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
@@ -72,13 +73,14 @@ Results MultiFormatReader::readMultiple(const BinaryBitmap& image, int maxSymbol
 	std::vector<Result> res;
 
 	for (const auto& reader : _readers) {
+		Diagnostics::begin();
 		auto r = reader->decode(image, maxSymbols);
 		if (!_hints.returnErrors()) {
 			//TODO: C++20 res.erase_if()
 			auto it = std::remove_if(res.begin(), res.end(), [](auto&& r) { return !r.isValid(); });
 			res.erase(it, res.end());
 		}
-		maxSymbols -= (int) r.size();
+		maxSymbols -= narrow_cast<int>(r.size());
 		res.insert(res.end(), std::move_iterator(r.begin()), std::move_iterator(r.end()));
 		if (maxSymbols <= 0)
 			break;

@@ -11,8 +11,6 @@
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "PDFDecoderResultExtra.h"
-#include "TextDecoder.h"
-#include "TextUtfEncoding.h"
 #include "ZXBigInteger.h"
 #include "ZXTestSupport.h"
 

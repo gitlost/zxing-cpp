@@ -91,23 +91,31 @@ bool Content::canProcess() const
 	return std::all_of(encodings.begin(), encodings.end(), [](Encoding e) { return CanProcess(e.eci); });
 }
 
-std::wstring Content::render(bool withECI) const
+std::string Content::render(bool withECI) const
 {
 	if (empty() || !canProcess())
 		return {};
 
-	std::wstring res;
+	std::string res;
 	if (withECI)
-		res = TextDecoder::FromLatin1(symbology.toString(true));
+		res = symbology.toString(true);
 	ECI lastECI = ECI::Unknown;
 	auto fallbackCS = hintedCharset;
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;
-			Diagnostics::fmt("DefEnc(%d)", ToInt(ToECI(fallbackCS)));
+			if (p_diagnostics) {
+				Diagnostics::fmt(p_diagnostics, "DefEnc(%d)", ToInt(ToECI(fallbackCS)));
+			}
 		} else {
 			fallbackCS = guessEncoding();
-			Diagnostics::fmt("GuessEnc(%d)", ToInt(ToECI(fallbackCS)));
+			if (p_diagnostics) {
+				Diagnostics::fmt(p_diagnostics, "GuessEnc(%d)", ToInt(ToECI(fallbackCS)));
+			}
+		}
+	} else {
+		if (p_diagnostics) {
+			Diagnostics::fmt(p_diagnostics, "Fallback(%d,%d)", ToInt(ToECI(fallbackCS)), hasECI ? 1 : 0);
 		}
 	}
 
@@ -125,14 +133,14 @@ std::wstring Content::render(bool withECI) const
 				eci = ECI::Binary;
 
 			if (lastECI != eci)
-				TextDecoder::AppendLatin1(res, ToString(eci));
+				res += ToString(eci);
 			lastECI = eci;
 
-			std::wstring tmp;
+			std::string tmp;
 			TextDecoder::Append(tmp, bytes.data() + begin, end - begin, cs);
 			for (auto c : tmp) {
 				res += c;
-				if (c == L'\\') // in the ECI protocol a '\' has to be doubled
+				if (c == '\\') // in the ECI protocol a '\' has to be doubled
 					res += c;
 			}
 		} else {
@@ -146,8 +154,8 @@ std::wstring Content::render(bool withECI) const
 std::string Content::text(TextMode mode) const
 {
 	switch(mode) {
-	case TextMode::Utf8: return TextUtfEncoding::ToUtf8(render(false));
-	case TextMode::Utf8ECI: return TextUtfEncoding::ToUtf8(render(true));
+	case TextMode::Utf8: return render(false);
+	case TextMode::Utf8ECI: return render(true);
 	case TextMode::HRI:
 		if (symbology.aiFlag == AIFlag::GS1)
 			return HRIFromGS1(text(TextMode::Utf8));
@@ -156,10 +164,15 @@ std::string Content::text(TextMode mode) const
 		else
 			return text(TextMode::Escaped);
 	case TextMode::Hex: return ToHex(bytes);
-	case TextMode::Escaped: return TextUtfEncoding::ToUtf8(render(false), true);
+	case TextMode::Escaped: return TextUtfEncoding::AngleEscape(render(false));
 	}
 
 	return {}; // silence compiler warning
+}
+
+std::wstring Content::utf16() const
+{
+	return TextUtfEncoding::FromUtf8(render(false));
 }
 
 ByteArray Content::bytesECI() const

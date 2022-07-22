@@ -32,9 +32,9 @@ static const uint8_t MACRO_06 = 237;
 static const uint8_t C40_UNLATCH = 254;
 static const uint8_t X12_UNLATCH = 254;
 
-static const std::wstring MACRO_05_HEADER = L"[)>\x1E""05\x1D";
-static const std::wstring MACRO_06_HEADER = L"[)>\x1E""06\x1D";
-static const std::wstring MACRO_TRAILER = L"\x1E\x04";
+static const std::string MACRO_05_HEADER = "[)>\x1E""05\x1D";
+static const std::string MACRO_06_HEADER = "[)>\x1E""06\x1D";
+static const std::string MACRO_TRAILER = "\x1E\x04";
 
 enum
 {
@@ -845,17 +845,17 @@ namespace Base256Encoder {
 
 } // Base256Encoder
 
-static bool StartsWith(const std::wstring& s, const std::wstring& ss)
+static bool StartsWith(const std::string& s, const std::string& ss)
 {
 	return s.length() > ss.length() && s.compare(0, ss.length(), ss) == 0;
 }
 
-static bool EndsWith(const std::wstring& s, const std::wstring& ss)
+static bool EndsWith(const std::string& s, const std::string& ss)
 {
 	return s.length() > ss.length() && s.compare(s.length() - ss.length(), ss.length(), ss) == 0;
 }
 
-ByteArray Encode(const std::wstring& msg)
+ByteArray Encode(const std::string& msg)
 {
 	return Encode(msg, SymbolShape::NONE, -1, -1, -1, -1);
 }
@@ -871,7 +871,7 @@ ByteArray Encode(const std::wstring& msg)
 * @param maxSize the maximum symbol size constraint or null for no constraint
 * @return the encoded message (the char values range from 0 to 255)
 */
-ByteArray Encode(const std::wstring& msg, SymbolShape shape, int minWidth, int minHeight, int maxWidth, int maxHeight)
+ByteArray Encode(const std::string& msg, SymbolShape shape, int minWidth, int minHeight, int maxWidth, int maxHeight)
 {
 	//the codewords 0..255 are encoded as Unicode characters
 	//Encoder[] encoders = {

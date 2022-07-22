@@ -81,6 +81,8 @@ set (COMMON_FILES
     src/ZXBigInteger.h
     src/ZXBigInteger.cpp
     src/ZXConfig.h
+    src/ZXCType.h
+    src/ZXCType.cpp
     src/ZXNullable.h
     src/ZXTestSupport.h
 )
@@ -156,6 +158,7 @@ set (PUBLIC_HEADERS
 if (BUILD_READERS)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/Content.h
+        src/CustomData.h
         src/DecodeHints.h
         src/Diagnostics.h
         src/Error.h
@@ -437,36 +440,18 @@ if (BUILD_WRITERS)
 endif()
 
 
-set (TEXT_CODEC_FILES
-    src/textcodec/Big5MapTable.h
-    src/textcodec/Big5MapTable.cpp
-    src/textcodec/KRHangulMapping.h
-    src/textcodec/KRHangulMapping.cpp
+set (LIBZUECI_FILES
+    src/libzueci/zueci_big5.h
+    src/libzueci/zueci.c
+    src/libzueci/zueci_common.h
+    src/libzueci/zueci_gb18030.h
+    src/libzueci/zueci_gb2312.h
+    src/libzueci/zueci_gbk.h
+    src/libzueci/zueci.h
+    src/libzueci/zueci_ksx1001.h
+    src/libzueci/zueci_sb.h
+    src/libzueci/zueci_sjis.h
 )
-if (BUILD_READERS)
-    set (TEXT_CODEC_FILES ${TEXT_CODEC_FILES}
-        src/textcodec/Big5TextDecoder.h
-        src/textcodec/Big5TextDecoder.cpp
-        src/textcodec/GBTextDecoder.h
-        src/textcodec/GBTextDecoder.cpp
-        src/textcodec/JPTextDecoder.h
-        src/textcodec/JPTextDecoder.cpp
-        src/textcodec/KRTextDecoder.h
-        src/textcodec/KRTextDecoder.cpp
-    )
-endif()
-if (BUILD_WRITERS)
-    set (TEXT_CODEC_FILES ${TEXT_CODEC_FILES}
-        src/textcodec/Big5TextEncoder.h
-        src/textcodec/Big5TextEncoder.cpp
-        src/textcodec/GBTextEncoder.h
-        src/textcodec/GBTextEncoder.cpp
-        src/textcodec/JPTextEncoder.h
-        src/textcodec/JPTextEncoder.cpp
-        src/textcodec/KRTextEncoder.h
-        src/textcodec/KRTextEncoder.cpp
-    )
-endif()
 
 source_group (Sources FILES ${COMMON_FILES})
 source_group (Sources\\aztec FILES ${AZTEC_FILES})
@@ -477,7 +462,7 @@ source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
 source_group (Sources\\pdf417 FILES ${PDF417_FILES})
 source_group (Sources\\qrcode FILES ${QRCODE_FILES})
-source_group (Sources\\textcodec FILES ${TEXT_CODEC_FILES})
+source_group (Sources\\libzueci FILES ${LIBZUECI_FILES})
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -493,7 +478,7 @@ add_library (ZXing
     ${ONED_FILES}
     ${PDF417_FILES}
     ${QRCODE_FILES}
-    ${TEXT_CODEC_FILES}
+    ${LIBZUECI_FILES}
 )
 
 target_include_directories (ZXing

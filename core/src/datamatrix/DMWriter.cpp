@@ -80,7 +80,7 @@ Writer::Writer() :
 }
 
 BitMatrix
-Writer::encode(const std::wstring& contents, int width, int height) const
+Writer::encode(const std::string& contents, int width, int height) const
 {
 	if (contents.empty()) {
 		throw std::invalid_argument("Found empty contents");
@@ -110,9 +110,9 @@ Writer::encode(const std::wstring& contents, int width, int height) const
 	return Inflate(std::move(result), width, height, _quietZone);
 }
 
-BitMatrix Writer::encode(const std::string& contents, int width, int height) const
+BitMatrix Writer::encode(const std::wstring& contents, int width, int height) const
 {
-	return encode(TextUtfEncoding::FromUtf8(contents), width, height);
+	return encode(TextUtfEncoding::ToUtf8(contents), width, height);
 }
 
 } // namespace ZXing::DataMatrix

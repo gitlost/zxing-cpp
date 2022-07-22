@@ -11,9 +11,7 @@
 #include "TextUtfEncoding.h"
 #include "GTIN.h"
 
-#include <cctype>
 #include <chrono>
-#include <clocale>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -158,7 +156,7 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 
 std::string escapeNonGraphical(const std::string& str)
 {
-	return TextUtfEncoding::ToUtf8(TextUtfEncoding::FromUtf8(str), true);
+	return TextUtfEncoding::AngleEscape(str);
 }
 
 int main(int argc, char* argv[])
@@ -178,9 +176,6 @@ int main(int argc, char* argv[])
 		return argc == 1 ? 0 : -1;
 	}
 	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
-
-	if (angleEscape)
-		std::setlocale(LC_CTYPE, "en_US.UTF-8"); // Needed so `std::iswgraph()` in `ToUtf8(angleEscape)` does not 'swallow' all printable non-ascii utf8 chars
 
 	std::cout.setf(std::ios::boolalpha);
 
@@ -218,6 +213,10 @@ int main(int argc, char* argv[])
 			if (bytesOnly) {
 				std::cout.write(reinterpret_cast<const char*>(result.bytes().data()), result.bytes().size());
 				continue;
+			}
+
+			if (hints.enableDiagnostics()) {
+				result.setContentDiagnostics();
 			}
 
 			if (oneLine) {

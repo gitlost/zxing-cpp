@@ -26,7 +26,6 @@
 #include "HXBitMatrixParser.h"
 #include "HXDataBlock.h"
 #include "ReedSolomonDecoder.h"
-#include "TextDecoder.h"
 #include "ZXTestSupport.h"
 
 #include <vector>

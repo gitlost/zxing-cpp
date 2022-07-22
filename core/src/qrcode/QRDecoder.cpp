@@ -18,7 +18,6 @@
 #include "QRVersion.h"
 #include "ReedSolomonDecoder.h"
 #include "StructuredAppend.h"
-#include "TextDecoder.h"
 #include "ZXAlgorithms.h"
 #include "ZXTestSupport.h"
 
@@ -187,16 +186,19 @@ static ECI ParseECIValue(BitSource& bits)
 	int firstByte = bits.readBits(8);
 	if ((firstByte & 0x80) == 0) {
 		// just one byte
+		Diagnostics::fmt("ECI(%d,1)", firstByte & 0x7F);
 		return ECI(firstByte & 0x7F);
 	}
 	if ((firstByte & 0xC0) == 0x80) {
 		// two bytes
 		int secondByte = bits.readBits(8);
+		Diagnostics::fmt("ECI(%d,2)", ((firstByte & 0x3F) << 8) | secondByte);
 		return ECI(((firstByte & 0x3F) << 8) | secondByte);
 	}
 	if ((firstByte & 0xE0) == 0xC0) {
 		// three bytes
 		int secondThirdBytes = bits.readBits(16);
+		Diagnostics::fmt("ECI(%d,3)", ((firstByte & 0x1F) << 16) | secondThirdBytes);
 		return ECI(((firstByte & 0x1F) << 16) | secondThirdBytes);
 	}
 	throw FormatError("ParseECIValue: invalid value");
@@ -266,8 +268,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				Diagnostics::put("FNC1(1st)");
 				break;
 			case CodecMode::FNC1_SECOND_POSITION:
-				if (!result.empty())
-					throw FormatError("AIM Application Indicator (FNC1 in second position) at illegal position");
+//				if (!result.empty())
+//					throw FormatError("AIM Application Indicator (FNC1 in second position) at illegal position");
 				result.symbology.modifier = '5'; // As above
 				// ISO/IEC 18004:2015 7.4.8.3 AIM Application Indicator (FNC1 in second position), "00-99" or "A-Za-z"
 				appInd = bits.readBits(8); // Number 00-99 or ASCII value + 100

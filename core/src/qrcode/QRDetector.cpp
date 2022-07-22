@@ -63,7 +63,7 @@ std::vector<ConcentricPattern> FindFinderPatterns(const BitMatrix& image, bool t
 													   Reduce(next) * 3 / 2); // 1.5 for very skewed samples
 				if (pattern) {
 					log(*pattern, 3);
-					assert(image.get(pattern->x, pattern->y));
+					assert(image.get(static_cast<int>(pattern->x), static_cast<int>(pattern->y)));
 					res.push_back(*pattern);
 				}
 			}

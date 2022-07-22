@@ -667,7 +667,7 @@ TEST(QREncoderTest, MEBKM)
 	// certain characters, which clashes with Shift JIS (JIS X 0201 Roman).
 	{
 		// Shortened version of "samples/qrcode-2/29.png"
-		std::wstring str(L"MEBKM:TITLE:hypeモバイル;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
+		std::wstring str(L"MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		EXPECT_THROW(Encode(str, ErrorCorrectionLevel::High, CharacterSet::Unknown, 0, false, -1), std::invalid_argument);
 		// Encode adds ECI(20) and maps backslash to Shift JIS 0x815F (full width reverse solidus), both of which
 		// are likely to cause issues for apps that process the MEBKM format. In particular according to above ref

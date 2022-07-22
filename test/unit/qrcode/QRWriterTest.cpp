@@ -165,7 +165,7 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		int bqrEcc = 1;
 		int aQRBorder = 1;
 		// Shortened version of "samples/qrcode-2/29.png"
-		std::string QRText(u8"MEBKM:TITLE:hypeモバイル;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
+		std::string QRText(u8"MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		BarcodeFormat format = BarcodeFormat::QRCode;
 		auto writer = MultiFormatWriter(format).setMargin(aQRBorder).setEccLevel(bqrEcc);
 		writer.setEncoding(CharacterSet::UTF8);

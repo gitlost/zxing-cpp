@@ -48,7 +48,7 @@ public:
 
 	Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
 
-	bool isValid() const { return format() != BarcodeFormat::None && !error(); }
+	bool isValid() const;
 
 	const Error& error() const { return _error; }
 

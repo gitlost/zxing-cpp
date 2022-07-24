@@ -72,6 +72,7 @@ set (COMMON_FILES
     src/Pattern.h
     src/Point.h
     src/Quadrilateral.h
+    src/Range.h
     src/RegressionLine.h
     src/Scope.h
     src/TextUtfEncoding.h
@@ -177,6 +178,7 @@ if (BUILD_WRITERS)
         src/BitMatrixIO.h
         src/Matrix.h
         src/MultiFormatWriter.h
+        src/Range.h
     )
 endif()
 # end of public header set

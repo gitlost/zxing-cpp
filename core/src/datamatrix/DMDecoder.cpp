@@ -380,7 +380,6 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 240: DecodeEdifactSegment(bits, result); break;
 			case 241: result.switchEncoding(ParseECIValue(bits)); break;
 			default:
-				Diagnostics::put("ASC");
 				if (oneByte <= 128) { // ASCII data (ASCII value + 1)
 					result.push_back(upperShift(oneByte) - 1);
 				} else if (oneByte <= 229) { // 2-digit data 00-99 (Numeric Value + 130)

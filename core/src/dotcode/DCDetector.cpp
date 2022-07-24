@@ -73,7 +73,7 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	int prev_y = -1;
 	for (int y = top; y < yHeight; y++) {
 		PatternRow row;
-		image.getPatternRow(y, row);
+		GetPatternRow(image, y, row, false);
 		if (left) {
 			row[0] -= left;
 		}

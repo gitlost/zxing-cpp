@@ -123,25 +123,31 @@ static int GetBit(int bit, const ByteArray& bytes)
 	return (bytes[bit / 6] & (1 << (5 - (bit % 6)))) == 0 ? 0 : 1;
 }
 
-static int GetInt(const ByteArray& bytes, const ByteArray& x)
+static unsigned int GetInt(const ByteArray& bytes, const ByteArray& x)
 {
 	int len = Size(x);
-	int val = 0;
+	unsigned int val = 0;
 	for (int i = 0; i < len; i++)
 		val += GetBit(x[i], bytes) << (len - i - 1);
 
 	return val;
 }
 
-static int GetPostCode2(const ByteArray& bytes)
+static unsigned int GetPostCode2Length(const ByteArray& bytes)
 {
-	return GetInt(bytes,
-				  {33, 34, 35, 36, 25, 26, 27, 28, 29, 30, 19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18, 7, 8, 9, 10, 11, 12, 1, 2});
+	return std::min(GetInt(bytes, {39, 40, 41, 42, 31, 32}), 9U);
 }
 
-static int GetPostCode2Length(const ByteArray& bytes)
+static std::string GetPostCode2(const ByteArray& bytes)
 {
-	return GetInt(bytes, {39, 40, 41, 42, 31, 32});
+	unsigned int val = GetInt(bytes,
+				  {33, 34, 35, 36, 25, 26, 27, 28, 29, 30, 19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18, 7, 8, 9, 10, 11, 12, 1, 2});
+	unsigned int len = GetPostCode2Length(bytes);
+	// Pad or truncate to length
+	char buf[11]; // 30 bits 0x3FFFFFFF == 1073741823 (10 digits)
+	sprintf(buf, "%0*d", len, val);
+	buf[len] = '\0';
+	return buf;
 }
 
 static std::string GetPostCode3(const ByteArray& bytes)
@@ -156,14 +162,14 @@ static std::string GetPostCode3(const ByteArray& bytes)
 	};
 }
 
-static int GetCountry(const ByteArray& bytes)
+static unsigned int GetCountry(const ByteArray& bytes)
 {
-	return GetInt(bytes, {53, 54, 43, 44, 45, 46, 47, 48, 37, 38});
+	return std::min(GetInt(bytes, {53, 54, 43, 44, 45, 46, 47, 48, 37, 38}), 999U);
 }
 
-static int GetServiceClass(const ByteArray& bytes)
+static unsigned int GetServiceClass(const ByteArray& bytes)
 {
-	return GetInt(bytes, {55, 56, 57, 58, 59, 60, 49, 50, 51, 52});
+	return std::min(GetInt(bytes, {55, 56, 57, 58, 59, 60, 49, 50, 51, 52}), 999U);
 }
 
 /**
@@ -172,18 +178,25 @@ static int GetServiceClass(const ByteArray& bytes)
 static ZXing::ECI ParseECIValue(const ByteArray& bytes, int& i)
 {
 	int firstByte = bytes[++i];
-	if ((firstByte & 0x20) == 0)
+	if ((firstByte & 0x20) == 0) {
+		Diagnostics::fmt("ECI(%d,1)", firstByte);
 		return ZXing::ECI(firstByte);
+	}
 
 	int secondByte = bytes[++i];
-	if ((firstByte & 0x10) == 0)
+	if ((firstByte & 0x10) == 0) {
+		Diagnostics::fmt("ECI(%d,2)", ((firstByte & 0x0F) << 6) | secondByte);
 		return ZXing::ECI(((firstByte & 0x0F) << 6) | secondByte);
+	}
 
 	int thirdByte = bytes[++i];
-	if ((firstByte & 0x08) == 0)
+	if ((firstByte & 0x08) == 0) {
+		Diagnostics::fmt("ECI(%d,3)", ((firstByte & 0x07) << 12) | (secondByte << 6) | thirdByte);
 		return ZXing::ECI(((firstByte & 0x07) << 12) | (secondByte << 6) | thirdByte);
+	}
 
 	int fourthByte = bytes[++i];
+	Diagnostics::fmt("ECI(%d,4)", ((firstByte & 0x03) << 18) | (secondByte << 12) | (thirdByte << 6) | fourthByte);
 	return ZXing::ECI(((firstByte & 0x03) << 18) | (secondByte << 12) | (thirdByte << 6) | fourthByte);
 }
 
@@ -256,9 +269,8 @@ static void GetMessage(const ByteArray& bytes, int start, int len, Content& resu
 		case PAD:
 			if (i == start)
 				ParseStructuredAppend(bytes, i, sai);
-			else {
+			else
 				Diagnostics::put("PAD");
-			}
 			shift = -1;
 			break;
 		default: result.push_back((unsigned char)c);
@@ -274,14 +286,15 @@ DecoderResult Decode(ByteArray&& bytes, const int mode)
 {
 	Diagnostics::fmt("MODE(%d)", mode);
 	Content result;
-	result.symbology = {'U', (mode == 2 || mode == 3) ? '1' : '0', 2}; // TODO: No identifier defined for mode 6?
+	// No identifier defined for mode 6 (ISO/IEC 16023:2000 Annexe E) so use '0' as undefined code
+	result.symbology = {mode == 6 ? '0' : 'U', (mode == 2 || mode == 3) ? '1' : '0', 2};
 	result.defaultCharset = CharacterSet::ISO8859_1;
 	StructuredAppendInfo sai;
 
 	switch (mode) {
 	case 2:
 	case 3: {
-		auto postcode = mode == 2 ? ToString(GetPostCode2(bytes), GetPostCode2Length(bytes)) : GetPostCode3(bytes);
+		auto postcode = mode == 2 ? GetPostCode2(bytes) : GetPostCode3(bytes);
 		auto country  = ToString(GetCountry(bytes), 3);
 		auto service  = ToString(GetServiceClass(bytes), 3);
 		Diagnostics::fmt("SCM(%s,%s,%s)", postcode.c_str(), country.c_str(), service.c_str());
@@ -312,7 +325,8 @@ DecoderResult Decode(const BitMatrix& bits)
 	Diagnostics::fmt("  Codewords:  (%d)", codewords.size()); Diagnostics::dump(codewords, "\n");
 	Diagnostics::put("  Decode:     ");
 	if (!CorrectErrors(codewords, 0, 10, 10, ALL)) {
-		Diagnostics::put("ChecksumError(primary)");
+		//Diagnostics::put("ChecksumError(primary)");
+		Diagnostics::clear();
 		return ChecksumError();
 	}
 

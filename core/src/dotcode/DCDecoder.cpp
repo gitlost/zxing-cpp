@@ -579,6 +579,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, erasureLocs);
 	if (codewords.size() == 0) {
+		Diagnostics::clear();
 		return {};
 	}
 

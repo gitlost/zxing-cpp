@@ -250,7 +250,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	ByteArray rawCodes;
 	rawCodes.reserve(20);
 	rawCodes.push_back(narrow_cast<uint8_t>(startCode));
-	Diagnostics::fmt("    Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
+	Diagnostics::fmt("  Decode: Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
 
 	Raw2TxtDecoder raw2txt(startCode);
 

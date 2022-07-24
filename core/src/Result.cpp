@@ -172,7 +172,7 @@ bool Result::operator==(const Result& o) const
 		return IsInside(Center(o.position()), position());
 
 	// linear symbology comparisons only implemented for this->lineCount == 1
-	//assert(lineCount() == 1);
+	assert(lineCount() == 1);
 
 	// if one line is less than half the length of the other away from the
 	// latter, we consider it to belong to the same symbol

@@ -41,6 +41,7 @@ void begin()
 {
 	if (_enabled) {
 		bool wasEmpty = _diagnostics.empty();
+		//if (!wasEmpty) printf("Notempty %s\n", print(&_diagnostics).c_str());
 		_diagnostics.clear();
 		if (!wasEmpty) {
 			put("WarnLeftOverDiagnostics");
@@ -145,6 +146,47 @@ void dump(const ByteArray& value, const char* const postfix, int begin, int end,
 	}
 }
 
+std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode)
+{
+	std::ostringstream s;
+
+	if (!p_diagnostics) {
+		p_diagnostics = &_diagnostics;
+	}
+	if (_enabled) {
+		if (skipToDecode) {
+			if (!p_diagnostics->empty()) {
+				bool haveDecode = false;
+				for (std::string value : *p_diagnostics) {
+					if (value.find("Decode:") != std::string::npos) {
+						haveDecode = true;
+						s << " ";
+					} else if (haveDecode) {
+						s << value;
+						if (!std::isspace(value.back())) {
+							s << " ";
+						}
+					}
+				}
+			}
+		} else {
+			if (p_diagnostics->empty()) {
+				s << " (empty)\n";
+			} else {
+				s << "\n";
+				for (std::string value : *p_diagnostics) {
+					s << value;
+					if (!std::isspace(value.back())) {
+						s << " ";
+					}
+				}
+				s << "\n";
+			}
+		}
+	}
+	return s.str();
+}
+
 void put(std::list<std::string>* p_diagnostics, const std::string& value)
 {
 	if (_enabled && !value.empty()) {
@@ -213,14 +255,12 @@ void chr(std::list<std::string>* p_diagnostics, const unsigned char value, const
 
 		if (value > 32 && value < 127) { // Graphical ASCII
 			s << value;
-		}
-		else if (value < 128) { // Non-graphical ASCII
+		} else if (value < 128) { // Non-graphical ASCII
 			s << "<" << ascii_nongraphs[value == 127 ? 33 : value] << ">";
-		}
-		else { // Non-ASCII
+		} else { // Non-ASCII
 			s << prefixIfNonASCII << narrow_cast<unsigned int>(value);
 			if (appendHex) {
-				s << "(0x" << std::uppercase << std::hex << narrow_cast<unsigned int>(value) << ")";
+				s << "(" << std::uppercase << std::hex << narrow_cast<unsigned int>(value) << ")";
 			}
 		}
 

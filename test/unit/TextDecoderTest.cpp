@@ -22,9 +22,7 @@ TEST(TextDecoderTest, AppendBINARY_ASCII)
 	for (int i = 0; i < 256; i++) {
 		uint8_t ch = static_cast<uint8_t>(i);
 		data[i] = ch;
-		char buf[4];
-		int len = Utf8Encode(i, buf);
-		expected.append(buf, len);
+		expected.append(Utf8Encode(i));
 	}
 	EXPECT_EQ(expected.size(), 256 + 128);
 
@@ -71,9 +69,7 @@ TEST(TextDecoderTest, AppendAllASCIIRange00_7F)
 	for (int i = 0; i < 0x80; i++) {
 		uint8_t ch = static_cast<uint8_t>(i);
 		data[i] = ch;
-		char buf[4];
-		int len = Utf8Encode(i, buf);
-		expected.append(buf, len);
+		expected.append(Utf8Encode(i));
 
 		int j = i << 1;
 		int k = j << 1;
@@ -117,9 +113,7 @@ TEST(TextDecoderTest, AppendISO8859Range80_9F)
 	for (int i = 0x80; i < 0xA0; i++) {
 		uint8_t ch = static_cast<uint8_t>(i);
 		data[i - 0x80] = ch;
-		char buf[4];
-		int len = Utf8Encode(i, buf);
-		expected.append(buf, len);
+		expected.append(Utf8Encode(i));
 	}
 	EXPECT_EQ(expected.size(), 0x20 * 2);
 

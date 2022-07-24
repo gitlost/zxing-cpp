@@ -158,13 +158,11 @@ static bool PlausibleDigitModuleSize(PatternView begin, int start, int i, float 
 
 static bool EAN8(PartialResult& res, PatternView begin)
 {
-	//printf("EAN8\n");
 	auto mid = begin.subView(19, MID_PATTERN.size());
 	auto end = begin.subView(40, END_PATTERN.size());
 
 	CHECK(end.isValid() && IsRightGuard(end, END_PATTERN, QUIET_ZONE_RIGHT) && IsPattern(mid, MID_PATTERN));
 
-	//printf(" after 1st CHECK IsRightGuard\n");
 	// additional plausibility check for the module size: it has to be about the same for both
 	// the guard patterns and the payload/data part.
 	float moduleSizeGuard = (begin.sum() + mid.sum() + end.sum()) / 11.f;
@@ -172,18 +170,15 @@ static bool EAN8(PartialResult& res, PatternView begin)
 		for (int i = 0; i < 4; ++i)
 			CHECK(PlausibleDigitModuleSize(begin, start, i, moduleSizeGuard));
 
-	//printf(" after 2nd CHECK loop\n");
 	auto next = begin.subView(END_PATTERN.size(), CHAR_LEN);
 	res.txt.clear();
 
 	CHECK(DecodeDigits(4, next, res.txt));
 
-	//printf(" after 3rd CHECK DecodeDigits\n");
 	next = next.subView(MID_PATTERN.size(), CHAR_LEN);
 
 	CHECK(DecodeDigits(4, next, res.txt));
 
-	//printf(" after 4th CHECK DecodeDigits\n");
 	res.end = end;
 	res.format = BarcodeFormat::EAN8;
 	return true;
@@ -269,9 +264,6 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 	const int minSize = 3 + 6*4 + 6; // UPC-E
 
 	next = FindLeftGuard(next, minSize, END_PATTERN, QUIET_ZONE_LEFT);
-	if (!next.isValid()) {
-		return {};
-	}
 	if (!next.isValid())
 		return {};
 
@@ -288,7 +280,6 @@ Result MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::u
 	if (!GTIN::IsCheckDigitValid(res.format == BarcodeFormat::UPCE ? UPCEANCommon::ConvertUPCEtoUPCA(res.txt) : res.txt))
 		error = ChecksumError();
 
-	//printf("found\n");
 	// If UPC-A was a requested format and we detected a EAN-13 code with a leading '0', then we drop the '0' and call it
 	// a UPC-A code.
 	// TODO: this is questionable

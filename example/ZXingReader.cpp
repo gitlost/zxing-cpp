@@ -134,6 +134,17 @@ std::ostream& operator<<(std::ostream& os, const Position& points)
 	return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
+	bool not_first = false;
+	for (const auto& e : ecis) {
+		if (not_first)
+			os << " ";
+		os << std::get<0>(e) << "," << std::get<1>(e);
+		not_first = true;
+	}
+	return os;
+}
+
 void drawLine(const ImageView& iv, PointI a, PointI b, bool error)
 {
 	int steps = maxAbsComponent(b - a);
@@ -184,17 +195,25 @@ int main(int argc, char* argv[])
 		std::unique_ptr<stbi_uc, void(*)(void*)> buffer(stbi_load(filePath.c_str(), &width, &height, &channels, 3), stbi_image_free);
 		if (buffer == nullptr) {
 			std::cerr << "Failed to read image: " << filePath << "\n";
-			return -1;
+			continue;
 		}
 
 		ImageView image{buffer.get(), width, height, ImageFormat::RGB};
-		auto results = ReadBarcodes(image, hints);
+		Results results;
+		try {
+			results = ReadBarcodes(image, hints);
+		} catch (Error e) {
+			std::cerr << filePath << " Exception: " << e.msg() << "\n";
+			if (hints.enableDiagnostics()) {
+				std::cerr << "  Diagnostics: " << Diagnostics::print(nullptr);
+				Diagnostics::clear();
+			}
+			continue;
+		}
 
 		// if we did not find anything, insert a dummy to produce some output for each file
-		if (results.empty()) {
-			//printf("----results.empty dummy\n");
+		if (results.empty())
 			results.emplace_back();
-		}
 
 		allResults.insert(allResults.end(), results.begin(), results.end());
 		if (filePath == filePaths.back()) {
@@ -223,18 +242,7 @@ int main(int argc, char* argv[])
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
 							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.error());
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
-					bool haveDecode = false;
-					for (std::string value : result.diagnostics()) {
-						if (value.find("Decode:") != std::string::npos) {
-							haveDecode = true;
-							std::cout << " ";
-						} else if (haveDecode) {
-							std::cout << value;
-							if (!std::isspace(value.back())) {
-								std::cout << " ";
-							}
-						}
-					}
+					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
 				}
 				std::cout << "\n";
 				continue;
@@ -256,12 +264,15 @@ int main(int argc, char* argv[])
 
 			std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
-					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(result.contentType()) << "\n"
-					  << "HasECI:     " << result.hasECI() << "\n"
-					  << "Position:   " << result.position() << "\n"
+					  << "HasECI:     " << result.hasECI() << "\n";
+			if (Size(result.ECIs()))
+				std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
+			else
+				std::cout << "ECIs:       None\n";
+			std::cout << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
 					  << "IsMirrored: " << result.isMirrored() << "\n";
 
@@ -320,22 +331,8 @@ int main(int argc, char* argv[])
 			if (result.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 
-			if (hints.enableDiagnostics()) {
-				std::cout << "Diagnostics";
-				const auto& diagnostics = result.diagnostics();
-				if (diagnostics.empty()) {
-					std::cout << " (empty)\n";
-				} else {
-					std::cout << "\n";
-					for (std::string value : diagnostics) {
-						std::cout << value;
-						if (!std::isspace(value.back())) {
-							std::cout << " ";
-						}
-					}
-					std::cout << "\n";
-				}
-			}
+			if (hints.enableDiagnostics())
+				std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
 		}
 
 		if (Size(filePaths) == 1 && !outPath.empty())

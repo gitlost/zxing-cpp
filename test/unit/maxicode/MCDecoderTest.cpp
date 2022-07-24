@@ -26,16 +26,24 @@ static void pad(ByteArray& padded)
 }
 
 // Helper to call Decode()
-static DecoderResult parse(ByteArray bytes, const int mode)
+static DecoderResult parse(ByteArray bytes, const int mode, ByteArray *mode2or3 = nullptr)
 {
 	ByteArray padded;
 	padded.reserve(93 + 1); // 93 + mode
 	if (mode == 2) {
-		// Mode 2, Postcode 152382802, Country 840, Class 001 example from ISO/IEC 16023:2000 Annex B.2
-		padded = {34, 20, 45, 20, 17, 18, 2, 18, 7, 0};
+		if (mode2or3) {
+			padded = *mode2or3;
+		} else {
+			// Mode 2, Postcode 152382802, Country 840, Class 001 example from ISO/IEC 16023:2000 Annex B.2
+			padded = {34, 20, 45, 20, 17, 18, 2, 18, 7, 0};
+		}
 	} else if (mode == 3) {
-		// Mode 3, Postcode B1050, Country 056, Class 999 example from ISO/IEC 16023:2000 Annex B.1
-		padded = {3, 8, 28, 13, 28, 44, 0, 14, 28, 62};
+		if (mode2or3) {
+			padded = *mode2or3;
+		} else {
+			// Mode 3, Postcode B1050, Country 056, Class 999 example from ISO/IEC 16023:2000 Annex B.1
+			padded = {3, 8, 28, 13, 28, 44, 0, 14, 28, 62};
+		}
 	} else {
 		padded.push_back(mode);
 	}
@@ -50,7 +58,7 @@ static StructuredAppendInfo info(ByteArray bytes, const int mode)
 	return parse(bytes, mode).structuredAppend();
 }
 
-TEST(MCDecodeTest, StructuredAppendSymbologyIdentifier)
+TEST(MCDecoderTest, StructuredAppendSymbologyIdentifier)
 {
 	// Null
 	EXPECT_EQ(info({49}, 2).index, -1); // Mode 2
@@ -76,7 +84,7 @@ TEST(MCDecodeTest, StructuredAppendSymbologyIdentifier)
 	EXPECT_EQ(info({49}, 6).index, -1); // Mode 6
 	EXPECT_EQ(info({49}, 6).count, -1);
 	EXPECT_TRUE(info({49}, 6).id.empty());
-//	EXPECT_TRUE(parse({49}, 6).symbologyIdentifier().empty()); // Not defined for reader initialisation/programming
+	EXPECT_TRUE(parse({49}, 6).symbologyIdentifier().empty()); // Not defined for reader initialisation/programming
 
 	// ISO/IEC 16023:2000 4.9.1 example
 	EXPECT_EQ(info({33, 22, 49}, 2).index, 2); // Mode 2 - 3rd position 1-based == index 2
@@ -137,7 +145,7 @@ TEST(MCDecodeTest, StructuredAppendSymbologyIdentifier)
 	EXPECT_EQ(info({33, 032, 49}, 4).count, 0);
 }
 
-TEST(MCDecodeTest, ReaderInit)
+TEST(MCDecoderTest, ReaderInit)
 {
 	// Null
 	EXPECT_FALSE(parse({49}, 2).readerInit()); // Mode 2
@@ -146,4 +154,36 @@ TEST(MCDecodeTest, ReaderInit)
 	// Set
 	EXPECT_TRUE(parse({49}, 6).readerInit()); // Mode 6
 	EXPECT_TRUE(parse({49}, 6).isValid());
+}
+
+TEST(MCDecoderTest, Mode2)
+{
+	// Good data
+	{
+		// Postcode 123400000, Country 840, Class 123 with postcode len 4
+		ByteArray mode2 = { 2, 16, 47, 43, 53, 1, 1, 18, 47, 7 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "1234\035840\035123\0351"); // Postcode truncated
+	}
+
+	// Out-of-range data
+	{
+		// Postcode 1, Country 840, Class 123 with postcode len 10
+		ByteArray mode2 = { 18, 0, 0, 0, 0, 32, 2, 18, 47, 7 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "000000001\035840\035123\0351"); // Postcode padded to 9
+	}
+	{
+		// Postcode 1073741823, Country 840, Class 123 with postcode 0x3FFFFFFF i.e max 30-bits, postcode len 10
+		ByteArray mode2 = { 50, 63, 63, 63, 63, 47, 2, 18, 47, 7 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "107374182\035840\035123\0351"); // Postcode truncated
+	}
+	{
+		// Postcode 12345, Country 1023, Class 123 with country 0x3FF i.e max 10-bits
+		ByteArray mode2 = { 18, 14, 48, 0, 0, 16, 49, 63, 47, 7 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "12345\035999\035123\0351"); // Country capped to 999
+	}
+	{
+		// Postcode 123456, Country 840, Class 1000 (0x3E8) with postcode len 8
+		ByteArray mode2 = { 2, 16, 34, 7, 0, 0, 2, 18, 35, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "00123456\035840\035999\0351"); // Class capped to 999
+	}
 }

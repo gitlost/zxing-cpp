@@ -37,9 +37,11 @@ void put(const std::string& value);
 void put(const int value);
 void put(const ByteArray& value, int begin = -1, int end = -1);
 void fmt(const char* const format, ...);
-void chr(const unsigned char value, const char* const prefixIfNonASCII = "", const bool appendHex = false);
+void chr(const unsigned char value, const char* const prefixIfNonASCII = "", const bool appendHex = true);
 void dump(const std::vector<int> value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
 void dump(const ByteArray& value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
+
+std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode = false);
 
 void put(std::list<std::string>* p_diagnostics, const std::string& value);
 void put(std::list<std::string>* p_diagnostics, const int value);

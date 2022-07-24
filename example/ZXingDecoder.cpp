@@ -468,20 +468,7 @@ int main(int argc, char* argv[])
 		std::cout << "Reader Initialisation/Programming\n";
 
 	if (hints.enableDiagnostics()) {
-		std::cout << "Diagnostics";
-		const auto& diagnostics = result.diagnostics();
-		if (diagnostics.empty()) {
-			std::cout << " (empty)\n";
-		} else {
-			std::cout << "\n";
-			for (std::string value : diagnostics) {
-				std::cout << value;
-				if (!std::isspace(value.back())) {
-					std::cout << " ";
-				}
-			}
-			std::cout << "\n";
-		}
+		std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
 	}
 
 	return ret;

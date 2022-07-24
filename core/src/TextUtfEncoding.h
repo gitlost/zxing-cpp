@@ -23,8 +23,8 @@ void ToUtf8(const std::wstring& str, std::string& utf8);
 // `cnt` is set to no. of chars read (including skipped continuation bytes on error).
 int Utf8Next(std::string_view str, const int start, int& cnt);
 
-// Encode Unicode codepoint `utf32` as UTF-8 into `out`, returning no. of UTF-8 chars
-int Utf8Encode(const uint32_t utf32, char* out);
+// Encode Unicode codepoint `utf32` as UTF-8
+std::string Utf8Encode(const uint32_t utf32);
 
 template <typename T>
 bool IsUtf16HighSurrogate(T c)

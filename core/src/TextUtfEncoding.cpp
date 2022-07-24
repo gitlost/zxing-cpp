@@ -78,8 +78,8 @@ static void Utf8Decode(uint8_t byte, uint32_t& state, uint32_t& codep)
 // `cnt` is set to no. of chars read (including skipped continuation bytes on error).
 int Utf8Next(std::string_view str, const int start, int& cnt)
 {
-	auto i = str.data() + start;
-	auto end = str.data() + str.length();
+	const char* i = str.data() + start;
+	const char* const end = str.data() + str.length();
 	uint32_t state = kAccepted;
 	uint32_t codepoint = 0; // GCC 11.1.0 gives false warning if not initialized
 	while (i < end) {
@@ -112,8 +112,8 @@ static void ConvertFromUtf8(const uint8_t* src, size_t length, std::wstring& buf
 	buffer.reserve(buffer.size() + destLen);
 	uint32_t codePoint = 0;
 	uint32_t state = kAccepted;
-	auto i = src;
-	auto end = src + length;
+	const uint8_t* i = src;
+	const uint8_t* const end = src + length;
 
 	while (i < end) {
 		Utf8Decode(*i++, state, codePoint);
@@ -165,8 +165,7 @@ static size_t Utf8CountBytes(const wchar_t* str, size_t length)
 	return result;
 }
 
-// Encode Unicode codepoint `utf32` as UTF-8 into `out`, returning no. of UTF-8 chars
-int Utf8Encode(const uint32_t utf32, char* out)
+static int Utf8Encode(const uint32_t utf32, char* out)
 {
 	if (utf32 < 0x80) {
 		*out++ = static_cast<uint8_t>(utf32);
@@ -191,6 +190,14 @@ int Utf8Encode(const uint32_t utf32, char* out)
 	return 4;
 }
 
+// Encode Unicode codepoint `utf32` as UTF-8
+std::string Utf8Encode(const uint32_t utf32)
+{
+	char buf[4];
+	int len = Utf8Encode(utf32, buf);
+	return std::string(buf, len);
+}
+
 static void ConvertToUtf8(const std::wstring& str, std::string& utf8)
 {
 	char buffer[4];
@@ -204,7 +211,7 @@ static void ConvertToUtf8(const std::wstring& str, std::string& utf8)
 		} else
 			c = str[i];
 
-		auto bufLength = Utf8Encode(c, buffer);
+		int bufLength = Utf8Encode(c, buffer);
 		utf8.append(buffer, bufLength);
 	}
 }

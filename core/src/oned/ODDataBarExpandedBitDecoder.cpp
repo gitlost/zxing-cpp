@@ -8,6 +8,7 @@
 #include "ODDataBarExpandedBitDecoder.h"
 
 #include "BitArray.h"
+#include "Diagnostics.h"
 #include "Error.h"
 #include "GTIN.h"
 
@@ -19,6 +20,7 @@ constexpr char GS = 29; // FNC1
 
 static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	enum State { NUMERIC, ALPHA, ISO_IEC_646 };
 	State state = NUMERIC;
 	std::string res;
@@ -117,6 +119,7 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 
 static std::string DecodeCompressedGTIN(std::string prefix, BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	for (int i = 0; i < 4; ++i)
 		prefix.append(ToString(bits.readBits(10), 3));
 
@@ -127,11 +130,13 @@ static std::string DecodeCompressedGTIN(std::string prefix, BitArrayView& bits)
 
 static std::string DecodeAI01GTIN(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	return DecodeCompressedGTIN("019", bits);
 }
 
 static std::string DecodeAI01AndOtherAIs(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	bits.skipBits(2); // Variable length symbol bit field
 
 	auto header = DecodeCompressedGTIN("01" + std::to_string(bits.readBits(4)), bits);
@@ -144,6 +149,7 @@ static std::string DecodeAI01AndOtherAIs(BitArrayView& bits)
 
 static std::string DecodeAnyAI(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	bits.skipBits(2); // Variable length symbol bit field
 
 	return DecodeGeneralPurposeBits(bits);
@@ -151,6 +157,7 @@ static std::string DecodeAnyAI(BitArrayView& bits)
 
 static std::string DecodeAI013103(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	std::string buffer = DecodeAI01GTIN(bits);
 	buffer.append("3103");
 	buffer.append(ToString(bits.readBits(15), 6));
@@ -160,6 +167,7 @@ static std::string DecodeAI013103(BitArrayView& bits)
 
 static std::string DecodeAI01320x(BitArrayView& bits)
 {
+	Diagnostics::put(__func__);
 	std::string buffer = DecodeAI01GTIN(bits);
 	int weight = bits.readBits(15);
 	buffer.append(weight < 10000 ? "3202" : "3203");
@@ -170,6 +178,7 @@ static std::string DecodeAI01320x(BitArrayView& bits)
 
 static std::string DecodeAI0139yx(BitArrayView& bits, char y)
 {
+	Diagnostics::fmt("%s(%c)", __func__, y);
 	bits.skipBits(2); // Variable length symbol bit field
 
 	std::string buffer = DecodeAI01GTIN(bits);
@@ -189,6 +198,7 @@ static std::string DecodeAI0139yx(BitArrayView& bits, char y)
 
 static std::string DecodeAI013x0x1x(BitArrayView& bits, const char* aiPrefix, const char* dateCode)
 {
+	Diagnostics::fmt("%s(%s,%s)", __func__, aiPrefix, dateCode);
 	std::string buffer = DecodeAI01GTIN(bits);
 	buffer.append(aiPrefix);
 
@@ -216,6 +226,7 @@ static std::string DecodeAI013x0x1x(BitArrayView& bits, const char* aiPrefix, co
 
 std::string DecodeExpandedBits(const BitArray& _bits)
 {
+	Diagnostics::put("  Decode:");
 	auto bits = BitArrayView(_bits);
 	bits.readBits(1); // skip linkage bit
 

@@ -36,7 +36,7 @@ std::vector<DataBlock> GetDataBlocks(const ByteArray& rawCodewords)
 		int NW = (nw - start + step - 1) / step;
 
 		result[start].numDataCodewords = ND;
-		auto& blockCodewords = result[start].codewords;
+		ByteArray& blockCodewords = result[start].codewords;
 		blockCodewords.resize(NW, 0);
 
 		for (int i = 0; i < NW; i++) {

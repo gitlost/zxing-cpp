@@ -181,6 +181,11 @@ static std::string printPositiveTestStats(int imageCount, const TestCase::TC& tc
 		for (const auto& f : tc.notDetectedFiles)
 			fmt::print(" {}", f.filename().string());
 	}
+	if (!tc.misReadFiles.empty()) {
+		fmt::print(", mr {}", Size(tc.misReadFiles));
+		for (const auto& [path, error] : tc.misReadFiles)
+			fmt::print(" {}", path.filename().string());
+	}
 	#endif
 
 	std::string failures;
@@ -338,10 +343,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		// clang-format off
 		runTests("aztec-1", "Aztec", 22, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 21, 21, 0   },
 			{ 21, 21, 90  },
 			{ 21, 21, 180 },
 			{ 21, 21, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 22, 0, pure },
 		});
 
@@ -353,10 +360,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("datamatrix-1", "DataMatrix", 26, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 26, 26, 0   },
 			{  0, 26, 90  },
 			{  0, 26, 180 },
 			{  0, 26, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 25, 0, pure },
 		});
 
@@ -375,10 +384,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("datamatrix-4", "DataMatrix", 21, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 21, 21, 0   },
 			{  0, 21, 90  },
 			{  0, 21, 180 },
 			{  0, 21, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 19, 0, pure },
 		});
 
@@ -428,8 +439,10 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("ean8-1", "EAN-8", 8, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 8, 8, 0   },
 			{ 8, 8, 180 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 7, 0, pure },
 		});
 
@@ -512,17 +525,21 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
 		runTests("upce-1", "UPC-E", 3, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 3, 3, 0   },
 			{ 3, 3, 180 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 3, 0, pure },
 		});
 
 		runTests("upce-2", "UPC-E", 28, {
+			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
 			{ 17, 22, 0, 1, 0   },
 			{ 20, 22, 1, 1, 180 },
 		});
 
 		runTests("upce-3", "UPC-E", 11, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 5, 7, 0   },
 			{ 6, 7, 180 },
 		});
@@ -543,8 +560,10 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("rssexpanded-1", "DataBarExpanded", 33, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 33, 33, 0   },
 			{ 33, 33, 180 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 33, 0, pure },
 		});
 
@@ -554,14 +573,18 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("rssexpanded-3", "DataBarExpanded", 118, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 118, 118, 0   },
 			{ 118, 118, 180 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 118, 0, pure },
 		});
 
 		runTests("rssexpandedstacked-1", "DataBarExpanded", 65, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 60, 65, 0   },
 			{ 60, 65, 180 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 60, 0, pure },
 		});
 
@@ -578,10 +601,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("qrcode-2", "QRCode", 46, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 44, 44, 0   },
 			{ 44, 44, 90  },
 			{ 44, 44, 180 },
 			{ 44, 44, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 21, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
 
@@ -600,10 +625,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("qrcode-5", "QRCode", 16, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 16, 16, 0   },
 			{ 16, 16, 90  },
 			{ 16, 16, 180 },
 			{ 16, 16, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 4, 0, pure },
 		});
 
@@ -619,18 +646,22 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("microqrcode-1", "MicroQRCode", 16, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 15, 15, 0   },
 			{ 15, 15, 90  },
 			{ 15, 15, 180 },
 			{ 14, 14, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 9, 0, pure },
 		});
 
 		runTests("pdf417-1", "PDF417", 17, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 16, 17, 0   },
 			{  1, 17, 90  },
 			{ 16, 17, 180 },
 			{  1, 17, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 17, 0, pure },
 		});
 
@@ -642,10 +673,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("pdf417-3", "PDF417", 16, {
+			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 16, 16, 0   },
 			{  0, 16, 90  },
 			{ 16, 16, 180 },
 			{  0, 16, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 7, 0, pure },
 		});
 
@@ -654,18 +687,22 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("falsepositives-1", "None", 26, {
+			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
 			{ 0, 0, 0, 0, 0   },
 			{ 0, 0, 0, 0, 90  },
 			{ 0, 0, 0, 0, 180 },
 			{ 0, 0, 0, 0, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 0, 0, pure },
 		});
 
 		runTests("falsepositives-2", "None", 25, {
+			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
 			{ 0, 0, 0, 0, 0   },
 			{ 0, 0, 0, 0, 90  },
 			{ 0, 0, 0, 0, 180 },
 			{ 0, 0, 0, 0, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 0, 0, pure },
 		});
 		// clang-format on

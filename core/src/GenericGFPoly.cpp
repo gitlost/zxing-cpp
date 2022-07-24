@@ -26,7 +26,7 @@ GenericGFPoly::evaluateAt(int a) const
 
 	if (a == 1)
 		// Just the sum of the coefficients
-		return Reduce(_coefficients, 0, [this](auto a, auto b) { return _field->add(a, b); });
+		return Reduce(_coefficients, 0, [this](int a, int b) { return _field->add(a, b); });
 
 	int result = _coefficients[0];
 	for (size_t i = 1; i < _coefficients.size(); ++i)

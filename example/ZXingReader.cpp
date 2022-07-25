@@ -5,7 +5,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 
+#ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
+#endif
 #include "pdf417/PDFDecoderResultExtra.h"
 #include "ReadBarcode.h"
 #include "TextUtfEncoding.h"
@@ -47,7 +49,9 @@ static void PrintUsage(const char* exePath)
 			  << "                  Use specific binarizer\n"
 			  << "    -charset <CHARSET>\n"
 			  << "                  Default character set\n"
+#ifdef ZX_DIAGNOSTICS
 			  << "    -diagnostics  Print diagnostics\n"
+#endif
 			  << "\n"
 			  << "Supported formats are:\n" << "   ";
 	for (auto f : BarcodeFormats::all()) {
@@ -108,7 +112,11 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 			}
 			hints.setCharacterSet(argv[i]);
 		} else if (strcmp(argv[i], "-diagnostics") == 0) {
+#ifdef ZX_DIAGNOSTICS
 			hints.setEnableDiagnostics(true);
+#else
+			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
+#endif
 		} else if (strcmp(argv[i], "-1") == 0) {
 			oneLine = true;
 		} else if (strcmp(argv[i], "-escape") == 0) {
@@ -204,10 +212,12 @@ int main(int argc, char* argv[])
 			results = ReadBarcodes(image, hints);
 		} catch (Error e) {
 			std::cerr << filePath << " Exception: " << e.msg() << "\n";
+#ifdef ZX_DIAGNOSTICS
 			if (hints.enableDiagnostics()) {
 				std::cerr << "  Diagnostics: " << Diagnostics::print(nullptr);
 				Diagnostics::clear();
 			}
+#endif
 			continue;
 		}
 
@@ -234,16 +244,20 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
+#ifdef ZX_DIAGNOSTICS
 			if (hints.enableDiagnostics()) {
 				result.setContentDiagnostics();
 			}
+#endif
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
 							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.error());
+#ifdef ZX_DIAGNOSTICS
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
 				}
+#endif
 				std::cout << "\n";
 				continue;
 			}
@@ -331,8 +345,10 @@ int main(int argc, char* argv[])
 			if (result.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 
+#ifdef ZX_DIAGNOSTICS
 			if (hints.enableDiagnostics())
 				std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
+#endif
 		}
 
 		if (Size(filePaths) == 1 && !outPath.empty())

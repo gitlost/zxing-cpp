@@ -42,10 +42,12 @@ MultiFormatReader::MultiFormatReader(const DecodeHints& hints) : _hints(hints)
 		_readers.emplace_back(new Pdf417::Reader(hints));
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(hints));
+	#if 0
 	if (formats.testFlag(BarcodeFormat::DotCode))
 		_readers.emplace_back(new DotCode::Reader(hints));
 	if (formats.testFlag(BarcodeFormat::HanXin))
 		_readers.emplace_back(new HanXin::Reader(hints));
+	#endif
 
 	// At end in "try harder" mode
 	if (formats.testFlags(BarcodeFormat::LinearCodes) && hints.tryHarder())
@@ -80,7 +82,7 @@ Results MultiFormatReader::readMultiple(const BinaryBitmap& image, int maxSymbol
 			auto it = std::remove_if(res.begin(), res.end(), [](auto&& r) { return !r.isValid(); });
 			res.erase(it, res.end());
 		}
-		maxSymbols -= narrow_cast<int>(r.size());
+		maxSymbols -= Size(r);
 		res.insert(res.end(), std::move_iterator(r.begin()), std::move_iterator(r.end()));
 		if (maxSymbols <= 0)
 			break;

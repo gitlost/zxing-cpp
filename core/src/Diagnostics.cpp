@@ -23,8 +23,16 @@
 
 namespace ZXing::Diagnostics {
 
-static thread_local bool _enabled = false;
 static thread_local std::list<std::string> _diagnostics;
+
+const std::list<std::string>& get()
+{
+	return _diagnostics;
+}
+
+#ifdef ZX_DIAGNOSTICS
+
+static thread_local bool _enabled = false;
 
 bool enabled()
 {
@@ -47,11 +55,6 @@ void begin()
 			put("WarnLeftOverDiagnostics");
 		}
 	}
-}
-
-const std::list<std::string>& get()
-{
-	return _diagnostics;
 }
 
 void moveTo(std::list<std::string>& diagnostics)
@@ -267,5 +270,7 @@ void chr(std::list<std::string>* p_diagnostics, const unsigned char value, const
 		put(p_diagnostics, s.str());
 	}
 }
+
+#endif /* ZX_DIAGNOSTICS */
 
 } // ZXing

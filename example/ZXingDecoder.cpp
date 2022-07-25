@@ -19,7 +19,9 @@
 
 #include "BitMatrixIO.h"
 #include "CharacterSet.h"
+#ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
+#endif
 #include "ReadBarcode.h"
 #include "TextDecoder.h"
 #include "TextUtfEncoding.h"
@@ -71,7 +73,9 @@ static void PrintUsage(const char* exePath)
 			  << "    -bits <BITSTREAM>    Bit dump\n"
 			  << "    -width <NUMBER>      Width of bit dump (if omitted 1st LF in bitstream)\n"
 			  << "    -textonly            Return bare text only\n"
+#ifdef ZX_DIAGNOSTICS
 			  << "    -diagnostics         Print diagnostics\n"
+#endif
 			  << "    -hint <HINT[,HINT]>  Hints\n"
 			  << "    -charset <CHARSET>   Default character set\n"
 			  << "Supported formats (case insensitive, with or without '-'):\n  ";
@@ -258,7 +262,11 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints &hints, std::string
 		} else if (strcmp(argv[i], "-textonly") == 0) {
 			textOnly = true;
 		} else if (strcmp(argv[i], "-diagnostics") == 0) {
+#ifdef ZX_DIAGNOSTICS
 			hints.setEnableDiagnostics(true);
+#else
+			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
+#endif
 		} else if (strcmp(argv[i], "-escape") == 0) {
 			angleEscape = true;
 		} else {
@@ -308,14 +316,18 @@ int main(int argc, char* argv[])
 	bool angleEscape = false;
 	int ret = 0;
 	Result result;
+#ifdef ZX_DIAGNOSTICS
 	std::list<std::string> diagnostics;
+#endif
 
 	if (!ParseOptions(argc, argv, hints, bitstream, width, textOnly, angleEscape)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
 
+#ifdef ZX_DIAGNOSTICS
 	Diagnostics::setEnabled(hints.enableDiagnostics());
+#endif
 
 	if (width == 0) {
 		width = static_cast<int>(bitstream.length());
@@ -334,7 +346,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+#ifdef ZX_DIAGNOSTICS
 	Diagnostics::begin();
+#endif
 
 	hints.setIsPure(true);
 
@@ -409,9 +423,11 @@ int main(int argc, char* argv[])
 		return ret;
 	}
 
+#ifdef ZX_DIAGNOSTICS
 	if (hints.enableDiagnostics()) {
 		result.setContentDiagnostics();
 	}
+#endif
 
 	std::cout << "Text:       \"" << (angleEscape ? AngleEscape(result.text()) : result.text()) << "\"\n"
 			  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n";
@@ -467,9 +483,11 @@ int main(int argc, char* argv[])
 	if (result.readerInit())
 		std::cout << "Reader Initialisation/Programming\n";
 
+#ifdef ZX_DIAGNOSTICS
 	if (hints.enableDiagnostics()) {
 		std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
 	}
+#endif
 
 	return ret;
 }

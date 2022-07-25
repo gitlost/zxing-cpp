@@ -4,6 +4,12 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
+/*
+	To run a particular subdirectory only e.g. (from build subdirectory)
+
+		test/blackbox/ReaderTest ../test/samples -taztec-1
+ */
+
 #include "BlackboxTestRunner.h"
 #include "ImageLoader.h"
 #include "ReadBarcode.h"

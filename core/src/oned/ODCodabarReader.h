@@ -15,7 +15,7 @@ class CodabarReader : public RowReader
 public:
 	using RowReader::RowReader;
 
-	Result decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>& state) const override;
+	Result decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const override;
 
 	CodabarReader(const DecodeHints& hints);
 private:

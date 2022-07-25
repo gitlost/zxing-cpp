@@ -75,6 +75,12 @@ static void plotAssistant(unsigned char *grid, const int size, const int x, cons
 	safePlot(grid, size, x + 1, y + 1, 0x10);
 }
 
+// Bogus gcc warning
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow="
+#endif
+
 /* Put static elements in the grid */
 static void setupGrid(unsigned char *grid, const int size, const int version)
 {
@@ -266,6 +272,10 @@ static void setupGrid(unsigned char *grid, const int size, const int version)
 		} while (y < size);
 	}
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 static bool getFunctionalInfo(const BitMatrix& image, const int size, int &version, int &ecLevel, int &mask)
 {

@@ -175,7 +175,7 @@ static std::string printPositiveTestStats(int imageCount, const TestCase::TC& tc
 	int passCount = imageCount - Size(tc.misReadFiles) - Size(tc.notDetectedFiles);
 
 	fmt::print(" | {}: {:3} of {:3}, misread {} of {}", tc.name, passCount, tc.minPassCount, Size(tc.misReadFiles), tc.maxMisreads);
-	#if 1
+	#if 0
 	if (!tc.notDetectedFiles.empty()) {
 		fmt::print(", nd {}", Size(tc.notDetectedFiles));
 		for (const auto& f : tc.notDetectedFiles)
@@ -235,6 +235,7 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 
 	for (auto& test : tests) {
 		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
+		fflush(stdout);
 		std::vector<int> times;
 		std::string failures;
 		for (auto tc : test.tc) {

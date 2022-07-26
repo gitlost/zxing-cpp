@@ -1,28 +1,16 @@
 /*
 * Copyright 2022 gitlost
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 #include "DecoderResult.h"
-#include "Diagnostics.h"
 #include "pdf417/PDFScanningDecoder.h"
 
 #include "gtest/gtest.h"
 
-namespace ZXing { namespace Pdf417 {
-DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures);
-}}
+namespace ZXing::Pdf417 {
+	DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures);
+}
 
 using namespace ZXing;
 using namespace ZXing::Pdf417;
@@ -39,7 +27,7 @@ static DecoderResult decode(std::vector<int>& codewords, int ecLevel = 0)
 TEST(PDF417ScanningDecoderTest, BadSymbolLengthDescriptor)
 {
 	{
-		std::vector<int> codewords = { 4, 1, 683, 675 }; // 4 should be 2
+		std::vector<int> codewords = { 4, 1, 449, 394 }; // 4 should be 2
 
 		auto result = decode(codewords);
 
@@ -48,7 +36,16 @@ TEST(PDF417ScanningDecoderTest, BadSymbolLengthDescriptor)
 		EXPECT_EQ(codewords[0], 2);
 	}
 	{
-		std::vector<int> codewords = { 1, 1, 683, 675 }; // 1 should be 2
+		std::vector<int> codewords = { 1, 1, 800, 351 }; // 1 should be 2
+
+		auto result = decode(codewords);
+
+		EXPECT_TRUE(result.isValid());
+		EXPECT_EQ(result.text(), L"AB");
+		EXPECT_EQ(codewords[0], 2);
+	}
+	{
+		std::vector<int> codewords = { 0, 1, 917, 27 }; // 0 should be 2
 
 		auto result = decode(codewords);
 

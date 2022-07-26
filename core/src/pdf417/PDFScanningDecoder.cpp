@@ -8,23 +8,13 @@
 
 #include "BitMatrix.h"
 #include "DecoderResult.h"
-#include "Diagnostics.h"
 #include "PDFBarcodeMetadata.h"
 #include "PDFBarcodeValue.h"
-#include "PDFBoundingBox.h"
 #include "PDFCodewordDecoder.h"
 #include "PDFDetectionResult.h"
-#include "PDFDetectionResultColumn.h"
 #include "PDFDecodedBitStreamParser.h"
 #include "PDFModulusGF.h"
-#include "ResultPoint.h"
-#include "ZXNullable.h"
 #include "ZXTestSupport.h"
-
-#include <algorithm>
-#include <array>
-#include <cstdlib>
-#include <numeric>
 
 namespace ZXing {
 namespace Pdf417 {
@@ -563,8 +553,9 @@ static bool VerifyCodewordCount(std::vector<int>& codewords, int numECCodewords)
 	if (numberOfCodewords > Size(codewords)) {
 		return false;
 	}
+
 	assert(numECCodewords >= 2);
-	if (numberOfCodewords == 0 || numberOfCodewords + numECCodewords != Size(codewords)) {
+	if (numberOfCodewords + numECCodewords != Size(codewords)) {
 		// Reset to the length of the array less number of Error Codewords
 		if (numECCodewords < Size(codewords)) {
 			codewords[0] = Size(codewords) - numECCodewords;

@@ -230,8 +230,7 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 	auto folderName = directory.stem();
 
 	if (Size(imgPaths) != totalTests)
-		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName, totalTests,
-				   imgPaths.size());
+		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName.string(), totalTests, imgPaths.size());
 
 	for (auto& test : tests) {
 		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
@@ -293,7 +292,8 @@ static void doRunStructuredAppendTest(const fs::path& directory, std::string_vie
 	}
 
 	if (Size(imageGroups) != totalTests)
-		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName, totalTests, imageGroups.size());
+		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName.string(), totalTests,
+				   imageGroups.size());
 
 	for (auto& test : tests) {
 		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
@@ -377,11 +377,11 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{  0, 13, 270 },
 		});
 
-		runTests("datamatrix-3", "DataMatrix", 19, {
-			{ 18, 19, 0   },
-			{  0, 19, 90  },
-			{  0, 19, 180 },
-			{  0, 19, 270 },
+		runTests("datamatrix-3", "DataMatrix", 20, {
+			{ 19, 20, 0   },
+			{  0, 20, 90  },
+			{  0, 20, 180 },
+			{  0, 20, 270 },
 		});
 
 		runTests("datamatrix-4", "DataMatrix", 21, {
@@ -519,7 +519,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 17, 20, 0   },
 			{ 18, 20, 180 },
 		});
-		
+
 		runTests("upca-extension-1", "UPC-A", 6, {
 			{ 4, 4, 0 },
 			{ 3, 4, 180 },

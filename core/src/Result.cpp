@@ -172,13 +172,19 @@ bool Result::operator==(const Result& o) const
 		return IsInside(Center(o.position()), position());
 
 	// linear symbology comparisons only implemented for this->lineCount == 1
-	assert(lineCount() == 1 || (BarcodeFormat::DataBar | BarcodeFormat::DataBarExpanded).testFlags(format())); // TODO: e.g. test/samples/rss14-2 & rssexpanded-2
+	assert(lineCount() == 1 || o.lineCount() == 1);
 
 	// if one line is less than half the length of the other away from the
 	// latter, we consider it to belong to the same symbol
 	auto dTop = maxAbsComponent(o.position().topLeft() - position().topLeft());
-	auto dBot = maxAbsComponent(o.position().bottomLeft() - position().topLeft());
-	auto length = maxAbsComponent(position().topLeft() - position().bottomRight());
+	int dBot, length;
+	if (lineCount() == 1) {
+		dBot = maxAbsComponent(o.position().bottomLeft() - position().topLeft());
+		length = maxAbsComponent(position().topLeft() - position().bottomRight());
+	} else {
+		dBot = maxAbsComponent(position().bottomLeft() - o.position().topLeft());
+		length = maxAbsComponent(o.position().topLeft() - o.position().bottomRight());
+	}
 
 	return std::min(dTop, dBot) < length / 2;
 }

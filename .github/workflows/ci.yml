@@ -56,8 +56,6 @@ jobs:
 
   build-ubuntu-debug:
     runs-on: ubuntu-latest
-    env:
-      BUILD_TYPE: Debug
 
     steps:
     - uses: actions/checkout@v2
@@ -69,17 +67,17 @@ jobs:
     - name: Configure CMake
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_BLACKBOX_TESTS=ON -DBUILD_UNIT_TESTS=ON -DBUILD_PYTHON_MODULE=ON
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DBUILD_BLACKBOX_TESTS=ON -DBUILD_UNIT_TESTS=ON -DBUILD_PYTHON_MODULE=ON
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: cmake --build . -j8 --config $BUILD_TYPE
+      run: cmake --build . -j8 --config Debug
 
     - name: Test
       working-directory: ${{runner.workspace}}/build
       shell: bash
-      run: ctest -V -C $BUILD_TYPE
+      run: ctest -V -C Debug
 
   build-sanitize:
     # Use clang as better sanitize

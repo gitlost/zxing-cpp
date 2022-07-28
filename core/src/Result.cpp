@@ -13,7 +13,6 @@
 #include <cmath>
 #include <list>
 #include <map>
-#include <utility>
 
 namespace ZXing {
 

@@ -124,7 +124,7 @@ TEST(ZXCTypeTest, IsWGraphToStd)
 
 		if (u == 0xA0) { // NO-BREAK SPACE
 			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
-		} else if (u == 0xAD) { // SHY 
+		} else if (u == 0xAD) { // SHY
 			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
 		} else if (u == 0x61C) { // ARABIC LETTER MARK
 			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;

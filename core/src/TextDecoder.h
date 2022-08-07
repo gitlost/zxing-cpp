@@ -22,6 +22,8 @@ public:
 	// If `sjisASCII` set then for Shift_JIS maps ASCII directly (straight-thru), i.e. does not map ASCII backslash & tilde
 	// to Yen sign & overline resp. (JIS X 0201 Roman)
 	static void Append(std::string& str, const uint8_t* bytes, size_t length, CharacterSet charset, bool sjisASCII = true);
+
+	static void Append(std::wstring& str, const uint8_t* bytes, size_t length, CharacterSet charset);
 };
 
 } // ZXing

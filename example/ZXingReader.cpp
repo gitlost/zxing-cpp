@@ -173,11 +173,6 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 		drawLine(image, pos[i], pos[(i + 1) % 4], error);
 }
 
-std::string escapeNonGraphical(const std::string& str)
-{
-	return TextUtfEncoding::AngleEscape(str);
-}
-
 int main(int argc, char* argv[])
 {
 	DecodeHints hints;
@@ -252,7 +247,7 @@ int main(int argc, char* argv[])
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << escapeNonGraphical(result.text()) << "\" " << ToString(result.error());
+							<< " \"" << TextUtfEncoding::EscapeNonGraphical(result.text()) << "\" " << ToString(result.error());
 #ifdef ZX_DIAGNOSTICS
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
@@ -276,8 +271,9 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			std::cout << "Text:       \"" << (angleEscape ? escapeNonGraphical(result.text()) : result.text()) << "\"\n"
+			std::cout << "Text:       \"" << (angleEscape ? TextUtfEncoding::EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
+					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(result.contentType()) << "\n"

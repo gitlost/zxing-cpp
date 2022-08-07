@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.10)
 
 #add_definitions(-DPRINT_DEBUG=1)
 
+include(../zxing.cmake)
+set(ZUECI_STATIC ON CACHE INTERNAL "")
+zxing_add_package(zueci zueci https://git.code.sf.net/p/libzueci/code master)
+
 if (NOT DEFINED BUILD_WRITERS)
     set (BUILD_WRITERS OFF)
 endif()
@@ -441,20 +445,6 @@ if (BUILD_WRITERS)
     )
 endif()
 
-
-set (LIBZUECI_FILES
-    src/libzueci/zueci_big5.h
-    src/libzueci/zueci.c
-    src/libzueci/zueci_common.h
-    src/libzueci/zueci_gb18030.h
-    src/libzueci/zueci_gb2312.h
-    src/libzueci/zueci_gbk.h
-    src/libzueci/zueci.h
-    src/libzueci/zueci_ksx1001.h
-    src/libzueci/zueci_sb.h
-    src/libzueci/zueci_sjis.h
-)
-
 source_group (Sources FILES ${COMMON_FILES})
 source_group (Sources\\aztec FILES ${AZTEC_FILES})
 source_group (Sources\\datamatrix FILES ${DATAMATRIX_FILES})
@@ -464,7 +454,6 @@ source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
 source_group (Sources\\pdf417 FILES ${PDF417_FILES})
 source_group (Sources\\qrcode FILES ${QRCODE_FILES})
-source_group (Sources\\libzueci FILES ${LIBZUECI_FILES})
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -480,7 +469,6 @@ add_library (ZXing
     ${ONED_FILES}
     ${PDF417_FILES}
     ${QRCODE_FILES}
-    ${LIBZUECI_FILES}
 )
 
 target_include_directories (ZXing
@@ -504,7 +492,7 @@ endif()
 
 target_compile_features(ZXing PUBLIC cxx_std_17)
 
-target_link_libraries (ZXing PRIVATE Threads::Threads)
+target_link_libraries (ZXing PRIVATE Threads::Threads zueci-static)
 
 add_library(ZXing::ZXing ALIAS ZXing)
 # add the old alias as well, to keep old clients compiling
@@ -541,8 +529,14 @@ endif()
 
 include (GNUInstallDirs)
 
+# TODO: find a working generator expression for this... :-/
+set(ZX_INSTALL_TARGETS ZXing)
+if (NOT BUILD_SHARED_LIBS)
+    set(ZX_INSTALL_TARGETS ZXing;zueci-static)
+endif()
+
 install (
-    TARGETS ZXing EXPORT ZXingTargets
+    TARGETS ${ZX_INSTALL_TARGETS} EXPORT ZXingTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

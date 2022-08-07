@@ -164,7 +164,7 @@ std::string Content::text(TextMode mode) const
 		else
 			return text(TextMode::Escaped);
 	case TextMode::Hex: return ToHex(bytes);
-	case TextMode::Escaped: return TextUtfEncoding::AngleEscape(render(false));
+	case TextMode::Escaped: return TextUtfEncoding::EscapeNonGraphical(render(false));
 	}
 
 	return {}; // silence compiler warning

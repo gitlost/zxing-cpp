@@ -1,6 +1,6 @@
 /*
-* Copyright 2021 gitlost
-*/
+ * Copyright 2021 gitlost
+ */
 // SPDX-License-Identifier: Apache-2.0
 
 #include "CharacterSet.h"
@@ -8,237 +8,60 @@
 #include "TextEncoder.h"
 
 #include "gtest/gtest.h"
-#include "gmock/gmock.h"
 
 using namespace ZXing;
 using namespace testing;
 
-TEST(TextEncoderTest, Cp437)
+void EnDeCode(CharacterSet cs, const char* in, std::string_view out)
 {
-	CharacterSet cs = CharacterSet::Cp437;
-	{
-		std::string str(u8"\u00C7"); // LATIN CAPITAL LETTER C WITH CEDILLA
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x80");
+	std::string bytes = TextEncoder::FromUnicode(in, cs);
+	EXPECT_EQ(bytes, out);
 
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
+	std::string dec;
+	TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+	EXPECT_EQ(dec, in);
 }
 
-TEST(TextEncoderTest, ISO8859_1)
+TEST(TextEncoderTest, FullCycleEncodeDecode)
 {
-	CharacterSet cs = CharacterSet::ISO8859_1;
-	{
-		std::string str(u8"\u0080");
-		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
-	}
-	{
-		std::string str(u8"\u00A0"); // NO-BREAK SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA0");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_2)
-{
-	CharacterSet cs = CharacterSet::ISO8859_2;
-	{
-		std::string str(u8"\u0104"); // LATIN CAPITAL LETTER A WITH OGONEK
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_3)
-{
-	CharacterSet cs = CharacterSet::ISO8859_3;
-	{
-		std::string str(u8"\u0126"); // LATIN CAPITAL LETTER H WITH STROKE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_4)
-{
-	CharacterSet cs = CharacterSet::ISO8859_4;
-	{
-		std::string str(u8"\u0138"); // LATIN SMALL LETTER KRA
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA2");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_5)
-{
-	CharacterSet cs = CharacterSet::ISO8859_5;
-	{
-		std::string str(u8"\u045F"); // CYRILLIC SMALL LETTER DZHE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_6)
-{
-	CharacterSet cs = CharacterSet::ISO8859_6;
-	{
-		std::string str(u8"\u0652"); // ARABIC SUKUN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xF2");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_7)
-{
-	CharacterSet cs = CharacterSet::ISO8859_7;
-	{
-		std::string str(u8"\u03CE"); // GREEK SMALL LETTER OMEGA WITH TONOS
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFE");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_8)
-{
-	CharacterSet cs = CharacterSet::ISO8859_8;
-	{
-		std::string str(u8"\u05EA"); // HEBREW LETTER TAV
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFA");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_9)
-{
-	CharacterSet cs = CharacterSet::ISO8859_9;
-	{
-		std::string str(u8"\u011E"); // LATIN CAPITAL LETTER G WITH BREVE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xD0");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_10)
-{
-	CharacterSet cs = CharacterSet::ISO8859_10;
-	{
-		std::string str(u8"\u0138"); // LATIN SMALL LETTER KRA
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_11)
-{
-	CharacterSet cs = CharacterSet::ISO8859_11;
-	{
-		std::string str(u8"\u0E5B"); // THAI CHARACTER KHOMUT
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFB");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_13)
-{
-	CharacterSet cs = CharacterSet::ISO8859_13;
-	{
-		std::string str(u8"\u2019"); // RIGHT SINGLE QUOTATION MARK
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xFF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_14)
-{
-	CharacterSet cs = CharacterSet::ISO8859_14;
-	{
-		std::string str(u8"\u1E6B"); // LATIN SMALL LETTER T WITH DOT ABOVE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xF7");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_15)
-{
-	CharacterSet cs = CharacterSet::ISO8859_15;
-	{
-		std::string str(u8"\u00BF"); // INVERTED QUESTION MARK
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xBF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ISO8859_16)
-{
-	CharacterSet cs = CharacterSet::ISO8859_16;
-	{
-		std::string str(u8"\u017C"); // LATIN SMALL LETTER Z WITH DOT ABOVE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xBF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
+	EnDeCode(CharacterSet::Cp437, u8"\u00C7", "\x80"); // LATIN CAPITAL LETTER C WITH CEDILLA
+	EnDeCode(CharacterSet::ISO8859_1, u8"\u00A0", "\xA0"); // NO-BREAK SPACE
+	EnDeCode(CharacterSet::ISO8859_2, u8"\u0104", "\xA1"); // LATIN CAPITAL LETTER A WITH OGONEK
+	EnDeCode(CharacterSet::ISO8859_3, u8"\u0126", "\xA1"); // LATIN CAPITAL LETTER H WITH STROKE
+	EnDeCode(CharacterSet::ISO8859_4, u8"\u0138", "\xA2"); // LATIN SMALL LETTER KRA
+	EnDeCode(CharacterSet::ISO8859_5, u8"\u045F", "\xFF"); // CYRILLIC SMALL LETTER DZHE
+	EnDeCode(CharacterSet::ISO8859_6, u8"\u0652", "\xF2"); // ARABIC SUKUN
+	EnDeCode(CharacterSet::ISO8859_7, u8"\u03CE", "\xFE"); // GREEK SMALL LETTER OMEGA WITH TONOS
+	EnDeCode(CharacterSet::ISO8859_8, u8"\u05EA", "\xFA"); // HEBREW LETTER TAV
+	EnDeCode(CharacterSet::ISO8859_9, u8"\u011E", "\xD0"); // LATIN CAPITAL LETTER G WITH BREVE
+	EnDeCode(CharacterSet::ISO8859_10, u8"\u0138", "\xFF"); // LATIN SMALL LETTER KRA
+	EnDeCode(CharacterSet::ISO8859_11, u8"\u0E5B", "\xFB"); // THAI CHARACTER KHOMUT
+	EnDeCode(CharacterSet::ISO8859_13, u8"\u2019", "\xFF"); // RIGHT SINGLE QUOTATION MARK
+	EnDeCode(CharacterSet::ISO8859_14, u8"\u1E6B", "\xF7"); // LATIN SMALL LETTER T WITH DOT ABOVE
+	EnDeCode(CharacterSet::ISO8859_15, u8"\u00BF", "\xBF"); // INVERTED QUESTION MARK
+	EnDeCode(CharacterSet::ISO8859_16, u8"\u017C", "\xBF"); // LATIN SMALL LETTER Z WITH DOT ABOVE
+//	EnDeCode(CharacterSet::Shift_JIS, u8"\u00A5", "\x5C"); // YEN SIGN Mapped to backslash
+//	EnDeCode(CharacterSet::Shift_JIS, u8"\u203E", "\x7E"); // OVERLINE Mapped to tilde
+	EnDeCode(CharacterSet::Shift_JIS, u8"\u3000", "\x81\x40"); // IDEOGRAPHIC SPACE
+	EnDeCode(CharacterSet::Cp1250, u8"\u20AC", "\x80"); // EURO SIGN
+	EnDeCode(CharacterSet::Cp1251, u8"\u045F", "\x9F"); // CYRILLIC SMALL LETTER DZHE
+	EnDeCode(CharacterSet::Cp1252, u8"\u02DC", "\x98"); // SMALL TILDE
+	EnDeCode(CharacterSet::Cp1256, u8"\u0686", "\x8D"); // ARABIC LETTER TCHEH
+	EnDeCode(CharacterSet::UTF16BE, u8"\u20AC", "\x20\xAC"); // EURO SIGN
+	EnDeCode(CharacterSet::UTF8, u8"\u20AC", "\xE2\x82\xAC"); // EURO SIGN
+	EnDeCode(CharacterSet::ASCII, "#", "#");
+	EnDeCode(CharacterSet::Big5, u8"\u3000", "\xA1\x40"); // IDEOGRAPHIC SPACE
+	EnDeCode(CharacterSet::GB2312, u8"\u3000", "\xA1\xA1"); // IDEOGRAPHIC SPACE
+	EnDeCode(CharacterSet::EUC_KR, u8"\u3000", "\xA1\xA1"); // IDEOGRAPHIC SPACE
+//	EnDeCode(CharacterSet::GBK, u8"\u3000", "\xA1\xA1"); // IDEOGRAPHIC SPACE
+	EnDeCode(CharacterSet::GB18030, u8"\u3000", "\xA1\xA1"); // IDEOGRAPHIC SPACE
+	EnDeCode(CharacterSet::UTF16LE, u8"\u20AC", "\xAC\x20"); // EURO SIGN
+	EnDeCode(CharacterSet::UTF32BE, u8"\u20AC", std::string("\x00\x00\x20\xAC", 4)); // EURO SIGN
+	EnDeCode(CharacterSet::UTF32LE, u8"\u20AC", std::string("\xAC\x20\x00\x00", 4)); // EURO SIGN
+//	EnDeCode(CharacterSet::ISO646_Inv, "%", "%");
+	EnDeCode(CharacterSet::BINARY, u8"\u0080\u00FF", "\x80\xFF");
+	EnDeCode(CharacterSet::Unknown, u8"\u0080", "\x80"); // Treated as binary
+	EnDeCode(CharacterSet::EUC_JP, u8"\u0080", "\x80"); // Not supported, treated as binary
 }
 
 TEST(TextEncoderTest, Shift_JIS)
@@ -262,159 +85,6 @@ TEST(TextEncoderTest, Shift_JIS)
 		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
 		EXPECT_EQ(dec, "~"); // Mapped straight-thru to tilde
 	}
-	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x81\x40");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, Cp1250)
-{
-	CharacterSet cs = CharacterSet::Cp1250;
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x80");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, Cp1251)
-{
-	CharacterSet cs = CharacterSet::Cp1251;
-	{
-		std::string str(u8"\u045F"); // CYRILLIC SMALL LETTER DZHE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x9F");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, Cp1252)
-{
-	CharacterSet cs = CharacterSet::Cp1252;
-	{
-		std::string str(u8"\u02DC"); // SMALL TILDE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x98");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, Cp1256)
-{
-	CharacterSet cs = CharacterSet::Cp1256;
-	{
-		std::string str(u8"\u0686"); // ARABIC LETTER TCHEH
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x8D");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, UnicodeBig)
-{
-	CharacterSet cs = CharacterSet::UnicodeBig; // UTF16BE
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x20\xAC");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, UTF8)
-{
-	CharacterSet cs = CharacterSet::UTF8;
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xE2\x82\xAC");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, ASCII)
-{
-	CharacterSet cs = CharacterSet::ASCII;
-	{
-		std::string str("#");
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "#");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-	{
-		std::string str(u8"\u00A0"); // Not mapped
-		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument);
-	}
-}
-
-TEST(TextEncoderTest, Big5)
-{
-	CharacterSet cs = CharacterSet::Big5;
-	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1\x40");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, GB2312)
-{
-	CharacterSet cs = CharacterSet::GB2312;
-	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, EUC_KR)
-{
-	CharacterSet cs = CharacterSet::EUC_KR;
-	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
 }
 
 TEST(TextEncoderTest, GBK)
@@ -424,62 +94,6 @@ TEST(TextEncoderTest, GBK)
 		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\xA1\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, GB18030)
-{
-	CharacterSet cs = CharacterSet::GB18030;
-	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xA1\xA1");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, UTF16LE)
-{
-	CharacterSet cs = CharacterSet::UTF16LE;
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\xAC\x20");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, UTF32BE)
-{
-	CharacterSet cs = CharacterSet::UTF32BE;
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, std::string("\x00\x00\x20\xAC", 4));
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-}
-
-TEST(TextEncoderTest, UTF32LE)
-{
-	CharacterSet cs = CharacterSet::UTF32LE;
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, std::string("\xAC\x20\x00\x00", 4));
 
 		std::string dec;
 		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
@@ -499,61 +113,32 @@ TEST(TextEncoderTest, ISO646_Inv)
 		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
 		EXPECT_EQ(dec, str);
 	}
+}
+
+TEST(TextEncoderTest, Unmapped)
+{
 	{
+		CharacterSet cs = CharacterSet::ISO8859_1;
+		std::string str(u8"\u0080");
+		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
+	}
+	{
+		CharacterSet cs = CharacterSet::ASCII;
+		std::string str(u8"\u00A0"); // Not mapped
+		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument);
+	}
+	{
+		CharacterSet cs = CharacterSet::ISO646_Inv;
 		std::string str("#"); // Not mapped
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument);
 	}
-}
-
-TEST(TextEncoderTest, BINARY)
-{
-	CharacterSet cs = CharacterSet::BINARY;
 	{
-		std::string str(u8"\u0080\u00FF");
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x80\xFF");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-	{
+		CharacterSet cs = CharacterSet::BINARY;
 		std::string str(u8"\u20AC"); // EURO SIGN
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
 	}
-}
-
-TEST(TextEncoderTest, Unknown)
-{
-	CharacterSet cs = CharacterSet::Unknown; // Treated as binary
 	{
-		std::string str(u8"\u0080");
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x80");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-	{
-		std::string str(u8"\u20AC"); // EURO SIGN
-		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
-	}
-}
-
-TEST(TextEncoderTest, EUC_JP)
-{
-	CharacterSet cs = CharacterSet::EUC_JP; // Not supported, treated as binary
-	{
-		std::string str(u8"\u0080");
-		std::string bytes = TextEncoder::FromUnicode(str, cs);
-		EXPECT_EQ(bytes, "\x80");
-
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
-		EXPECT_EQ(dec, str);
-	}
-	{
+		CharacterSet cs = CharacterSet::Unknown; // Treated as binary
 		std::string str(u8"\u20AC"); // EURO SIGN
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
 	}

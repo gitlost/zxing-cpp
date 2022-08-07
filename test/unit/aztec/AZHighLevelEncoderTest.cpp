@@ -9,7 +9,6 @@
 #include "BitArrayUtility.h"
 #include "DecoderResult.h"
 #include "StructuredAppend.h"
-#include "TextDecoder.h"
 
 #include "gtest/gtest.h"
 #include <algorithm>

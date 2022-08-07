@@ -38,12 +38,13 @@ enum class CharacterSet : unsigned char
 	Shift_JIS,
 	Big5,
 	GB2312,
-	GB18030,
-	EUC_JP, // Not supported (kept for backwards compatibility)
-	EUC_KR,
-	UnicodeBig, // UTF16BE (name kept for backwards compatibility)
-	UTF8,
 	GBK,
+	GB18030,
+	EUC_JP,
+	EUC_KR,
+	UTF16BE,
+	UnicodeBig [[deprecated]] = UTF16BE,
+	UTF8,
 	UTF16LE,
 	UTF32BE,
 	UTF32LE,

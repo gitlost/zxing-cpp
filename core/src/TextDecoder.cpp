@@ -1,5 +1,6 @@
 /*
 * Copyright 2016 Nu-book Inc.
+* Copyright 2022 gitlost
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,14 +10,14 @@
 #include "ECI.h"
 #include "TextUtfEncoding.h"
 #include "ZXAlgorithms.h"
-#include "libzueci/zueci.h"
+#include "zueci.h"
 
 #include <cassert>
+#include <stdexcept>
 
 namespace ZXing {
 
-void
-TextDecoder::Append(std::string& str, const uint8_t* bytes, size_t length, CharacterSet charset, bool sjisASCII)
+void TextDecoder::Append(std::string& str, const uint8_t* bytes, size_t length, CharacterSet charset, bool sjisASCII)
 {
 	int eci = ToInt(ToECI(charset));
 	const size_t str_len = str.length();
@@ -25,15 +26,12 @@ TextDecoder::Append(std::string& str, const uint8_t* bytes, size_t length, Chara
 	const unsigned int flags = ZUECI_FLAG_SB_STRAIGHT_THRU | (sjisASCII ? ZUECI_FLAG_SJIS_STRAIGHT_THRU : 0);
 	int utf8_len;
 
-	if (eci == -1) {
+	if (eci == -1)
 		eci = 899; // Binary
-	}
 
 	int error_number = zueci_dest_len_utf8(eci, bytes, bytes_len, replacement, flags, &utf8_len);
-	if (error_number >= ZUECI_ERROR) {
-		// TODO: throw exception?
-		return;
-	}
+	if (error_number >= ZUECI_ERROR)
+		throw std::runtime_error("zueci_dest_len_utf8 failed");
 
 	str.resize(str_len + utf8_len); // Precise length
 	unsigned char *utf8_buf = reinterpret_cast<unsigned char *>(str.data()) + str_len;
@@ -41,10 +39,16 @@ TextDecoder::Append(std::string& str, const uint8_t* bytes, size_t length, Chara
 	error_number = zueci_eci_to_utf8(eci, bytes, bytes_len, replacement, flags, utf8_buf, &utf8_len);
 	if (error_number >= ZUECI_ERROR) {
 		str.resize(str_len);
-		// TODO: throw exception?
-		return;
+		throw std::runtime_error("zueci_eci_to_utf8 failed");
 	}
 	assert(str.length() == str_len + utf8_len);
+}
+
+void TextDecoder::Append(std::wstring& str, const uint8_t* bytes, size_t length, CharacterSet charset)
+{
+	std::string u8str;
+	Append(u8str, bytes, length, charset);
+	str.append(TextUtfEncoding::FromUtf8(u8str));
 }
 
 /**

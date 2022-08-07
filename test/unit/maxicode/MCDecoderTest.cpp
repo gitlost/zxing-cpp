@@ -160,30 +160,47 @@ TEST(MCDecoderTest, Mode2)
 {
 	// Good data
 	{
-		// Postcode 123400000, Country 840, Class 123 with postcode len 4
-		ByteArray mode2 = { 2, 16, 47, 43, 53, 1, 1, 18, 47, 7 };
-		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "1234\035840\035123\0351"); // Postcode truncated
+		// Postcode 1234, Postcode Length 4, Country 999, Class 999
+		ByteArray mode2 = { 34, 52, 4, 0, 0, 0, 49, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "1234\035999\035999\0351");
+	}
+	{
+		// Postcode 0123, Postcode Length 4, Country 999, Class 999
+		ByteArray mode2 = { 50, 30, 0, 0, 0, 0, 49, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "0123\035999\035999\0351");
+	}
+
+	// Dodgy data (postcode length mismatch)
+	{
+		// Postcode 123456789, Postcode Length 4, Country 999, Class 999
+		ByteArray mode2 = { 18, 5, 13, 47, 53, 1, 49, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "1234\035999\035999\0351"); // Postcode truncated
+	}
+	{
+		// Postcode 123, Postcode Length 4, Country 999, Class 999
+		ByteArray mode2 = { 50, 30, 0, 0, 0, 0, 49, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "0123\035999\035999\0351"); // Postcode zero-filled to len 4
 	}
 
 	// Out-of-range data
 	{
-		// Postcode 1, Country 840, Class 123 with postcode len 10
-		ByteArray mode2 = { 18, 0, 0, 0, 0, 32, 2, 18, 47, 7 };
-		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "000000001\035840\035123\0351"); // Postcode padded to 9
+		// Postcode 1, Postcode Length 10, Country 999, Class 999
+		ByteArray mode2 = { 18, 0, 0, 0, 0, 32, 50, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "000000001\035999\035999\0351"); // Postcode capped to len 9 & zero-filled
 	}
 	{
-		// Postcode 1073741823, Country 840, Class 123 with postcode 0x3FFFFFFF i.e max 30-bits, postcode len 10
-		ByteArray mode2 = { 50, 63, 63, 63, 63, 47, 2, 18, 47, 7 };
-		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "107374182\035840\035123\0351"); // Postcode truncated
+		// Postcode 1073741823 (0x3FFFFFFF, 30-bit max), Postcode Length 10, Country 999, Class 999
+		ByteArray mode2 = { 50, 63, 63, 63, 63, 47, 50, 57, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "107374182\035999\035999\0351"); // Postcode truncated
 	}
 	{
-		// Postcode 12345, Country 1023, Class 123 with country 0x3FF i.e max 10-bits
-		ByteArray mode2 = { 18, 14, 48, 0, 0, 16, 49, 63, 47, 7 };
-		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "12345\035999\035123\0351"); // Country capped to 999
+		// Postcode 12345, Postcode Length 5, Country 1023 (0x3FF, 10-bit max), Class 999
+		ByteArray mode2 = { 18, 14, 48, 0, 0, 16, 49, 63, 31, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "12345\035999\035999\0351"); // Country capped to 999
 	}
 	{
-		// Postcode 123456, Country 840, Class 1000 (0x3E8) with postcode len 8
-		ByteArray mode2 = { 2, 16, 34, 7, 0, 0, 2, 18, 35, 62 };
-		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "00123456\035840\035999\0351"); // Class capped to 999
+		// Postcode 123456, Postcode Length 8, Country 999, Class 1000 (0x3E8)
+		ByteArray mode2 = { 2, 16, 34, 7, 0, 0, 50, 57, 35, 62 };
+		EXPECT_EQ(parse({49}, 2, &mode2).content().utf8(), "00123456\035999\035999\0351"); // Class capped to 999
 	}
 }

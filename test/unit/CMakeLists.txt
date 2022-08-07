@@ -20,6 +20,7 @@ add_executable (UnitTest
     ReedSolomonTest.cpp
     TextEncoderTest.cpp
     TextDecoderTest.cpp
+    TextEncoderTest.cpp
     TextUtfEncodingTest.cpp
     ThresholdBinarizerTest.cpp
     ZXAlgorithmsTest.cpp

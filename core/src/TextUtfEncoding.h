@@ -5,17 +5,17 @@
 
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <string>
+#include <string_view>
 
-namespace ZXing {
-namespace TextUtfEncoding {
+namespace ZXing::TextUtfEncoding {
 
-std::string ToUtf8(const std::wstring& str);
-std::string ToUtf8(const std::wstring& str, const bool angleEscape);
-std::string AngleEscape(std::string_view str);
-std::wstring FromUtf8(const std::string& utf8);
+std::string ToUtf8(std::wstring_view str);
+[[deprecated]] std::string ToUtf8(std::wstring_view str, const bool angleEscape);
+std::wstring FromUtf8(std::string_view utf8);
+
+std::string EscapeNonGraphical(std::wstring_view str);
+std::string EscapeNonGraphical(std::string_view utf8);
 
 void ToUtf8(const std::wstring& str, std::string& utf8);
 
@@ -26,23 +26,4 @@ int Utf8Next(std::string_view str, const int start, int& cnt);
 // Encode Unicode codepoint `utf32` as UTF-8
 std::string Utf8Encode(const uint32_t utf32);
 
-template <typename T>
-bool IsUtf16HighSurrogate(T c)
-{
-	return (c & 0xfc00) == 0xd800;
-}
-
-template <typename T>
-bool IsUtf16LowSurrogate(T c)
-{
-	return (c & 0xfc00) == 0xdc00;
-}
-
-template <typename T>
-uint32_t CodePointFromUtf16Surrogates(T high, T low)
-{
-	return (uint32_t(high) << 10) + low - 0x35fdc00;
-}
-
-} // namespace TextUtfEncoding
-} // namespace ZXing
+} // namespace ZXing::TextUtfEncoding

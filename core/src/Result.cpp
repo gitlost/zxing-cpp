@@ -9,6 +9,8 @@
 #include "ECI.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
+#include "TextDecoder.h"
+#include "ZXAlgorithms.h"
 
 #include <cmath>
 #include <list>
@@ -81,22 +83,20 @@ ByteArray Result::bytesECI() const
 	return _content.bytesECI();
 }
 
+std::string Result::text(TextMode mode) const
+{
+	return _content.text(mode);
+}
+
 std::string Result::utf8() const
 {
 	return _content.utf8();
 }
 
-std::wstring Result::utf16() const
+std::wstring Result::utfW() const
 {
-	return _content.utf16();
+	return _content.utfW();
 }
-
-#if 0
-std::string Result::utf8ECI() const
-{
-	return _content.text(TextMode::Utf8ECI);
-}
-#endif
 
 ContentType Result::contentType() const
 {
@@ -144,10 +144,11 @@ std::string Result::sequenceId() const
 	return _sai.id;
 }
 
-Result& Result::setCharacterSet(CharacterSet defaultCS)
+Result& Result::setDecodeHints(DecodeHints hints)
 {
-	if (defaultCS != CharacterSet::Unknown)
-		_content.hintedCharset = defaultCS;
+	if (hints.characterSet() != CharacterSet::Unknown)
+		_content.hintedCharset = hints.characterSet();
+	_decodeHints = hints;
 	return *this;
 }
 
@@ -171,13 +172,13 @@ bool Result::operator==(const Result& o) const
 		return IsInside(Center(o.position()), position());
 
 	// linear symbology comparisons only implemented for this->lineCount == 1
-	assert(lineCount() == 1 || o.lineCount() == 1);
+	//assert(lineCount() == 1 || o.lineCount() == 1);
 
 	// if one line is less than half the length of the other away from the
 	// latter, we consider it to belong to the same symbol
 	auto dTop = maxAbsComponent(o.position().topLeft() - position().topLeft());
 	int dBot, length;
-	if (lineCount() == 1) {
+	if (lineCount() <= o.lineCount()) {
 		dBot = maxAbsComponent(o.position().bottomLeft() - position().topLeft());
 		length = maxAbsComponent(position().topLeft() - position().bottomRight());
 	} else {

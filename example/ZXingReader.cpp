@@ -8,10 +8,10 @@
 #ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
 #endif
-#include "pdf417/PDFDecoderResultExtra.h"
 #include "ReadBarcode.h"
-#include "TextUtfEncoding.h"
 #include "GTIN.h"
+#include "Utf.h"
+#include "pdf417/PDFDecoderResultExtra.h"
 
 #include <chrono>
 #include <cstring>
@@ -70,18 +70,19 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 						 std::vector<std::string>& filePaths, std::string& outPath)
 {
 	for (int i = 1; i < argc; ++i) {
-		if (strcmp(argv[i], "-fast") == 0) {
+		auto is = [&](const char* str) { return strncmp(argv[i], str, strlen(argv[i])) == 0; };
+		if (is("-fast")) {
 			hints.setTryHarder(false);
-		} else if (strcmp(argv[i], "-norotate") == 0) {
+		} else if (is("-norotate")) {
 			hints.setTryRotate(false);
-		} else if (strcmp(argv[i], "-noscale") == 0) {
+		} else if (is("-noscale")) {
 			hints.setDownscaleThreshold(0);
-		} else if (strcmp(argv[i], "-ispure") == 0) {
+		} else if (is("-ispure")) {
 			hints.setIsPure(true);
 			hints.setBinarizer(Binarizer::FixedThreshold);
-		} else if (strcmp(argv[i], "-errors") == 0) {
+		} else if (is("-errors")) {
 			hints.setReturnErrors(true);
-		} else if (strcmp(argv[i], "-format") == 0) {
+		} else if (is("-format")) {
 			if (++i == argc)
 				return false;
 			try {
@@ -90,7 +91,7 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				std::cerr << e.what() << "\n";
 				return false;
 			}
-		} else if (strcmp(argv[i], "-binarizer") == 0) {
+		} else if (is("-binarizer")) {
 			if (++i == argc)
 				return false;
 			std::string binarizer(argv[i]);
@@ -105,25 +106,25 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				std::cerr << "Unknown binarizer '" << binarizer << "'\n";
 				return false;
 			}
-		} else if (strcmp(argv[i], "-charset") == 0) {
+		} else if (is("-charset")) {
 			if (++i == argc) {
 				std::cerr << "No argument for -charset\n";
 				return false;
 			}
 			hints.setCharacterSet(argv[i]);
-		} else if (strcmp(argv[i], "-diagnostics") == 0) {
+		} else if (is("-diagnostics")) {
 #ifdef ZX_DIAGNOSTICS
 			hints.setEnableDiagnostics(true);
 #else
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
-		} else if (strcmp(argv[i], "-1") == 0) {
+		} else if (is("-1")) {
 			oneLine = true;
-		} else if (strcmp(argv[i], "-escape") == 0) {
+		} else if (is("-escape")) {
 			angleEscape = true;
-		} else if (strcmp(argv[i], "-bytes") == 0) {
+		} else if (is("-bytes")) {
 			bytesOnly = true;
-		} else if (strcmp(argv[i], "-pngout") == 0) {
+		} else if (is("-pngout")) {
 			if (++i == argc)
 				return false;
 			outPath = argv[i];
@@ -184,12 +185,12 @@ int main(int argc, char* argv[])
 	bool bytesOnly = false;
 	int ret = 0;
 
+	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
 	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, bytesOnly, filePaths, outPath)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
-	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
 	std::cout.setf(std::ios::boolalpha);
 
@@ -200,6 +201,7 @@ int main(int argc, char* argv[])
 			std::cerr << "Failed to read image: " << filePath << "\n";
 			continue;
 		}
+		//std::cerr << "File " << filePath << "\n";
 
 		ImageView image{buffer.get(), width, height, ImageFormat::RGB};
 		Results results;
@@ -247,7 +249,7 @@ int main(int argc, char* argv[])
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << TextUtfEncoding::EscapeNonGraphical(result.text()) << "\" " << ToString(result.error());
+							<< " \"" << EscapeNonGraphical(result.text()) << "\" " << ToString(result.error());
 #ifdef ZX_DIAGNOSTICS
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
@@ -271,17 +273,23 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			std::cout << "Text:       \"" << (angleEscape ? TextUtfEncoding::EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
+			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
 					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
-					  << "Content:    " << ToString(result.contentType()) << "\n"
-					  << "HasECI:     " << result.hasECI() << "\n";
+					  << "Content:    " << ToString(result.contentType()) << "\n";
+
+			if (result.contentType() == ContentType::GS1)
+				std::cout << "HRI:        \"" << result.text(TextMode::HRI) << "\"\n";
+
+			std::cout << "HasECI:     " << result.hasECI() << "\n";
+
 			if (Size(result.ECIs()))
 				std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
 			else
 				std::cout << "ECIs:       None\n";
+
 			std::cout << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
 					  << "IsMirrored: " << result.isMirrored() << "\n";

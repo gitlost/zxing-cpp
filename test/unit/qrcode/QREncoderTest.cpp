@@ -9,7 +9,7 @@
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "TextDecoder.h"
-#include "TextUtfEncoding.h"
+#include "Utf.h"
 #include "qrcode/QRCodecMode.h"
 #include "qrcode/QRDecoder.h"
 #include "qrcode/QREncoder.h"
@@ -45,7 +45,7 @@ namespace {
 	{
 		std::string str;
 		TextDecoder::Append(str, bytes.data(), bytes.size(), CharacterSet::Shift_JIS);
-		return TextUtfEncoding::FromUtf8(str);
+		return FromUtf8(str);
 	}
 
 	std::string RemoveSpace(std::string s)
@@ -675,6 +675,6 @@ TEST(QREncoderTest, MEBKM)
 		auto qrCode = Encode(str, ErrorCorrectionLevel::High, CharacterSet::Shift_JIS, 0, false, -1);
 		// Decode maps 0x815F to backslash and so round-trips ok here
 		auto content = Decode(qrCode.matrix).content();
-		EXPECT_EQ(content.utf16(), str);
+		EXPECT_EQ(content.utfW(), str);
 	}
 }

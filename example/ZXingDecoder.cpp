@@ -24,8 +24,8 @@
 #endif
 #include "ReadBarcode.h"
 #include "TextDecoder.h"
-#include "TextUtfEncoding.h"
 #include "ThresholdBinarizer.h"
+#include "Utf.h"
 #include "aztec/AZReader.h"
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
@@ -46,7 +46,6 @@
 #include <vector>
 
 using namespace ZXing;
-using namespace TextUtfEncoding;
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) ((int) (sizeof(x) / sizeof((x)[0])))
@@ -404,10 +403,6 @@ int main(int argc, char* argv[])
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}
 
-	if (hints.characterSet() == CharacterSet::Unknown) {
-		result.setCharacterSet(hints.characterSet());
-	}
-
 	if (!result.isValid()) {
 		ret = 1;
 	}
@@ -418,7 +413,7 @@ int main(int argc, char* argv[])
 			if (text.empty() && !result.bytes().empty()) {
 				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
 			}
-			std::cout << (angleEscape ? AngleEscape(text) : text);
+			std::cout << (angleEscape ? EscapeNonGraphical(text) : text);
 		}
 		return ret;
 	}
@@ -429,7 +424,7 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	std::cout << "Text:       \"" << (angleEscape ? AngleEscape(result.text()) : result.text()) << "\"\n"
+	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
 			  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n";
 
 	if (Size(result.ECIs()))

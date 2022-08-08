@@ -9,7 +9,7 @@
 #include "AZEncoder.h"
 #include "CharacterSet.h"
 #include "TextEncoder.h"
-#include "TextUtfEncoding.h"
+#include "Utf.h"
 
 #include <utility>
 

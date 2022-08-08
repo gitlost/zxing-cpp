@@ -186,7 +186,7 @@ bool Result::operator==(const Result& o) const
 		length = maxAbsComponent(o.position().topLeft() - o.position().bottomRight());
 	}
 
-	return std::min(dTop, dBot) < length / 2;
+	return std::min(dTop, dBot) < length * 4 / 10;
 }
 
 Result MergeStructuredAppendSequence(const Results& results)

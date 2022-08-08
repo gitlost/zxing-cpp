@@ -145,13 +145,13 @@ public:
 	/// Specifies the TextMode that controls the return of the Result::text() function
 	ZX_PROPERTY(TextMode, textMode, setTextMode)
 
-	/// Enable diagnostics.
-	ZX_PROPERTY(bool, enableDiagnostics, setEnableDiagnostics)
-
 	/// Specifies fallback character set to use instead of auto-detecting it (when applicable)
 	ZX_PROPERTY(CharacterSet, characterSet, setCharacterSet)
 	DecodeHints& setCharacterSet(std::string_view v)& { return _characterSet = CharacterSetFromString(v), *this; }
 	DecodeHints&& setCharacterSet(std::string_view v) && { return _characterSet = CharacterSetFromString(v), std::move(*this); }
+
+	/// Enable diagnostics.
+	ZX_PROPERTY(bool, enableDiagnostics, setEnableDiagnostics)
 
 #undef ZX_PROPERTY
 

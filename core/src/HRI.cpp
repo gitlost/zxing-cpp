@@ -292,11 +292,11 @@ std::string HRIFromISO15434(std::string_view str)
 
 	for (char c : str) {
 		switch (c) {
-		case 4: oss << u8"\u1d31\u1d52\u209c"; break; // EOT
-		case 28: oss << u8"\ua7f3\u209b"; break; // FS
-		case 29: oss << u8"\u1d33\u209b"; break; // GS
-		case 30: oss << u8"\u1d3f\u209b"; break; // RS
-		case 31: oss << u8"\u1d41\u209b"; break; // US
+		case 4: oss << u8"\u1d31\u1d52\u209c"; break; // EOT (U+2404)
+		case 28: oss << u8"\ua7f3\u209b"; break; // FS (U+241C)
+		case 29: oss << u8"\u1d33\u209b"; break; // GS (U+241D)
+		case 30: oss << u8"\u1d3f\u209b"; break; // RS (U+241E)
+		case 31: oss << u8"\u1d41\u209b"; break; // US (U+241F)
 		default: oss << c;
 		}
 	}

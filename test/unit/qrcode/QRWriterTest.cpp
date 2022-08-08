@@ -6,7 +6,6 @@
 
 #include "BitMatrixIO.h"
 #include "MultiFormatWriter.h"
-#include "TextUtfEncoding.h"
 #include "qrcode/QRWriter.h"
 #include "qrcode/QRErrorCorrectionLevel.h"
 
@@ -169,7 +168,7 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		BarcodeFormat format = BarcodeFormat::QRCode;
 		auto writer = MultiFormatWriter(format).setMargin(aQRBorder).setEccLevel(bqrEcc);
 		writer.setEncoding(CharacterSet::UTF8);
-		BitMatrix bitmatrix = writer.encode(TextUtfEncoding::FromUtf8(QRText), 0, 0);
+		BitMatrix bitmatrix = writer.encode(QRText, 0, 0);
 		auto actual = ToString(bitmatrix, 'X', ' ', true);
 		EXPECT_EQ(actual,
 "                                                                              \n"

@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
 					  << "Identifier: " << result.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(result.contentType()) << "\n";
 
-			if (result.contentType() == ContentType::GS1)
+			if (result.contentType() == ContentType::GS1 || result.contentType() == ContentType::ISO15434)
 				std::cout << "HRI:        \"" << result.text(TextMode::HRI) << "\"\n";
 
 			std::cout << "HasECI:     " << result.hasECI() << "\n";

@@ -67,7 +67,7 @@ inline char32_t Utf32FromUtf16Surrogates(std::wstring_view str)
 	return (static_cast<char32_t>(str[0]) << 10) + str[1] - 0x35fdc00;
 }
 
-static size_t Utf8CountCodePoints(std::string_view utf8)
+static int Utf8CountCodePoints(std::string_view utf8)
 {
 	int count = 0;
 	for (int start = 0, end = narrow_cast<int>(utf8.length()); start < end; start += count)

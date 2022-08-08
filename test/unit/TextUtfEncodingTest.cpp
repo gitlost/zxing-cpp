@@ -98,32 +98,10 @@ TEST(TextUtfEncodingTest, FromUtf8)
 	EXPECT_EQ(FromUtf8(u8"\U00010000"), L"\U00010000");
 	EXPECT_EQ(FromUtf8(u8"\U00010FFF"), L"\U00010FFF");
 	EXPECT_EQ(FromUtf8("A\xE8\x80\xBFG"), L"A\u803FG"); // U+803F
-}
 
-TEST(TextUtfEncodingTest, FromUtf8Bad)
-{
-	{
-		std::wstring str = FromUtf8("A\xE8\x80\xBF\x80G"); // Bad UTF-8 (extra continuation byte)
-		EXPECT_EQ(str, L"A\u803FG");
-	}
-
-	{
-		std::wstring str = FromUtf8("A\xE8\x80\xC0G"); // Bad UTF-8 (non-continuation byte)
-		EXPECT_EQ(str, L"AG");
-	}
-
-	{
-		std::wstring str = FromUtf8("A\xE8\x80G"); // Bad UTF-8 (missing continuation byte)
-		EXPECT_EQ(str, L"AG");
-	}
-
-	{
-		std::wstring str = FromUtf8("A\xE8G"); // Bad UTF-8 (missing continuation bytes)
-		EXPECT_EQ(str, L"AG");
-	}
-
-	{
-		std::wstring str = FromUtf8("A\xED\xA0\x80G"); // Bad UTF-8 (unpaired high surrogate U+D800)
-		EXPECT_EQ(str, L"AG");
-	}
+	EXPECT_EQ(FromUtf8("A\xE8\x80\xBF\x80G"), L"A\u803FG"); // Bad UTF-8 (extra continuation byte)
+	EXPECT_EQ(FromUtf8("A\xE8\x80\xC0G"), L"AG");           // Bad UTF-8 (non-continuation byte)
+	EXPECT_EQ(FromUtf8("A\xE8\x80G"), L"AG");               // Bad UTF-8 (missing continuation byte)
+	EXPECT_EQ(FromUtf8("A\xE8G"), L"AG");                   // Bad UTF-8 (missing continuation bytes)
+	EXPECT_EQ(FromUtf8("A\xED\xA0\x80G"), L"AG");           // Bad UTF-8 (unpaired high surrogate U+D800)
 }

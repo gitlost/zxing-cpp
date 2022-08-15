@@ -11,6 +11,13 @@
 
 using namespace ZXing;
 
+#if __cplusplus > 201703L
+std::string EscapeNonGraphical(const char8_t* utf8)
+{
+	return EscapeNonGraphical(reinterpret_cast<const char*>(utf8));
+}
+#endif
+
 TEST(TextUtfEncodingTest, ToUtf8)
 {
 	EXPECT_EQ(ToUtf8(L"\u00B6\u0416"), u8"\u00B6\u0416");

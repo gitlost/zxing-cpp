@@ -360,14 +360,14 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 3, 270 },
 		});
 
-		runTests("datamatrix-1", "DataMatrix", 26, {
+		runTests("datamatrix-1", "DataMatrix", 27, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 26, 26, 0   },
+			{ 26, 27, 0   },
 			{  0, 26, 90  },
 			{  0, 26, 180 },
 			{  0, 26, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 25, 0, pure },
+			{ 26, 0, pure },
 		});
 
 		runTests("datamatrix-2", "DataMatrix", 13, {

@@ -314,8 +314,10 @@ static int TextCompaction(const std::vector<int>& codewords, int codeIndex, Cont
 				codeIndex = ProcessTextECI(textCompactionData, index, codewords, codeIndex, code);
 				break;
 			default:
-				if (!TerminatesCompaction(code))
+				if (!TerminatesCompaction(code)) {
+					Diagnostics::fmt("TERMError(%d)", code);
 					throw FormatError();
+				}
 
 				codeIndex--;
 				end = true;
@@ -352,15 +354,17 @@ static int CountByteBatches(int mode, const std::vector<int>& codewords, int cod
 				continue;
 			}
 			if (!TerminatesCompaction(code)) {
-				Diagnostics::put("LINKAGEError");
+				Diagnostics::fmt("LINKAGEError(%d)", code);
 				throw FormatError();
 			}
 			break;
 		}
 		count++;
 	}
-	if (codeIndex > codewords[0])
+	if (codeIndex > codewords[0]) {
+		Diagnostics::put("CODEIDXError");
 		throw FormatError();
+	}
 
 	if (count == 0)
 		return 0;
@@ -372,8 +376,10 @@ static int CountByteBatches(int mode, const std::vector<int>& codewords, int cod
 			count -= 5;
 		}
 	} else { // BYTE_COMPACTION_MODE_LATCH_6
-		if (count % 5 != 0)
+		if (count % 5 != 0) {
+			Diagnostics::put("BYTECOMPError");
 			throw FormatError();
+		}
 	}
 
 	return count / 5;
@@ -499,6 +505,7 @@ static std::string DecodeBase900toBase10(const std::vector<int>& codewords, int 
 	if (!resultString.empty() && resultString.front() == '1')
 		return resultString.substr(1);
 
+	Diagnostics::put("BASE900Error");
 	throw FormatError();
 }
 
@@ -532,8 +539,10 @@ static int NumericCompaction(const std::vector<int>& codewords, int codeIndex, C
 				codeIndex = ProcessECI(codewords, codeIndex, codewords[0], code, result);
 				continue;
 			}
-			if (!TerminatesCompaction(code))
+			if (!TerminatesCompaction(code)) {
+				Diagnostics::fmt("NUMError(%d)", code);
 				throw FormatError();
+			}
 
 			codeIndex--;
 			end = true;
@@ -598,8 +607,10 @@ ZXING_EXPORT_TEST_ONLY
 int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata)
 {
 	// we must have at least two bytes left for the segment index
-	if (codeIndex + NUMBER_OF_SEQUENCE_CODEWORDS > codewords[0])
+	if (codeIndex + NUMBER_OF_SEQUENCE_CODEWORDS > codewords[0]) {
+		Diagnostics::put("MACROBLKError");
 		throw FormatError();
+	}
 
 	std::vector<int> segmentIndexArray(NUMBER_OF_SEQUENCE_CODEWORDS);
 	for (int i = 0; i < NUMBER_OF_SEQUENCE_CODEWORDS; i++, codeIndex++)
@@ -683,7 +694,7 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 				Diagnostics::put("FileSize");
 				break;
 			}
-			default: Diagnostics::put("MACROError"); throw FormatError(); break;
+			default: Diagnostics::put("MACROOPTError"); throw FormatError(); break;
 			}
 			break;
 		}
@@ -757,7 +768,7 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 		case BEGIN_MACRO_PDF417_OPTIONAL_FIELD:
 		case MACRO_PDF417_TERMINATOR:
 			// Should not see these outside a macro block
-			Diagnostics::put("MACROError");
+			Diagnostics::put("MACROTERMError");
 			throw FormatError();
 			break;
 		case READER_INIT:
@@ -795,8 +806,10 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 		}
 	}
 
-	if (result.empty() && resultMetadata->segmentIndex() == -1)
+	if (result.empty() && resultMetadata->segmentIndex() == -1) {
+		Diagnostics::put("SEGIDXError");
 		return FormatError();
+	}
 
 	StructuredAppendInfo sai;
 	if (resultMetadata->segmentIndex() > -1) {

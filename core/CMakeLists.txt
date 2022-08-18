@@ -392,6 +392,8 @@ if (BUILD_READERS)
         src/pdf417/PDFReader.cpp
         src/pdf417/PDFScanningDecoder.h
         src/pdf417/PDFScanningDecoder.cpp
+        #src/pdf417/MicroPDFReader.h
+        #src/pdf417/MicroPDFReader.cpp
     )
 endif()
 if (BUILD_WRITERS)

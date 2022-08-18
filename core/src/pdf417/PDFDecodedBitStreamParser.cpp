@@ -495,6 +495,7 @@ static std::string DecodeBase900toBase10(const std::vector<int>& codewords, int 
 		return table;
 	}();
 
+	Diagnostics::fmt("B900B10(%d)", count);
 	assert(count <= 16);
 
 	BigInteger result;
@@ -505,7 +506,7 @@ static std::string DecodeBase900toBase10(const std::vector<int>& codewords, int 
 	if (!resultString.empty() && resultString.front() == '1')
 		return resultString.substr(1);
 
-	Diagnostics::put("BASE900Error");
+	Diagnostics::fmt("BASE900Error(%s)", resultString.c_str());
 	throw FormatError();
 }
 

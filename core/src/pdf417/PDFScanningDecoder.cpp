@@ -544,6 +544,7 @@ static bool VerifyCodewordCount(std::vector<int>& codewords, int numECCodewords)
 	if (codewords.size() < 4) {
 		// Codeword array size should be at least 4 allowing for
 		// Count CW, At least one Data CW, Error Correction CW, Error Correction CW
+		printf("%s:%d fail\n", __FILE__, __LINE__);
 		return false;
 	}
 	// The first codeword, the Symbol Length Descriptor, shall always encode the total number of data
@@ -551,6 +552,7 @@ static bool VerifyCodewordCount(std::vector<int>& codewords, int numECCodewords)
 	// codewords, but excluding the number of error correction codewords.
 	int numberOfCodewords = codewords[0];
 	if (numberOfCodewords > Size(codewords)) {
+		printf("%s:%d fail\n", __FILE__, __LINE__);
 		return false;
 	}
 
@@ -561,6 +563,7 @@ static bool VerifyCodewordCount(std::vector<int>& codewords, int numECCodewords)
 			codewords[0] = Size(codewords) - numECCodewords;
 		}
 		else {
+			printf("%s:%d fail numECCodewords %d, Size(codewords) %d\n", __FILE__, __LINE__, numECCodewords, Size(codewords));
 			return false;
 		}
 	}

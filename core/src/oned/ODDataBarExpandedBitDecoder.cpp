@@ -29,22 +29,29 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 		int v = bits.readBits(5);
 		if (v == 4) {
 			state = state == ALPHA ? ISO_IEC_646 : ALPHA;
+            Diagnostics::put(state == ALPHA ? "ALPHA" : "ISO646");
 		} else if (v == 15) { // FNC1 + latch to Numeric
 			res.push_back(GS);
 			state = NUMERIC;
+            Diagnostics::put("<GS> NUM");
 			// Allow for some generators incorrectly placing a numeric latch "000" after an FNC1
-			if (bits.size() >= 7 && bits.peakBits(7) < 8)
+			if (bits.size() >= 7 && bits.peakBits(7) < 8) {
 				bits.skipBits(3);
+                Diagnostics::put("Skip(3)");
+            }
 		} else {
 			res.push_back(v + 43);
+            Diagnostics::chr(res.back());
 		}
 	};
 
 	auto isPadding = [](State state, BitArrayView& bits) {
 		bool res = (state == NUMERIC) ? bits.size() < 4
 									  : bits.size() < 5 && (0b00100 >> (5 - bits.size()) == bits.peakBits(bits.size()));
-		if (res)
+		if (res) {
 			bits.skipBits(bits.size());
+            Diagnostics::fmt("Skip(%d)", bits.size());
+        }
 		return res;
 	};
 
@@ -55,15 +62,20 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 				break;
 			if (bits.size() < 7) {
 				int v = bits.readBits(4);
-				if (v > 0)
+				if (v > 0) {
 					res.push_back(ToDigit(v - 1));
+                    Diagnostics::chr(res.back());
+                }
 			} else if (bits.peakBits(4) == 0) {
 				bits.skipBits(4);
 				state = ALPHA;
+                Diagnostics::put("Skip(4) ALPHA");
 			} else {
 				int v = bits.readBits(7);
-				for (int digit : {(v - 8) / 11, (v - 8) % 11})
+				for (int digit : {(v - 8) / 11, (v - 8) % 11}) {
 					res.push_back(digit == 10 ? GS : ToDigit(digit));
+                    Diagnostics::chr(res.back());
+                }
 			}
 			break;
 		case ALPHA:
@@ -78,9 +90,11 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 					res.push_back(lut58to62[v - 58]);
 				else
 					throw FormatError();
+                Diagnostics::chr(res.back());
 			} else if (bits.peakBits(3) == 0) {
 				bits.skipBits(3);
 				state = NUMERIC;
+                Diagnostics::put("Skip(3) NUM");
 			} else {
 				decode5Bits(state, res, bits);
 			}
@@ -91,6 +105,7 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 			if (bits.peakBits(3) == 0) {
 				bits.skipBits(3);
 				state = NUMERIC;
+                Diagnostics::put("Skip(3) NUM");
 			} else {
 				int v = bits.peakBits(5);
 				if (v < 16) {
@@ -98,12 +113,14 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 				} else if (v < 29) {
 					v = bits.readBits(7);
 					res.push_back(v < 90 ? v + 1 : v + 7);
+                    Diagnostics::chr(res.back());
 				} else {
 					constexpr char const* lut232to252 = R"(!"%&'()*+,-./:;<=>?_ )";
 					v = bits.readBits(8);
 					if (v < 232 || 252 < v)
 						throw FormatError();
 					res.push_back(lut232to252[v - 232]);
+                    Diagnostics::chr(res.back());
 				}
 			}
 			break;

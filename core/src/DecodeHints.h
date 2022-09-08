@@ -57,10 +57,10 @@ class DecodeHints
 	bool _validateITFCheckSum      : 1;
 	bool _returnCodabarStartEnd    : 1;
 	bool _returnErrors             : 1;
+    bool _enableDiagnostics        : 1;
 	EanAddOnSymbol _eanAddOnSymbol : 2;
 	Binarizer _binarizer           : 2;
 	TextMode _textMode             : 3;
-    bool _enableDiagnostics        : 1;
 
 	CharacterSet _characterSet   = CharacterSet::Unknown;
 	uint8_t _minLineCount        = 2;
@@ -81,10 +81,10 @@ public:
 		  _validateITFCheckSum(0),
 		  _returnCodabarStartEnd(0),
 		  _returnErrors(0),
+		  _enableDiagnostics(0),
 		  _eanAddOnSymbol(EanAddOnSymbol::Ignore),
 		  _binarizer(Binarizer::LocalAverage),
-		  _textMode(TextMode::Plain),
-		  _enableDiagnostics(0)
+		  _textMode(TextMode::Plain)
 	{}
 
 #define ZX_PROPERTY(TYPE, GETTER, SETTER) \

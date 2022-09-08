@@ -376,7 +376,7 @@ DecoderResult Decode(const DetectorResult& detectorResult)
 		Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
 		Diagnostics::put("  Decode:      ");
 
-		return Decode(bits).setReaderInit(detectorResult.readerInit());
+		return Decode(bits);
 	} catch (Error e) {
 		return e;
 	}

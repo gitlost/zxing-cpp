@@ -35,6 +35,7 @@ static void PrintUsage(const char* exePath)
 	std::cout << "Usage: " << exePath << " [options] <image file>...\n"
 			  << "    -fast         Skip some lines/pixels during detection (faster)\n"
 			  << "    -norotate     Don't try rotated image during detection (faster)\n"
+			  << "    -noinvert     Don't search for inverted codes during detection (faster)\n"
 			  << "    -noscale      Don't try downscaled images during detection (faster)\n"
 			  << "    -format <FORMAT[,...]>\n"
 			  << "                  Only detect given format(s) (faster)\n"
@@ -75,6 +76,8 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 			hints.setTryHarder(false);
 		} else if (is("-norotate")) {
 			hints.setTryRotate(false);
+		} else if (is("-noinvert")) {
+			hints.setTryInvert(false);
 		} else if (is("-noscale")) {
 			hints.setDownscaleThreshold(0);
 		} else if (is("-ispure")) {
@@ -292,7 +295,8 @@ int main(int argc, char* argv[])
 
 			std::cout << "Position:   " << result.position() << "\n"
 					  << "Rotation:   " << result.orientation() << " deg\n"
-					  << "IsMirrored: " << result.isMirrored() << "\n";
+					  << "IsMirrored: " << result.isMirrored() << "\n"
+					  << "IsInverted: " << result.isInverted() << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {
 				if (!v.empty())

@@ -10,6 +10,7 @@
 #include "ImageLoader.h"
 #include "ReadBarcode.h"
 #include "ThresholdBinarizer.h"
+#include "Utf.h"
 #include "ZXAlgorithms.h"
 #include "pdf417/PDFReader.h"
 #include "qrcode/QRReader.h"
@@ -83,6 +84,8 @@ static std::string getResultValue(const Result& result, const std::string& key)
 		return result.isPartOfSequence() ? "true" : "false";
 	if (key == "isMirrored")
 		return result.isMirrored() ? "true" : "false";
+	if (key == "isInverted")
+		return result.isInverted() ? "true" : "false";
 	if (key == "readerInit")
 		return result.readerInit() ? "true" : "false";
 
@@ -136,7 +139,8 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 	}
 
 	if (auto expected = readFile(".txt")) {
-		auto utf8Result = result.text();
+		expected = EscapeNonGraphical(*expected);
+		auto utf8Result = result.text(TextMode::Escaped);
 		return utf8Result != *expected ? fmt::format("Content mismatch: expected '{}' but got '{}'", *expected, utf8Result) : "";
 	}
 
@@ -241,8 +245,10 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 			if (tc.name.empty())
 				break;
 			auto startTime = std::chrono::steady_clock::now();
+			hints.setTryDownscale(false);
 			hints.setTryHarder(tc.name == "slow");
 			hints.setTryRotate(tc.name == "slow");
+			hints.setTryInvert(tc.name == "slow");
 			hints.setIsPure(tc.name == "pure");
 			if (hints.isPure())
 				hints.setBinarizer(Binarizer::FixedThreshold);
@@ -343,21 +349,21 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		auto startTime = std::chrono::steady_clock::now();
 
 		// clang-format off
-		runTests("aztec-1", "Aztec", 22, {
+		runTests("aztec-1", "Aztec", 26, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
+			{ 25, 26, 0   },
+			{ 25, 26, 90  },
+			{ 25, 26, 180 },
+			{ 25, 26, 270 },
+			// <pure minPassCount> <pure maxMisReads> <PureTag>
+			{ 24, 0, pure },
+		});
+
+		runTests("aztec-2", "Aztec", 22, {
 			{ 21, 21, 0   },
 			{ 21, 21, 90  },
 			{ 21, 21, 180 },
 			{ 21, 21, 270 },
-			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 22, 0, pure },
-		});
-
-		runTests("aztec-2", "Aztec", 22, {
-			{ 5, 5, 0   },
-			{ 4, 4, 90  },
-			{ 6, 6, 180 },
-			{ 3, 3, 270 },
 		});
 
 		runTests("datamatrix-1", "DataMatrix", 27, {
@@ -601,12 +607,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 16, 270 },
 		});
 
-		runTests("qrcode-2", "QRCode", 46, {
+		runTests("qrcode-2", "QRCode", 48, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 44, 44, 0   },
-			{ 44, 44, 90  },
-			{ 44, 44, 180 },
-			{ 44, 44, 270 },
+			{ 44, 46, 0   },
+			{ 44, 46, 90  },
+			{ 44, 46, 180 },
+			{ 44, 45, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 21, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});

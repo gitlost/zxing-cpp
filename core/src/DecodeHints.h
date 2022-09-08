@@ -50,6 +50,7 @@ class DecodeHints
 {
 	bool _tryHarder                : 1;
 	bool _tryRotate                : 1;
+	bool _tryInvert                : 1;
 	bool _tryDownscale             : 1;
 	bool _isPure                   : 1;
 	bool _tryCode39ExtendedMode    : 1;
@@ -57,15 +58,15 @@ class DecodeHints
 	bool _validateITFCheckSum      : 1;
 	bool _returnCodabarStartEnd    : 1;
 	bool _returnErrors             : 1;
+	uint8_t _downscaleFactor       : 3;
     bool _enableDiagnostics        : 1;
 	EanAddOnSymbol _eanAddOnSymbol : 2;
 	Binarizer _binarizer           : 2;
 	TextMode _textMode             : 3;
+	CharacterSet _characterSet     : 6;
 
-	CharacterSet _characterSet   = CharacterSet::Unknown;
 	uint8_t _minLineCount        = 2;
 	uint8_t _maxNumberOfSymbols  = 0xff;
-	uint8_t _downscaleFactor     = 3;
 	uint16_t _downscaleThreshold = 500;
 	BarcodeFormats _formats      = BarcodeFormat::None;
 
@@ -74,6 +75,7 @@ public:
 	DecodeHints()
 		: _tryHarder(1),
 		  _tryRotate(1),
+		  _tryInvert(1),
 		  _tryDownscale(1),
 		  _isPure(0),
 		  _tryCode39ExtendedMode(0),
@@ -81,10 +83,12 @@ public:
 		  _validateITFCheckSum(0),
 		  _returnCodabarStartEnd(0),
 		  _returnErrors(0),
+		  _downscaleFactor(3),
 		  _enableDiagnostics(0),
 		  _eanAddOnSymbol(EanAddOnSymbol::Ignore),
 		  _binarizer(Binarizer::LocalAverage),
-		  _textMode(TextMode::Plain)
+		  _textMode(TextMode::Plain),
+		  _characterSet(CharacterSet::Unknown)
 	{}
 
 #define ZX_PROPERTY(TYPE, GETTER, SETTER) \
@@ -100,6 +104,9 @@ public:
 
 	/// Also try detecting code in 90, 180 and 270 degree rotated images.
 	ZX_PROPERTY(bool, tryRotate, setTryRotate)
+
+	/// Also try detecting inverted ("reversed reflectance") codes if the format allows for those.
+	ZX_PROPERTY(bool, tryInvert, setTryInvert)
 
 	/// Also try detecting code in downscaled images (depending on image size).
 	ZX_PROPERTY(bool, tryDownscale, setTryDownscale)

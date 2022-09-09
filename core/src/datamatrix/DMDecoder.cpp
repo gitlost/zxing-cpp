@@ -397,6 +397,9 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 	} catch (Error e) {
 		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
 		error = std::move(e);
+	} catch (const std::exception& e) {
+		Diagnostics::fmt("FMTError(%s)", e.what());
+		error = FormatError(e.what());
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 

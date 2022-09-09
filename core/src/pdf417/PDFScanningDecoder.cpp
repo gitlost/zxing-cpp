@@ -588,6 +588,8 @@ DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const st
 		return DecodedBitStreamParser::Decode(codewords, ecLevel);
 	} catch (Error e) {
 		return e;
+	} catch (const std::exception& e) {
+		return FormatError(e.what());
 	}
 }
 

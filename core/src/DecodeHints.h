@@ -87,7 +87,7 @@ public:
 		  _enableDiagnostics(0),
 		  _eanAddOnSymbol(EanAddOnSymbol::Ignore),
 		  _binarizer(Binarizer::LocalAverage),
-		  _textMode(TextMode::Plain),
+		  _textMode(TextMode::HRI),
 		  _characterSet(CharacterSet::Unknown)
 	{}
 

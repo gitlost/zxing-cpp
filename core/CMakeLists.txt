@@ -517,7 +517,7 @@ endif()
 
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
-if (APPLE)
+if (APPLE AND BUILD_APPLE_FRAMEWORK)
     set_target_properties(ZXing PROPERTIES
         FRAMEWORK TRUE
         FRAMEWORK_VERSION "C"
@@ -530,7 +530,7 @@ if (APPLE)
         #MACOSX_FRAMEWORK_INFO_PLIST Info.plist
         PUBLIC_HEADER "${PUBLIC_HEADERS}"
         XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer"
-        XCODE_ATTRIBUTE_ENABLE_BITCODE "YES"
+        XCODE_ATTRIBUTE_ENABLE_BITCODE "NO"
     )
 endif()
 

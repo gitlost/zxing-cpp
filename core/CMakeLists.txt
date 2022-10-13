@@ -220,6 +220,26 @@ if (BUILD_WRITERS)
 endif()
 
 
+set (CODABLOCKF_FILES
+)
+if (BUILD_READERS)
+    set (CODABLOCKF_FILES ${CODABLOCKF_FILES}
+        src/codablockf/CBFReader.h
+        src/codablockf/CBFReader.cpp
+    )
+endif()
+
+
+set (CODE16K_FILES
+)
+if (BUILD_READERS)
+    set (CODE16K_FILES ${CODE16K_FILES}
+        src/code16k/C16KReader.h
+        src/code16k/C16KReader.cpp
+    )
+endif()
+
+
 set (DATAMATRIX_FILES
     src/datamatrix/DMBitLayout.h
     src/datamatrix/DMBitLayout.cpp
@@ -454,6 +474,8 @@ endif()
 
 source_group (Sources FILES ${COMMON_FILES})
 source_group (Sources\\aztec FILES ${AZTEC_FILES})
+source_group (Sources\\codablockf FILES ${CODABLOCKF_FILES})
+source_group (Sources\\code16k FILES ${CODE16K_FILES})
 source_group (Sources\\datamatrix FILES ${DATAMATRIX_FILES})
 source_group (Sources\\dotcode FILES ${DOTCODE_FILES})
 source_group (Sources\\hanxin FILES ${HANXIN_FILES})
@@ -469,6 +491,8 @@ find_package(Threads REQUIRED)
 add_library (ZXing
     ${COMMON_FILES}
     ${AZTEC_FILES}
+    ${CODABLOCKF_FILES}
+    ${CODE16K_FILES}
     ${DATAMATRIX_FILES}
     ${DOTCODE_FILES}
     ${HANXIN_FILES}

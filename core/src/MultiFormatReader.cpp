@@ -13,6 +13,8 @@
 #include "Result.h"
 #include "ZXAlgorithms.h"
 #include "aztec/AZReader.h"
+#include "codablockf/CBFReader.h"
+#include "code16k/C16KReader.h"
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
 #include "hanxin/HXReader.h"
@@ -43,10 +45,14 @@ MultiFormatReader::MultiFormatReader(const DecodeHints& hints) : _hints(hints)
 		_readers.emplace_back(new Pdf417::Reader(hints));
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(hints));
-	#if 0
-	if (formats.testFlag(BarcodeFormat::DotCode))
+	#if 1
+	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::CodablockF))
+		_readers.emplace_back(new CodablockF::Reader(hints));
+	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::Code16K))
+		_readers.emplace_back(new Code16K::Reader(hints));
+	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::DotCode))
 		_readers.emplace_back(new DotCode::Reader(hints));
-	if (formats.testFlag(BarcodeFormat::HanXin))
+	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::HanXin))
 		_readers.emplace_back(new HanXin::Reader(hints));
 	#endif
 

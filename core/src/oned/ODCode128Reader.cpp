@@ -39,139 +39,123 @@ static const int CODE_START_B = 104;
 static const int CODE_START_C = 105;
 static const int CODE_STOP = 106;
 
-class Raw2TxtDecoder
+Code128Decoder::Code128Decoder(int startCode) : codeSet(204 - startCode)
 {
-	int codeSet = 0;
-	SymbologyIdentifier _symbologyIdentifier = {'C', '0'}; // ISO/IEC 15417:2007 Annex C Table C.1
-	bool _readerInit = false;
-	std::string txt;
-	size_t lastTxtSize = 0;
+	txt.reserve(20);
+}
 
-	bool fnc4All = false;
-	bool fnc4Next = false;
-	bool shift = false;
-
-	void fnc1(const bool isCodeSetC)
-	{
-		if (txt.empty()) {
-			// ISO/IEC 15417:2007 Annex B.1 and GS1 General Specifications 21.0.1 Section 5.4.3.7
-			// If the first char after the start code is FNC1 then this is GS1-128.
-			_symbologyIdentifier.modifier = '1';
-			// GS1 General Specifications Section 5.4.6.4
-			// "Transmitted data ... is prefixed by the symbology identifier ]C1, if used."
-			// Choosing not to use symbology identifier, i.e. to not prefix to data.
-			Diagnostics::put("FNC1(GS1)");
-			_symbologyIdentifier.aiFlag = AIFlag::GS1;
-		}
-		else if ((isCodeSetC && txt.size() == 2 && txt[0] >= '0' && txt[0] <= '9' && txt[1] >= '0' && txt[1] <= '9')
-				|| (!isCodeSetC && txt.size() == 1 && ((txt[0] >= 'A' && txt[0] <= 'Z')
-														|| (txt[0] >= 'a' && txt[0] <= 'z')))) {
-			// ISO/IEC 15417:2007 Annex B.2
-			// FNC1 in second position following Code Set C "00-99" or Code Set A/B "A-Za-z" - AIM
-			_symbologyIdentifier.modifier = '2';
-			Diagnostics::fmt("FNC1(AIM %s)", txt.c_str());
-			_symbologyIdentifier.aiFlag = AIFlag::AIM;
-		}
-		else {
-			// ISO/IEC 15417:2007 Annex B.3. Otherwise FNC1 is returned as ASCII 29 (GS)
-			txt.push_back((char)29);
-			Diagnostics::put("FNC1(29)");
-		}
-	};
-
-public:
-	Raw2TxtDecoder(int startCode) : codeSet(204 - startCode)
-	{
-		txt.reserve(20);
+void Code128Decoder::fnc1(const bool isCodeSetC)
+{
+	if (txt.empty()) {
+		// ISO/IEC 15417:2007 Annex B.1 and GS1 General Specifications 21.0.1 Section 5.4.3.7
+		// If the first char after the start code is FNC1 then this is GS1-128.
+		_symbologyIdentifier.modifier = '1';
+		// GS1 General Specifications Section 5.4.6.4
+		// "Transmitted data ... is prefixed by the symbology identifier ]C1, if used."
+		// Choosing not to use symbology identifier, i.e. to not prefix to data.
+		Diagnostics::put("FNC1(GS1)");
+		_symbologyIdentifier.aiFlag = AIFlag::GS1;
 	}
+	else if ((isCodeSetC && txt.size() == 2 && txt[0] >= '0' && txt[0] <= '9' && txt[1] >= '0' && txt[1] <= '9')
+			|| (!isCodeSetC && txt.size() == 1 && ((txt[0] >= 'A' && txt[0] <= 'Z')
+													|| (txt[0] >= 'a' && txt[0] <= 'z')))) {
+		// ISO/IEC 15417:2007 Annex B.2
+		// FNC1 in second position following Code Set C "00-99" or Code Set A/B "A-Za-z" - AIM
+		_symbologyIdentifier.modifier = '2';
+		Diagnostics::fmt("FNC1(AIM %s)", txt.c_str());
+		_symbologyIdentifier.aiFlag = AIFlag::AIM;
+	}
+	else {
+		// ISO/IEC 15417:2007 Annex B.3. Otherwise FNC1 is returned as ASCII 29 (GS)
+		txt.push_back((char)29);
+		Diagnostics::put("FNC1(29)");
+	}
+}
 
-	bool decode(int code)
-	{
-		lastTxtSize = txt.size();
+bool Code128Decoder::decode(int code)
+{
+	lastTxtSize = txt.size();
 
-		if (codeSet == CODE_CODE_C) {
-			if (code < 100) {
-				txt.append(ToString(code, 2));
-				Diagnostics::fmt("%02d", code);
-			} else if (code == CODE_FNC_1) {
-				fnc1(true /*isCodeSetC*/);
+	if (codeSet == CODE_CODE_C) {
+		if (code < 100) {
+			txt.append(ToString(code, 2));
+			Diagnostics::fmt("%02d", code);
+		} else if (code == CODE_FNC_1) {
+			fnc1(true /*isCodeSetC*/);
+		} else {
+			codeSet = code; // CODE_A / CODE_B
+			Diagnostics::fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
+		}
+	} else { // codeSet A or B
+		bool unshift = shift;
+
+		switch (code) {
+		case CODE_FNC_1: fnc1(false /*isCodeSetC*/); break;
+		case CODE_FNC_2:
+			// Message Append - do nothing?
+			Diagnostics::put("FNC2");
+			break;
+		case CODE_FNC_3:
+			_prevReaderInit = _readerInit; // Could be processing checksum so need to record previous state
+			_readerInit = true; // Can occur anywhere in the symbol (ISO/IEC 15417:2007 4.3.4.2 (c))
+			Diagnostics::put("RInit");
+			break;
+		case CODE_SHIFT:
+			if (shift) {
+				Diagnostics::put("2ShiftsError");
+				return false; // two shifts in a row make no sense
+			}
+			shift = true;
+			codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
+			Diagnostics::fmt("Sh%c", codeSet == CODE_CODE_A ? 'A' : 'B');
+			break;
+		case CODE_CODE_A:
+		case CODE_CODE_B:
+			if (codeSet == code) {
+				// FNC4
+				if (fnc4Next)
+					fnc4All = !fnc4All;
+				fnc4Next = !fnc4Next;
+				Diagnostics::put("FNC4");
 			} else {
-				codeSet = code; // CODE_A / CODE_B
+				codeSet = code;
 				Diagnostics::fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
 			}
-		} else { // codeSet A or B
-			bool unshift = shift;
+			break;
+		case CODE_CODE_C: codeSet = CODE_CODE_C;
+			Diagnostics::put("CodeC");
+			break;
 
-			switch (code) {
-			case CODE_FNC_1: fnc1(false /*isCodeSetC*/); break;
-			case CODE_FNC_2:
-				// Message Append - do nothing?
-				Diagnostics::put("FNC2");
-				break;
-			case CODE_FNC_3:
-				_readerInit = true; // Can occur anywhere in the symbol (ISO/IEC 15417:2007 4.3.4.2 (c))
-				Diagnostics::put("RInit");
-				break;
-			case CODE_SHIFT:
-				if (shift) {
-					Diagnostics::put("2ShiftsError");
-					return false; // two shifts in a row make no sense
-				}
-				shift = true;
-				codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
-				Diagnostics::fmt("Sh%c", codeSet == CODE_CODE_A ? 'A' : 'B');
-				break;
-			case CODE_CODE_A:
-			case CODE_CODE_B:
-				if (codeSet == code) {
-					// FNC4
-					if (fnc4Next)
-						fnc4All = !fnc4All;
-					fnc4Next = !fnc4Next;
-					Diagnostics::put("FNC4");
-				} else {
-					codeSet = code;
-					Diagnostics::fmt("Code%c", codeSet == CODE_CODE_A ? 'A' : 'B');
-				}
-				break;
-			case CODE_CODE_C: codeSet = CODE_CODE_C;
-				Diagnostics::put("CodeC");
-				break;
-
-			default: {
-				// code < 96 at this point
-				int offset;
-				if (codeSet == CODE_CODE_A && code >= 64)
-					offset = fnc4All == fnc4Next ? -64 : +64;
-				else
-					offset = fnc4All == fnc4Next ? ' ' : ' ' + 128;
-				txt.push_back((char)(code + offset));
-				fnc4Next = false;
-				Diagnostics::chr(txt.back());
-				break;
-			}
-			}
-
-			// Unshift back to another code set if we were shifted
-			if (unshift) {
-				codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
-				shift = false;
-			}
+		default: {
+			// code < 96 at this point
+			int offset;
+			if (codeSet == CODE_CODE_A && code >= 64)
+				offset = fnc4All == fnc4Next ? -64 : +64;
+			else
+				offset = fnc4All == fnc4Next ? ' ' : ' ' + 128;
+			txt.push_back((char)(code + offset));
+			fnc4Next = false;
+			Diagnostics::chr(txt.back());
+			break;
+		}
 		}
 
-		return true;
+		// Unshift back to another code set if we were shifted
+		if (unshift) {
+			codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
+			shift = false;
+		}
 	}
 
-	std::string text() const
-	{
-		// Need to pull out the check digit(s) from string (if the checksum code happened to
-		// be a printable character).
-		return txt.substr(0, lastTxtSize);
-	}
+	return true;
+}
 
-	SymbologyIdentifier symbologyIdentifier() const { return _symbologyIdentifier; }
-	bool readerInit() const { return _readerInit; }
-};
+std::string Code128Decoder::text() const
+{
+	// Need to pull out the check digit(s) from string (if the checksum code happened to
+	// be a printable character).
+	return txt.substr(0, lastTxtSize);
+}
 
 template <typename C>
 static int DetectStartCode(const C& c)
@@ -252,7 +236,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	rawCodes.push_back(narrow_cast<uint8_t>(startCode));
 	Diagnostics::fmt("  Decode: Start%c", startCode == CODE_START_A ? 'A' : startCode == CODE_START_B ? 'B' : 'C');
 
-	Raw2TxtDecoder raw2txt(startCode);
+	Code128Decoder raw2txt(startCode);
 
 	while (true) {
 		if (!next.skipSymbol()) {
@@ -306,10 +290,11 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 		Diagnostics::fmt("CSumError(%d)", rawCodes.back());
 		error = ChecksumError();
 	}
+	bool readerInit = checksum == CODE_FNC_3 ? raw2txt.prevReaderInit() : raw2txt.readerInit(); // Allow for bogus CODE_FNC_3
 
 	int xStop = next.pixelsTillEnd();
 	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, raw2txt.symbologyIdentifier(), error,
-				  raw2txt.readerInit());
+				  readerInit);
 }
 
 } // namespace ZXing::OneD

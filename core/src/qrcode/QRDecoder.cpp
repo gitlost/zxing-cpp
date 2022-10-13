@@ -318,8 +318,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			}
 			}
 		}
-	} catch (std::out_of_range& e) { // see BitSource::readBits
-		Diagnostics::fmt("FMTError(%s)", e.what());
+	} catch (const std::out_of_range& e) { // see BitSource::readBits
+		Diagnostics::fmt("FMTError(OutOfRange)");
 		error = FormatError("Truncated bit stream");
 	} catch (Error e) {
 		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
@@ -342,8 +342,8 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 
 	auto formatInfo = ReadFormatInformation(bits, version.isMicroQRCode());
 	if (!formatInfo.isValid())
-		return FormatError("Invalid format informatino");
-	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %d)\n", bits.height(), bits.width(), (bits.width() - 17) / 4);
+		return FormatError("Invalid format information");
+	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %s%d)\n", bits.height(), bits.width(), version.isMicroQRCode() ? "M" : "", version.versionNumber());
 	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask);
 
 	// Read codewords

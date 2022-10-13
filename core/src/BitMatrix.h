@@ -149,6 +149,8 @@ BitMatrix Inflate(BitMatrix&& input, int width, int height, int quietZone);
 
 BitMatrix InflateXY(BitMatrix&& input, int width, int height, int xQuietZone = 0, int yQuietZone = 0);
 
+BitMatrix AddQuietZones(BitMatrix&& input, int xQuietZone, int yQuietZone);
+
 /**
  * @brief Deflate (crop + subsample) a bit matrix
  * @param matrix

@@ -449,7 +449,7 @@ static DecoderResult DoDecode(const BitMatrix& bits)
 	const Version* version = VersionForDimensionsOf(bits);
 	if (version == nullptr)
 		return FormatError("Invalid matrix dimension");
-	Diagnostics::fmt("  Dimensions:    %dx%d (HxW)\n", bits.height(), bits.width());
+	Diagnostics::fmt("  Dimensions:    %dx%d (HxW) (Version %d)\n", bits.height(), bits.width(), version->versionNumber);
 
 	// Read codewords
 	ByteArray codewords = CodewordsFromBitMatrix(bits, *version);

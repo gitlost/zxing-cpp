@@ -58,7 +58,7 @@ public:
 	std::list<std::string>* p_diagnostics = nullptr;
 
 	Content();
-	Content(ByteArray&& bytes, SymbologyIdentifier si);
+	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);

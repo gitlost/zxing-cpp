@@ -118,6 +118,7 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 		} else if (is("-diagnostics")) {
 #ifdef ZX_DIAGNOSTICS
 			hints.setEnableDiagnostics(true);
+			hints.setReturnErrors(true);
 #else
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
@@ -254,7 +255,7 @@ int main(int argc, char* argv[])
 
 			if (oneLine) {
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << EscapeNonGraphical(result.text()) << "\" " << ToString(result.error());
+							<< " \"" << EscapeNonGraphical(result.text(TextMode::Plain)) << "\" " << ToString(result.error());
 #ifdef ZX_DIAGNOSTICS
 				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
@@ -278,7 +279,7 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
+			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n"
 					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
 					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
@@ -313,12 +314,12 @@ int main(int argc, char* argv[])
 
 			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
 					.testFlag(result.format())) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(), result.format()));
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(TextMode::Plain), result.format()));
 				printOptional("Add-On:     ", GTIN::EanAddOn(result));
 				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
 				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
 			} else if (result.format() == BarcodeFormat::ITF && Size(result.bytes()) == 14) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(), result.format()));
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(TextMode::Plain), result.format()));
 			}
 
 			if (result.isPartOfSequence()) {

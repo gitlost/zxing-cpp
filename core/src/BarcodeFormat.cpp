@@ -25,6 +25,8 @@ static BarcodeFormatName NAMES[] = {
 	{BarcodeFormat::None, "None"},
 	{BarcodeFormat::Aztec, "Aztec"},
 	{BarcodeFormat::Codabar, "Codabar"},
+	{BarcodeFormat::CodablockF, "CodablockF"},
+	{BarcodeFormat::Code16K, "Code16K"},
 	{BarcodeFormat::Code39, "Code39"},
 	{BarcodeFormat::Code93, "Code93"},
 	{BarcodeFormat::Code128, "Code128"},

@@ -310,3 +310,12 @@ TEST(DMDecodeTest, ReaderInit)
 	EXPECT_FALSE(parse({233, 42, 1, 1, 234, 50}).readerInit());
 	EXPECT_FALSE(parse({233, 42, 1, 1, 234, 50}).isValid());
 }
+
+TEST(DMDecodeTest, OutOfRange)
+{
+	DecoderResult result = parse({98, 241}); // ECI
+	EXPECT_EQ(result.text(), L"a");
+	EXPECT_FALSE(result.isValid());
+	EXPECT_TRUE(result.isValid(true /*includeErrors*/));
+	EXPECT_EQ(result.error(), Error::Format);
+}

@@ -19,7 +19,7 @@
 namespace ZXing {
 
 Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error, bool readerInit)
-	: _content({ByteArray(text)}, si),
+	: _content({ByteArray(text)}, si, CharacterSet::ISO8859_1),
 	  _error(error),
 	  _position(Line(y, xStart, xStop)),
 	  _format(format),

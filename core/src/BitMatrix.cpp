@@ -187,6 +187,26 @@ BitMatrix InflateXY(BitMatrix&& input, int width, int height, int xQuietZone, in
 	return result;
 }
 
+BitMatrix AddQuietZones(BitMatrix&& input, int xQuietZone, int yQuietZone)
+{
+	const int outputWidth = input.width() + 2 * xQuietZone;
+	const int outputHeight = input.height() + 2 * yQuietZone;
+
+	if (input.width() == outputWidth && input.height() == outputHeight)
+		return std::move(input);
+
+	BitMatrix result(outputWidth, outputHeight);
+
+	for (int inputY = 0, outputY = yQuietZone; inputY < input.height(); ++inputY, ++outputY) {
+		for (int inputX = 0, outputX = xQuietZone; inputX < input.width(); ++inputX, ++outputX) {
+			if (input.get(inputX, inputY))
+				result.set(outputX, outputY);
+		}
+	}
+
+	return result;
+}
+
 BitMatrix Deflate(const BitMatrix& input, int width, int height, float top, float left, float subSampling)
 {
 	BitMatrix result(width, height);

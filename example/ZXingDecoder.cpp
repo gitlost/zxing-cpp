@@ -27,6 +27,8 @@
 #include "ThresholdBinarizer.h"
 #include "Utf.h"
 #include "aztec/AZReader.h"
+#include "codablockf/CBFReader.h"
+#include "code16k/C16KReader.h"
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
 #include "hanxin/HXReader.h"
@@ -355,6 +357,14 @@ int main(int argc, char* argv[])
 		Aztec::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 
+	} else if (hints.formats() == BarcodeFormat::CodablockF) {
+		CodablockF::Reader reader(hints);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+
+	} else if (hints.formats() == BarcodeFormat::Code16K) {
+		Code16K::Reader reader(hints);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+
 	} else if (hints.formats() == BarcodeFormat::DataMatrix) {
 		DataMatrix::Reader reader(hints);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
@@ -409,7 +419,7 @@ int main(int argc, char* argv[])
 
 	if (textOnly) {
 		if (ret == 0) {
-			std::string text = result.text();
+			std::string text = result.text(TextMode::Plain);
 			if (text.empty() && !result.bytes().empty()) {
 				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
 			}
@@ -424,7 +434,7 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text()) : result.text()) << "\"\n"
+	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n"
 			  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n";
 
 	if (Size(result.ECIs()))
@@ -435,7 +445,7 @@ int main(int argc, char* argv[])
 	std::cout << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
 			  << "Position:   " << result.position() << "\n"
-			  << "Error:      " << ToString(result.error()) << "\n";
+			  << "Error:      " << (result.error() ? ToString(result.error()) : "None") << "\n";
 
 	auto printOptional = [](const char* key, const std::string& v) {
 		if (!v.empty())

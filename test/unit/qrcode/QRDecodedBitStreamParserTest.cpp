@@ -134,3 +134,29 @@ TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 	result = DecodeBitStream({0x9A, 0x42, 0x00, 0x96, 0x00}, version, ecLevel);
 	EXPECT_FALSE(result.isValid());
 }
+
+TEST(QRDecodedBitStreamParserTest, MicroQROutOfRange)
+{
+	{
+		// Issue #404 Exception: BitSource::readBits: out of range
+		const Version& version = *Version::VersionForNumber(3, true /*isMicro*/);
+		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Medium;
+		DecoderResult result;
+		result = DecodeBitStream({0x9D, 0x15, 0xE1, 0x85, 0xB5, 0xC1, 0xB1, 0x94, 0xC0}, version, ecLevel);
+		EXPECT_EQ(result.text(), L"Example");
+		EXPECT_FALSE(result.isValid());
+		EXPECT_TRUE(result.isValid(true /*includeErrors*/));
+		EXPECT_EQ(result.error(), Error::Format);
+	}
+	{
+		// Issue #413
+		const Version& version = *Version::VersionForNumber(3, true /*isMicro*/);
+		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Low;
+		DecoderResult result;
+		result = DecodeBitStream({0xA5, 0x91, 0xE5, 0xB9, 0x85, 0xB5, 0xCD, 0xBD, 0x99, 0xD0, 0xC0}, version, ecLevel);
+		EXPECT_EQ(result.text(), L"dynamsoft");
+		EXPECT_FALSE(result.isValid());
+		EXPECT_TRUE(result.isValid(true /*includeErrors*/));
+		EXPECT_EQ(result.error(), Error::Format);
+	}
+}

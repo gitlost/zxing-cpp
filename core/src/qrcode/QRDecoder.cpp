@@ -319,7 +319,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			}
 		}
 	} catch (const std::out_of_range& e) { // see BitSource::readBits
-		Diagnostics::fmt("FMTError(OutOfRange)");
+		Diagnostics::fmt("FMTError(%s)", e.what());
 		error = FormatError("Truncated bit stream");
 	} catch (Error e) {
 		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());

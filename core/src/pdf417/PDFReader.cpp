@@ -91,9 +91,9 @@ static Results DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate
 		if (decoderResult.isValid(returnErrors)) {
 			auto point = [&](int i) { return rotate(PointI(points[i].value())); };
 			Result result(std::move(decoderResult), {point(0), point(2), point(3), point(1)}, BarcodeFormat::PDF417);
-            if (auto extra = decoderResult.extra()) {
-                result.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
-            }
+			if (auto extra = decoderResult.extra()) {
+				result.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
+			}
 			results.push_back(result);
 			if (!multiple)
 				return results;

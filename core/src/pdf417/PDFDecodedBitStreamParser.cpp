@@ -822,7 +822,7 @@ DecodedBitStreamParser::Decode(const std::vector<int>& codewords, int ecLevel)
 	}
 
 	return DecoderResult(std::move(result))
-		.setEcLevel(std::to_string(ecLevel))
+		.setEcLevel(std::to_string(ecLevel > 8 ? ecLevel - 8 : ecLevel))
 		.setStructuredAppend(sai)
 		.setReaderInit(readerInit)
 		.setExtra(resultMetadata);

@@ -20,6 +20,7 @@
 #include "hanxin/HXReader.h"
 #include "maxicode/MCReader.h"
 #include "oned/ODReader.h"
+#include "pdf417/MicroPDFReader.h"
 #include "pdf417/PDFReader.h"
 #include "qrcode/QRReader.h"
 
@@ -54,6 +55,8 @@ MultiFormatReader::MultiFormatReader(const DecodeHints& hints) : _hints(hints)
 		_readers.emplace_back(new DotCode::Reader(hints));
 	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::HanXin))
 		_readers.emplace_back(new HanXin::Reader(hints));
+	if (!hints.formats().empty() && formats.testFlag(BarcodeFormat::MicroPDF417))
+		_readers.emplace_back(new MicroPdf417::Reader(hints));
 	#endif
 
 	// At end in "try harder" mode

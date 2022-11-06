@@ -284,26 +284,23 @@ int main(int argc, char* argv[])
 			}
 
 			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n"
-					  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
-					  << "BytesECI:   " << ToHex(result.bytesECI()) << "\n"
+					  //<< "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
-					  << "Identifier: " << result.symbologyIdentifier() << "\n"
-					  << "Content:    " << ToString(result.contentType()) << "\n";
+					  << "Identifier: " << result.symbologyIdentifier() << "\n";
 
 			if (result.contentType() == ContentType::GS1 || result.contentType() == ContentType::ISO15434)
 				std::cout << "HRI:        \"" << result.text(TextMode::HRI) << "\"\n";
 
-			std::cout << "HasECI:     " << result.hasECI() << "\n";
-
 			if (Size(result.ECIs()))
 				std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
-			else
-				std::cout << "ECIs:       None\n";
 
-			std::cout << "Position:   " << result.position() << "\n"
-					  << "Rotation:   " << result.orientation() << " deg\n"
-					  << "IsMirrored: " << result.isMirrored() << "\n"
-					  << "IsInverted: " << result.isInverted() << "\n";
+			std::cout << "Position:   " << result.position() << "\n";
+			if (result.orientation())
+				std::cout << "Rotation:   " << result.orientation() << " deg\n";
+			if (result.isMirrored())
+				std::cout << "IsMirrored: " << result.isMirrored() << "\n";
+			if (result.isInverted())
+				std::cout << "IsInverted: " << result.isInverted() << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {
 				if (!v.empty())

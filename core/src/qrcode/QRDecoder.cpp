@@ -373,6 +373,7 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 
 		resultIterator = std::copy_n(codewordBytes.begin(), numDataCodewords, resultIterator);
 	}
+	Diagnostics::fmt("  Codewords:  (%d)", Size(resultBytes)); Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");

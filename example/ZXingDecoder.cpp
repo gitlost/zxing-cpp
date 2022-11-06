@@ -34,6 +34,7 @@
 #include "hanxin/HXReader.h"
 #include "maxicode/MCReader.h"
 #include "oned/ODReader.h"
+#include "pdf417/MicroPDFReader.h"
 #include "pdf417/PDFReader.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 #include "qrcode/QRReader.h"
@@ -399,6 +400,10 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width(), height);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
 
+	} else if (hints.formats() == BarcodeFormat::MicroPDF417) {
+		MicroPdf417::Reader reader(hints);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+
 	} else if (hints.formats().testFlags(BarcodeFormat::LinearCodes)) {
 		hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(hints);
@@ -434,24 +439,21 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n"
-			  << "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n";
+	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n";
 
 	if (Size(result.ECIs()))
 		std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
-	else
-		std::cout << "ECIs:       None\n";
 
 	std::cout << "Format:     " << ToString(result.format()) << "\n"
 			  << "Identifier: " << result.symbologyIdentifier() << "\n"
-			  << "Position:   " << result.position() << "\n"
-			  << "Error:      " << (result.error() ? ToString(result.error()) : "None") << "\n";
+			  << "Position:   " << result.position() << "\n";
 
 	auto printOptional = [](const char* key, const std::string& v) {
 		if (!v.empty())
 			std::cout << key << v << "\n";
 	};
 
+	printOptional("Error:      ", ToString(result.error()));
 	printOptional("EC Level:   ", result.ecLevel());
 
 	if (result.isPartOfSequence()) {

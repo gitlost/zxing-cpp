@@ -59,7 +59,7 @@ class DecodeHints
 	bool _returnCodabarStartEnd    : 1;
 	bool _returnErrors             : 1;
 	uint8_t _downscaleFactor       : 3;
-    bool _enableDiagnostics        : 1;
+	bool _enableDiagnostics        : 1;
 	EanAddOnSymbol _eanAddOnSymbol : 2;
 	Binarizer _binarizer           : 2;
 	TextMode _textMode             : 3;

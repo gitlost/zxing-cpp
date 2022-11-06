@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <vector>
+
 namespace ZXing {
 
 class BitMatrix;
@@ -26,6 +28,8 @@ public:
 		const Nullable<ResultPoint>& imageTopRight, const Nullable<ResultPoint>& imageBottomRight,
 		int minCodewordWidth, int maxCodewordWidth);
 };
+
+DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures);
 
 } // Pdf417
 } // ZXing

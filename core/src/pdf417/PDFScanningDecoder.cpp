@@ -575,7 +575,7 @@ DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const st
 	if (codewords.empty())
 		return FormatError();
 
-	int numECCodewords = 1 << (ecLevel + 1);
+	int numECCodewords = ecLevel > 8 ? ecLevel - 8 : 1 << (ecLevel + 1);
 	int correctedErrorsCount = 0;
 	if (!CorrectErrors(codewords, erasures, numECCodewords, correctedErrorsCount))
 		return ChecksumError();

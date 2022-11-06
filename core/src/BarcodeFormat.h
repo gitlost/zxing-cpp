@@ -39,10 +39,11 @@ enum class BarcodeFormat
 	UPCA            = (1 << 14), ///< UPC-A
 	UPCE            = (1 << 15), ///< UPC-E
 	MicroQRCode     = (1 << 16), ///< Micro QR Code
-	HanXin          = (1 << 17), ///< HanXin
-	DotCode         = (1 << 18), ///< DotCode
-	CodablockF      = (1 << 19), ///< Codablock-F
-	Code16K         = (1 << 20), ///< Code 16K
+	MicroPDF417     = (1 << 17), ///< MicroPDF417
+	HanXin          = (1 << 18), ///< HanXin
+	DotCode         = (1 << 19), ///< DotCode
+	CodablockF      = (1 << 20), ///< Codablock-F
+	Code16K         = (1 << 21), ///< Code 16K
 
 	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
 	MatrixCodes = Aztec | CodablockF | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode,

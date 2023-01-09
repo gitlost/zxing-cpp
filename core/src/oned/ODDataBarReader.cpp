@@ -14,6 +14,7 @@
 #include "ODDataBarCommon.h"
 #include "Result.h"
 
+#include <cmath>
 #include <unordered_set>
 
 namespace ZXing::OneD {

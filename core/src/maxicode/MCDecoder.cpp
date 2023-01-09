@@ -146,7 +146,7 @@ static std::string GetPostCode2(const ByteArray& bytes)
 	Diagnostics::fmt("PCD(%d,%d)", len, val);
 	// Pad or truncate to length
 	char buf[11]; // 30 bits 0x3FFFFFFF == 1073741823 (10 digits)
-	sprintf(buf, "%0*d", len, val);
+	snprintf(buf, sizeof(buf), "%0*d", len, val);
 	buf[len] = '\0';
 	return buf;
 }

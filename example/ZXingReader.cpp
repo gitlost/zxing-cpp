@@ -16,6 +16,7 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <vector>
@@ -236,7 +237,7 @@ int main(int argc, char* argv[])
 		if (filePath == filePaths.back()) {
 			auto merged = MergeStructuredAppendSequences(allResults);
 			// report all merged sequences as part of the last file to make the logic not overly complicated here
-			results.insert(results.end(), merged.begin(), merged.end());
+			results.insert(results.end(), std::make_move_iterator(merged.begin()), std::make_move_iterator(merged.end()));
 		}
 
 		for (auto&& result : results) {
@@ -308,6 +309,7 @@ int main(int argc, char* argv[])
 			};
 
 			printOptional("EC Level:   ", result.ecLevel());
+			printOptional("Version:    ", result.version());
 			printOptional("Error:      ", ToString(result.error()));
 
 			if (result.lineCount())

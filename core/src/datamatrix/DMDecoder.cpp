@@ -126,8 +126,10 @@ std::optional<std::array<int, 3>> DecodeNextTriple(BitSource& bits)
 	if (bits.available() < 16)
 		return {};
 	int firstByte = bits.readBits(8);
-	if (firstByte == 254) // Unlatch codeword
+	if (firstByte == 254) { // Unlatch codeword
+		Diagnostics::put("ASC");
 		return {};
+	}
 
 	int fullBitValue = (firstByte << 8) + bits.readBits(8) - 1;
 	int a = fullBitValue / 1600;

@@ -38,6 +38,7 @@ android {
     lint {
         disable 'UnsafeExperimentalUsageError'
     }
+    namespace 'com.zxingcpp'
 }
 
 dependencies {

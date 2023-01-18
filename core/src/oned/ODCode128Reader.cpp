@@ -189,13 +189,15 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	};
 
 	next = FindLeftGuard(next, minCharCount * CHAR_LEN, START_PATTERN_PREFIX, QUIET_ZONE);
-	if (!next.isValid())
+	if (!next.isValid()) {
 		return {};
+	}
 
 	next = next.subView(0, CHAR_LEN);
 	int startCode = decodePattern(next);
 	if (!(CODE_START_A <= startCode && startCode <= CODE_START_C))
 		return {};
+	//printf("%s: startCode %d found\n", __func__, startCode);
 
 	int xStart = next.pixelsInFront();
 	ByteArray rawCodes;

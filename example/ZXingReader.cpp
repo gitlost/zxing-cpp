@@ -48,7 +48,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -pngout <file name>\n"
 			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
 			  << "    -binarizer <BINARIZER>\n"
-			  << "                  Use specific binarizer\n"
+			  << "                  Use specific binarizer (default LocalAverage)\n"
 			  << "    -charset <CHARSET>\n"
 			  << "                  Default character set\n"
 #ifdef ZX_DIAGNOSTICS

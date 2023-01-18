@@ -139,7 +139,7 @@ TEST(QRDecodedBitStreamParserTest, MicroQROutOfRange)
 {
 	{
 		// Issue #404 Exception: BitSource::readBits: out of range
-		const Version& version = *Version::VersionForNumber(3, true /*isMicro*/);
+		const Version& version = *Version::FromNumber(3, true /*isMicro*/);
 		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Medium;
 		DecoderResult result;
 		result = DecodeBitStream({0x9D, 0x15, 0xE1, 0x85, 0xB5, 0xC1, 0xB1, 0x94, 0xC0}, version, ecLevel);
@@ -150,7 +150,7 @@ TEST(QRDecodedBitStreamParserTest, MicroQROutOfRange)
 	}
 	{
 		// Issue #413
-		const Version& version = *Version::VersionForNumber(3, true /*isMicro*/);
+		const Version& version = *Version::FromNumber(3, true /*isMicro*/);
 		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Low;
 		DecoderResult result;
 		result = DecodeBitStream({0xA5, 0x91, 0xE5, 0xB9, 0x85, 0xB5, 0xCD, 0xBD, 0x99, 0xD0, 0xC0}, version, ecLevel);

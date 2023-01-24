@@ -12,6 +12,7 @@
 #include "GTIN.h"
 #include "Utf.h"
 #include "pdf417/PDFDecoderResultExtra.h"
+#include "ZXVersion.h"
 
 #include <chrono>
 #include <cstring>
@@ -55,6 +56,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -diagnostics  Print diagnostics\n"
 #endif
 			  << "    -help         Print usage information and exit\n"
+			  << "    -version      Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n" << "   ";
 	for (auto f : BarcodeFormats::all()) {
@@ -136,6 +138,9 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 			outPath = argv[i];
 		} else if (is("-help") || is("--help")) {
 			PrintUsage(argv[0]);
+			exit(0);
+		} else if (is("-version") || is("--version")) {
+			std::cout << "ZXingReader " << ZXING_VERSION_STR << "\n";
 			exit(0);
 		} else {
 			filePaths.push_back(argv[i]);

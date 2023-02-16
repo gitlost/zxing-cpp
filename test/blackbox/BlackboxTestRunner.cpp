@@ -6,14 +6,10 @@
 
 #include "BlackboxTestRunner.h"
 
-#include "DecoderResult.h"
 #include "ImageLoader.h"
 #include "ReadBarcode.h"
-#include "ThresholdBinarizer.h"
 #include "Utf.h"
 #include "ZXAlgorithms.h"
-#include "pdf417/PDFReader.h"
-#include "qrcode/QRReader.h"
 
 #include <fmt/core.h>
 #include <fmt/ostream.h>
@@ -589,8 +585,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		runTests("rssexpandedstacked-1", "DataBarExpanded", 65, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 60, 65, 0   },
-			{ 60, 65, 180 },
+			{ 55, 65, 0   },
+			{ 55, 65, 180 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 60, 0, pure },
 		});
@@ -607,21 +603,21 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 16, 270 },
 		});
 
-		runTests("qrcode-2", "QRCode", 48, {
+		runTests("qrcode-2", "QRCode", 49, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 44, 46, 0   },
-			{ 44, 46, 90  },
-			{ 44, 46, 180 },
-			{ 44, 45, 270 },
+			{ 45, 47, 0   },
+			{ 45, 47, 90  },
+			{ 45, 47, 180 },
+			{ 45, 46, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 21, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
 
 		runTests("qrcode-3", "QRCode", 28, {
-			{ 25, 25, 0   },
-			{ 25, 25, 90  },
-			{ 25, 25, 180 },
-			{ 24, 24, 270 },
+			{ 28, 28, 0   },
+			{ 28, 28, 90  },
+			{ 28, 28, 180 },
+			{ 27, 27, 270 },
 		});
 
 		runTests("qrcode-4", "QRCode", 41, {

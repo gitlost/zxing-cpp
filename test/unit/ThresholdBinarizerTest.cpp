@@ -95,6 +95,7 @@ TEST(ThresholdBinarizerTest, PatternRowClear)
 
 	bits = ParseBitMatrix(bitstream, 53 /*width*/);
 	hints.setFormats(BarcodeFormat::DataBarExpanded);
+	hints.setMinLineCount(1);
 	OneD::Reader reader(hints);
 
 	testing::internal::CaptureStderr(); // Capture any runtime error warnings if BUILD_SANITIZE set

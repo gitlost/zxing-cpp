@@ -6,11 +6,11 @@
 
 #include "PDFDecodedBitStreamParser.h"
 
-#include "ByteArray.h"
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "PDFDecoderResultExtra.h"
+#include "ZXAlgorithms.h"
 #include "ZXBigInteger.h"
 #include "ZXTestSupport.h"
 

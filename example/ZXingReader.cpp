@@ -201,6 +201,7 @@ int main(int argc, char* argv[])
 	bool bytesOnly = false;
 	int ret = 0;
 
+	hints.setTryDenoise(true);
 	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
 	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, bytesOnly, filePaths, outPath)) {

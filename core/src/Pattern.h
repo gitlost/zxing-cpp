@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include "BitHacks.h"
 #include "Range.h"
 #include "ZXAlgorithms.h"
 
@@ -19,7 +20,9 @@
 
 namespace ZXing {
 
-using PatternRow = std::vector<uint16_t>;
+using PatternType = uint16_t;
+template<int N> using Pattern = std::array<PatternType, N>;
+using PatternRow = std::vector<PatternType>;
 
 class PatternView
 {
@@ -43,7 +46,7 @@ public:
 	PatternView(Iterator data, int size, Iterator base, Iterator end) : _data(data), _size(size), _base(base), _end(end) {}
 
 	template <size_t N>
-	PatternView(const std::array<value_type, N>& row) : _data(row.data()), _size(N)
+	PatternView(const Pattern<N>& row) : _data(row.data()), _size(N)
 	{}
 
 	Iterator data() const { return _data; }
@@ -134,7 +137,7 @@ struct BarAndSpace
 	bool isValid() const { return bar != T{} && space != T{}; }
 };
 
-using BarAndSpaceI = BarAndSpace<PatternView::value_type>;
+using BarAndSpaceI = BarAndSpace<PatternType>;
 
 /**
  * @brief FixedPattern describes a compile-time constant (start/stop) pattern.
@@ -314,12 +317,36 @@ void GetPatternRow(Range<I> b_row, PatternRow& p_row)
 	std::fill(p_row.begin(), p_row.end(), 0);
 
 	auto bitPos = b_row.begin();
+	const auto bitPosEnd = b_row.end();
 	auto intPos = p_row.data();
 
 	if (*bitPos)
 		intPos++; // first value is number of white pixels, here 0
 
-	while (++bitPos < b_row.end()) {
+	// The following code as been observed to cause a speedup of up to 30% on large images on an AVX cpu
+	// and on an a Google Pixel 3 Android phone. Your mileage may vary.
+	if constexpr (std::is_pointer_v<I> && sizeof(I) == 8 && sizeof(std::remove_pointer_t<I>) == 1) {
+		using simd_t = uint64_t;
+		while (bitPos < bitPosEnd - sizeof(simd_t)) {
+			auto asSimd0 = BitHacks::LoadU<simd_t>(bitPos);
+			auto asSimd1 = BitHacks::LoadU<simd_t>(bitPos + 1);
+			auto z = asSimd0 ^ asSimd1;
+			if (z) {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+				int step = BitHacks::NumberOfTrailingZeros(z) / 8 + 1;
+#else
+				int step = BitHacks::NumberOfLeadingZeros(z) / 8 + 1;
+#endif
+				(*intPos++) += step;
+				bitPos += step;
+			} else {
+				(*intPos) += sizeof(simd_t);
+				bitPos += sizeof(simd_t);
+			}
+		}
+	}
+
+	while (++bitPos != bitPosEnd) {
 		++(*intPos);
 		intPos += bitPos[0] != bitPos[-1];
 	}

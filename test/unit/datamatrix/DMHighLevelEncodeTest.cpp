@@ -66,11 +66,11 @@ namespace {
 
 	std::string CreateBinaryMessage(int len) {
 		std::string buf;
-		buf.append(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00E1-");
+		buf.append("\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00E1-");
 		for (int i = 0; i < len - 9; i++) {
-			buf.append(u8"\u00B7");
+			buf.append("\u00B7");
 		}
-		buf.append(u8"\u00BB");
+		buf.append("\u00BB");
 		return buf;
 	}
 }
@@ -80,7 +80,7 @@ TEST(DMHighLevelEncodeTest, ASCIIEncodation)
 	std::string visualized = Encode("123456");
     EXPECT_EQ(visualized, "142 164 186");
 
-	visualized = Encode(u8"123456\u00A3");
+	visualized = Encode("123456\u00A3");
 	EXPECT_EQ(visualized, "142 164 186 235 36");
 
 	visualized = Encode("30Q324343430794<OQQ");
@@ -109,7 +109,7 @@ TEST(DMHighLevelEncodeTest, C40EncodationBasic2)
 	//"b" is normally encoded as "Shift 3, 2" (two C40 values)
 	//"else" case: "b" is encoded as ASCII
 
-	visualized = Encode(u8"AIMAIMAIM\u00CB");
+	visualized = Encode("AIMAIMAIM\u00CB");
 	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 254 235 76");
 	//Alternative solution:
 	//EXPECT_EQ(visualized, "230 91 11 91 11 91 11 11 9 254", visualized);
@@ -117,7 +117,7 @@ TEST(DMHighLevelEncodeTest, C40EncodationBasic2)
 	//"11 9" = "�" = "Shift 2, UpperShift, <char>
 	//"else" case
 
-	visualized = Encode(u8"AIMAIMAIM\u00EB");
+	visualized = Encode("AIMAIMAIM\u00EB");
 	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 254 235 108"); //Activate when additional rectangulars are available
 	//Expl: 230 = shift to C40, "91 11" = "AIM",
 	//"�" in C40 encodes to: 1 30 2 11 which doesn't fit into a triplet
@@ -185,7 +185,7 @@ TEST(DMHighLevelEncodeTest, TextEncodation)
 	visualized = Encode("aimaimaimB");
     EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254 67 129");
 
-	visualized = Encode(u8"aimaimaim{txt}\u0004");
+	visualized = Encode("aimaimaim{txt}\u0004");
     EXPECT_EQ(visualized, "239 91 11 91 11 91 11 16 218 236 107 181 69 254 129 237");
 }
 
@@ -234,7 +234,7 @@ TEST(DMHighLevelEncodeTest, EDIFACTEncodation)
     EXPECT_EQ(visualized, "240 184 27 131 198 236 238 89");
 
     //Checking temporary unlatch from EDIFACT
-	visualized = Encode(u8".XXX.XXX.XXX.XXX.XXX.XXX.\u00FCXX.XXX.XXX.XXX.XXX.XXX.XXX");
+	visualized = Encode(".XXX.XXX.XXX.XXX.XXX.XXX.\u00FCXX.XXX.XXX.XXX.XXX.XXX.XXX");
     EXPECT_EQ(visualized, "240 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24"
 							" 124 47 235 125 240" //<-- this is the temporary unlatch
 							" 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 89 89");
@@ -243,20 +243,20 @@ TEST(DMHighLevelEncodeTest, EDIFACTEncodation)
 TEST(DMHighLevelEncodeTest, Base256Encodation)
 {
     //231 shifts to Base256 encodation
-	std::string visualized = Encode(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB");
+	std::string visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB");
 	EXPECT_EQ(visualized, "231 44 108 59 226 126 1 104");
-	visualized = Encode(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00BB");
+	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00BB");
     EXPECT_EQ(visualized, "231 51 108 59 226 126 1 141 254 129");
-	visualized = Encode(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00E1\u00BB");
+	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00E1\u00BB");
     EXPECT_EQ(visualized, "231 44 108 59 226 126 1 141 36 147");
 
-	visualized = Encode(u8" 23\u00A3"); //ASCII only (for reference)
+	visualized = Encode(" 23\u00A3"); //ASCII only (for reference)
     EXPECT_EQ(visualized, "33 153 235 36 129");
 
-	visualized = Encode(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 234"); //Mixed Base256 + ASCII
+	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 234"); //Mixed Base256 + ASCII
     EXPECT_EQ(visualized, "231 51 108 59 226 126 1 104 99 153 53 129");
 
-	visualized = Encode(u8"\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 23\u00A3 1234567890123456789");
+	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 23\u00A3 1234567890123456789");
     EXPECT_EQ(visualized, "231 55 108 59 226 126 1 104 99 10 161 167 185 142 164 186 208"
 							" 220 142 164 186 208 58 129 59 209 104 254 150 45");
 
@@ -333,7 +333,7 @@ TEST(DMHighLevelEncodeTest, Bug3048549)
 
 TEST(DMHighLevelEncodeTest, MacroCharacters)
 {
-	std::string visualized = Encode(u8"[)>\u001E""05\u001D""5555\u001C""6666\u001E\u0004");
+	std::string visualized = Encode("[)>\u001E""05\u001D""5555\u001C""6666\u001E\u0004");
     //EXPECT_EQ(visualized, "92 42 63 31 135 30 185 185 29 196 196 31 5 129 87 237");
 	EXPECT_EQ(visualized, "236 185 185 29 196 196 129 56");
 }

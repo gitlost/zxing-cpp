@@ -147,14 +147,14 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		static const uint8_t data[] = { 0x5C };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u005C"); // Would normally be "\u00A5" ("¥")
+		EXPECT_EQ(str, "\u005C"); // Would normally be "\u00A5" ("¥")
 	}
 	{
 		// Non-direct ASCII mapping
 		static const uint8_t data[] = { 0x5C };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs, false /*sjisASCII*/);
-		EXPECT_EQ(str, u8"\u00A5");
+		EXPECT_EQ(str, "\u00A5");
 	}
 
 	{
@@ -162,7 +162,7 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		static const uint8_t data[] = { 0x81, 0x5F };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u005C"); // Backslash
+		EXPECT_EQ(str, "\u005C"); // Backslash
 	}
 //	{
 //		// Shift JIS 0x815F goes to U+FF3C (full width reverse solidus i.e. backslash)
@@ -178,7 +178,7 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		static const uint8_t data[] = { 0xA5 };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\uFF65");
+		EXPECT_EQ(str, "\uFF65");
 	}
 
 	{
@@ -186,14 +186,14 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		static const uint8_t data[] = { 0x7E };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u007E"); // Tilde, would normally be "\u203E" ("‾")
+		EXPECT_EQ(str, "\u007E"); // Tilde, would normally be "\u203E" ("‾")
 	}
 	{
 		// Non-direct ASCII mapping
 		static const uint8_t data[] = { 0x7E };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs, false /*sjisASCII*/);
-		EXPECT_EQ(str, u8"\u203E");
+		EXPECT_EQ(str, "\u203E");
 	}
 
 	{
@@ -201,7 +201,7 @@ TEST(TextDecoderTest, AppendShift_JIS)
 										0xE4, 0xAA, 0x83, 0x65 };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"a\u03B2c\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6"); // Note 0x815F now -> backslash
+		EXPECT_EQ(str, "a\u03B2c\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6"); // Note 0x815F now -> backslash
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -220,7 +220,7 @@ TEST(TextDecoderTest, AppendShift_JIS)
 										0xE4, 0xAA, 0x83, 0x65 };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs, false /*sjisASCII*/);
-		EXPECT_EQ(str, u8"\u00A5\u03B2\u203E\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6");
+		EXPECT_EQ(str, "\u00A5\u03B2\u203E\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6");
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -234,7 +234,7 @@ TEST(TextDecoderTest, AppendBig5)
 		static const uint8_t data[] = { 0xA1, 0x5A }; // Drawings box light left in Big5-2003; not in original Big5
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\uFFFD"); // Note used to map to U+2574, now no mapping (so replacement char U+FFFD)
+		EXPECT_EQ(str, "\uFFFD"); // Note used to map to U+2574, now no mapping (so replacement char U+FFFD)
 	}
 //	{
 //		static const uint8_t data[] = { 0xA1, 0x5A }; // Drawings box light left in Big5-2003; not in original Big5
@@ -248,14 +248,14 @@ TEST(TextDecoderTest, AppendBig5)
 		static const uint8_t data[] = { 0xA1, 0x56 }; // En dash U+2013 in Big5, horizontal bar U+2015 in Big5-2003
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u2013");
+		EXPECT_EQ(str, "\u2013");
 	}
 
 	{
 		static const uint8_t data[] = { 0x1, ' ', 0xA1, 0x71, '@', 0xC0, 0x40, 0xF9, 0xD5, 0x7F };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u0001 \u3008@\u9310\u9F98\u007F");
+		EXPECT_EQ(str, "\u0001 \u3008@\u9310\u9F98\u007F");
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -270,7 +270,7 @@ TEST(TextDecoderTest, AppendGB2312)
 		static const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0xA1, 0xA4, 0xA1, 0xAA, 0xA8, 0xA6, 'Z' };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"a\u03B2c\u30FB\u2015\u00E9Z"); // Note previous used GBK values below, now uses GB 2312 values
+		EXPECT_EQ(str, "a\u03B2c\u30FB\u2015\u00E9Z"); // Note previous used GBK values below, now uses GB 2312 values
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -285,7 +285,7 @@ TEST(TextDecoderTest, AppendGBK)
 		static const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0xA1, 0xA4, 0xA1, 0xAA, 0xA8, 0xA6, 'Z' };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, std::string(u8"a\u03B2c\u00B7\u2014\u00E9Z"));
+		EXPECT_EQ(str, std::string("a\u03B2c\u00B7\u2014\u00E9Z"));
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -308,7 +308,7 @@ TEST(TextDecoderTest, AppendGB18030)
 										0xA8, 0xA6, 'Z' };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"a\u03B2c\u30FB\u00B7\u2014\u00E9Z");
+		EXPECT_EQ(str, "a\u03B2c\u30FB\u00B7\u2014\u00E9Z");
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -322,7 +322,7 @@ TEST(TextDecoderTest, AppendEUC_KR)
 		static const uint8_t data[] = { 0xA2, 0xE6 }; // Euro sign U+20AC added KS X 1001:1998, now supported, previously not
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u20AC"); // Note previously unmapped
+		EXPECT_EQ(str, "\u20AC"); // Note previously unmapped
 	}
 	{
 		static const uint8_t data[] = { 0xA2, 0xE6 }; // Euro sign U+20AC added KS X 1001:1998
@@ -336,7 +336,7 @@ TEST(TextDecoderTest, AppendEUC_KR)
 		static const uint8_t data[] = { 'a', 0xA4, 0xA1, 'Z' };
 		std::string str;
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"a\u3131Z");
+		EXPECT_EQ(str, "a\u3131Z");
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -351,7 +351,7 @@ TEST(TextDecoderTest, AppendUTF16BE)
 		static const uint8_t data[] = { 0x00, 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x01, 0xFF, 0x10, 0xFF,
 										0xFF, 0xFD };
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, u8"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD");
+		EXPECT_EQ(str, "\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD");
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -369,7 +369,7 @@ TEST(TextDecoderTest, AppendUTF16BE)
 		std::string str;
 		static const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, std::string(u8"\U00010000"));
+		EXPECT_EQ(str, std::string("\U00010000"));
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -391,7 +391,7 @@ TEST(TextDecoderTest, AppendUTF16LE)
 		static const uint8_t data[] = { 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x00, 0xFF, 0x01, 0xFF, 0x10,
 										0xFD, 0xFF };
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, std::string(u8"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -417,7 +417,7 @@ TEST(TextDecoderTest, AppendUTF32BE)
 										0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x01, 0xFF, 0x00, 0x00, 0x10, 0xFF,
 										0x00, 0x00, 0xFF, 0xFD };
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, std::string(u8"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -443,7 +443,7 @@ TEST(TextDecoderTest, AppendUTF32LE)
 										0xFF, 0x00, 0x00, 0x00, 0xFF, 0x01, 0x00, 0x00, 0xFF, 0x10, 0x00, 0x00,
 										0xFD, 0xFF, 0x00, 0x00 };
 		TextDecoder::Append(str, data, sizeof(data), cs);
-		EXPECT_EQ(str, std::string(u8"\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
+		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
@@ -465,31 +465,31 @@ TEST(TextDecoderTest, AppendMixed)
 	std::string str;
 
 	static const uint8_t dataBINARY[] = { 0x80, 0x9F, 0xA0, 0xFF };
-	std::string expectedBINARY(u8"\u0080\u009F\u00A0\u00FF");
+	std::string expectedBINARY("\u0080\u009F\u00A0\u00FF");
 
 	TextDecoder::Append(str, dataBINARY, sizeof(dataBINARY), CharacterSet::BINARY);
 	EXPECT_EQ(str, expectedBINARY);
 
 	static const uint8_t dataASCII[] = { '\0', '\x1F', '\\', '~', '\x7F' };
-	std::string expectedASCII(u8"\u0000\u001F\u005C\u007E\u007F", 5);
+	std::string expectedASCII("\u0000\u001F\u005C\u007E\u007F", 5);
 
 	TextDecoder::Append(str, dataASCII, sizeof(dataASCII), CharacterSet::ASCII);
 	EXPECT_EQ(str, expectedBINARY + expectedASCII);
 
 	static const uint8_t dataShift_JIS[] = { 'a', 0x83, 0xC0, 'c', 0x84, 0x47 };
-	std::string expectedShift_JIS(u8"a\u03B2c\u0416");
+	std::string expectedShift_JIS("a\u03B2c\u0416");
 
 	TextDecoder::Append(str, dataShift_JIS, sizeof(dataShift_JIS), CharacterSet::Shift_JIS);
 	EXPECT_EQ(str, expectedBINARY + expectedASCII + expectedShift_JIS);
 
 	static const uint8_t dataEUC_KR[] = { 0xA2, 0xE6, 'a', 0xA4, 0xA1, 'Z' };
-	std::string expectedEUC_KR(u8"\u20ACa\u3131Z");
+	std::string expectedEUC_KR("\u20ACa\u3131Z");
 
 	TextDecoder::Append(str, dataEUC_KR, sizeof(dataEUC_KR), CharacterSet::EUC_KR);
 	EXPECT_EQ(str, expectedBINARY + expectedASCII + expectedShift_JIS + expectedEUC_KR);
 
 	static const uint8_t dataUTF16BE[] = { 0x00, 0x00, 0x00, 0xFF, 0x30, 0xFD };
-	std::string expectedUTF16BE(u8"\u0000\u00FF\u30FD", 6);
+	std::string expectedUTF16BE("\u0000\u00FF\u30FD", 6);
 
 	TextDecoder::Append(str, dataUTF16BE, sizeof(dataUTF16BE), CharacterSet::UTF16BE);
 	EXPECT_EQ(str, expectedBINARY + expectedASCII + expectedShift_JIS + expectedEUC_KR + expectedUTF16BE);

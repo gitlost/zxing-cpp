@@ -69,7 +69,7 @@ TEST(TextEncoderTest, Shift_JIS)
 {
 	CharacterSet cs = CharacterSet::Shift_JIS;
 	{
-		std::string str(u8"\u00A5"); // YEN SIGN
+		std::string str("\u00A5"); // YEN SIGN
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\x5C"); // Mapped to backslash
 
@@ -78,7 +78,7 @@ TEST(TextEncoderTest, Shift_JIS)
 		EXPECT_EQ(dec, "\\"); // Mapped straight-thru to backslash
 	}
 	{
-		std::string str(u8"\u203E"); // OVERLINE
+		std::string str("\u203E"); // OVERLINE
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\x7E"); // Mapped to tilde
 
@@ -92,7 +92,7 @@ TEST(TextEncoderTest, GBK)
 {
 	CharacterSet cs = CharacterSet::GBK;
 	{
-		std::string str(u8"\u3000"); // IDEOGRAPHIC SPACE
+		std::string str("\u3000"); // IDEOGRAPHIC SPACE
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\xA1\xA1");
 
@@ -120,12 +120,12 @@ TEST(TextEncoderTest, Unmapped)
 {
 	{
 		CharacterSet cs = CharacterSet::ISO8859_1;
-		std::string str(u8"\u0080");
+		std::string str("\u0080");
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
 	}
 	{
 		CharacterSet cs = CharacterSet::ASCII;
-		std::string str(u8"\u00A0"); // Not mapped
+		std::string str("\u00A0"); // Not mapped
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument);
 	}
 	{
@@ -135,12 +135,12 @@ TEST(TextEncoderTest, Unmapped)
 	}
 	{
 		CharacterSet cs = CharacterSet::BINARY;
-		std::string str(u8"\u20AC"); // EURO SIGN
+		std::string str("\u20AC"); // EURO SIGN
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
 	}
 	{
 		CharacterSet cs = CharacterSet::Unknown; // Treated as binary
-		std::string str(u8"\u20AC"); // EURO SIGN
+		std::string str("\u20AC"); // EURO SIGN
 		EXPECT_THROW(TextEncoder::FromUnicode(str, cs), std::invalid_argument); // Not mapped
 	}
 }

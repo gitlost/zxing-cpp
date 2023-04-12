@@ -134,15 +134,6 @@ std::wstring FromUtf8(std::string_view utf8)
 	return str;
 }
 
-#if __cplusplus > 201703L
-std::wstring FromUtf8(std::u8string_view utf8)
-{
-	std::wstring str;
-	AppendFromUtf8(utf8, str);
-	return str;
-}
-#endif
-
 // Count the number of bytes required to store given code points in UTF-8.
 static size_t Utf8CountBytes(std::wstring_view str)
 {

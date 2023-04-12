@@ -5,6 +5,10 @@ if (GTest_POPULATED)
     set (INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 endif()
 
+if (MSVC)
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif()
+
 # Our executable
 add_executable (UnitTest
     BarcodeFormatTest.cpp

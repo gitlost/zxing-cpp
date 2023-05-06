@@ -454,9 +454,9 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 1, 1, 180 },
 		}, DecodeHints().setEanAddOnSymbol(EanAddOnSymbol::Require));
 
-		runTests("ean13-1", "EAN-13", 31, {
-			{ 24, 29, 0   },
-			{ 23, 29, 180 },
+		runTests("ean13-1", "EAN-13", 32, {
+			{ 26, 30, 0   },
+			{ 25, 30, 180 },
 		});
 
 		runTests("ean13-2", "EAN-13", 24, {

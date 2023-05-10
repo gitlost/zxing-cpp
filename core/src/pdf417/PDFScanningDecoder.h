@@ -29,7 +29,12 @@ public:
 		int minCodewordWidth, int maxCodewordWidth);
 };
 
-DecoderResult DecodeCodewords(std::vector<int>& codewords, int ecLevel, const std::vector<int>& erasures);
+inline int NumECCodeWords(int ecLevel)
+{
+	return 1 << (ecLevel + 1);
+}
+
+DecoderResult DecodeCodewords(std::vector<int>& codewords, int numECCodeWords);
 
 } // Pdf417
 } // ZXing

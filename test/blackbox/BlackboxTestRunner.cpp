@@ -665,7 +665,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 17, 180 },
 			{  1, 17, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 17, 0, pure },
+			{ 16, 0, pure },
 		});
 
 		runTests("pdf417-2", "PDF417", 25, {

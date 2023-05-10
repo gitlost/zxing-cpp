@@ -461,16 +461,9 @@ Result DetectSymbol(const BinaryBitmap& image)
 
 	codeWords.insert(codeWords.begin(), Size(codeWords) + 1);
 	//printf("codeWords (%d)", Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { printf(" %d", codeWords[i]); } printf("\n");
-	std::vector<int> erasures;
-	for (int i = 0; i < Size(codeWords); ++i) {
-		if (codeWords[i] == -1) {
-			codeWords[i] = 0;
-			erasures.push_back(i);
-		}
-	}
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", nRows, nCols);
-	DecoderResult decoderResult = Pdf417::DecodeCodewords(codeWords, numECCodewords + 8, erasures);
+	DecoderResult decoderResult = Pdf417::DecodeCodewords(codeWords, numECCodewords);
     return Result(std::move(decoderResult), Position(tl, tr, br, bl), BarcodeFormat::MicroPDF417);
 }
 

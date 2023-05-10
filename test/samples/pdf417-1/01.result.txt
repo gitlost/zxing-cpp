@@ -1,5 +1,5 @@
 symbologyIdentifier=]L2
-ecLevel=2
+ecLevel=36%
 sequenceSize=-1
 sequenceIndex=-1
 sequenceId=

@@ -51,7 +51,7 @@ static std::string DecodeGeneralPurposeBits(BitArrayView& bits)
 		if (res) {
 			bits.skipBits(bits.size());
 			Diagnostics::fmt("Skip(%d)", bits.size());
-        }
+		}
 		return res;
 	};
 

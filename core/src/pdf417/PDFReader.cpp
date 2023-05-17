@@ -15,7 +15,7 @@
 #include "Diagnostics.h"
 #include "Pattern.h"
 #include "PDFCodewordDecoder.h"
-#include "PDFDecodedBitStreamParser.h"
+#include "PDFDecoder.h"
 #include "PDFDecoderResultExtra.h"
 #include "PDFDetector.h"
 #include "PDFScanningDecoder.h"

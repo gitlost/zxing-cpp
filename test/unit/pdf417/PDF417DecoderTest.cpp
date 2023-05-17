@@ -6,7 +6,7 @@
 
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "pdf417/PDFDecodedBitStreamParser.h"
+#include "pdf417/PDFDecoder.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 
 #include "gtest/gtest.h"
@@ -24,7 +24,7 @@ static DecoderResult parse(const std::vector<int>& codewords)
 	try {
 		//Diagnostics::setEnabled(true);
 
-		auto result = DecodedBitStreamParser::Decode(codewords);
+		auto result = Decode(codewords);
 
 		#if 0
 		for (std::string value : Diagnostics::get()) {
@@ -558,21 +558,21 @@ TEST(PDF417DecoderTest, ECIUserDefined)
 TEST(PDF417DecoderTest, ReaderInit)
 {
 	// Null
-	EXPECT_FALSE(parse({ 2, 0 }).readerInit());
+	EXPECT_FALSE(parse({2, 0}).readerInit());
 	EXPECT_EQ(decode({ 2, 0 }), L"AA");
 
 	// Set
-	EXPECT_TRUE(parse({ 3, 921, 0 }).readerInit());
+	EXPECT_TRUE(parse({3, 921, 0}).readerInit());
 	EXPECT_EQ(decode({ 3, 921, 0 }), L"AA");
 
 	// Must be first
-	EXPECT_FALSE(parse({ 3, 0, 921 }).readerInit());
+	EXPECT_FALSE(parse({3, 0, 921}).readerInit());
 	EXPECT_FALSE(valid({ 3, 0, 921 }));
 
-	EXPECT_FALSE(parse({ 4, 901, 65, 921 }).readerInit());
+	EXPECT_FALSE(parse({4, 901, 65, 921}).readerInit());
 	EXPECT_FALSE(valid({ 4, 901, 65, 921 }));
 
-	EXPECT_FALSE(parse({ 4, 901, 921, 65 }).readerInit());
+	EXPECT_FALSE(parse({4, 901, 921, 65}).readerInit());
 	EXPECT_FALSE(valid({ 4, 901, 921, 65 }));
 }
 

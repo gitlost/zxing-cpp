@@ -218,7 +218,7 @@ Result DetectSymbol(const BinaryBitmap& image)
 			continue;
 		}
 
-        xStart = view.pixelsInFront();
+		xStart = view.pixelsInFront();
 		offset = next.size();
 		next = view.subView(offset, CHAR_LEN);
 		//printf("  1st next offset %d", offset); for (int i = 0; i < Size(next); i++) { printf(" %d", next[i]); } printf("\n");
@@ -429,7 +429,7 @@ Result DetectSymbol(const BinaryBitmap& image)
 		} else if (nRows == 44) {
 			numECCodewords = 50;
 		} else {
-			return Result(DecoderResult(FormatError("unknown 2-Col Rows combo")), {}, BarcodeFormat::MicroPDF417);
+			return Result(DecoderResult(FormatError("unknown 3-Col Rows combo")), {}, BarcodeFormat::MicroPDF417);
 		}
 	} else {
 		if (nRows == 4) {
@@ -455,7 +455,7 @@ Result DetectSymbol(const BinaryBitmap& image)
 		} else if (nRows == 44) {
 			numECCodewords = 50;
 		} else {
-			return Result(DecoderResult(FormatError("unknown 2-Col Rows combo")), {}, BarcodeFormat::MicroPDF417);
+			return Result(DecoderResult(FormatError("unknown 4-Col Rows combo")), {}, BarcodeFormat::MicroPDF417);
 		}
 	}
 
@@ -464,7 +464,7 @@ Result DetectSymbol(const BinaryBitmap& image)
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", nRows, nCols);
 	DecoderResult decoderResult = Pdf417::DecodeCodewords(codeWords, numECCodewords);
-    return Result(std::move(decoderResult), Position(tl, tr, br, bl), BarcodeFormat::MicroPDF417);
+	return Result(std::move(decoderResult), Position(tl, tr, br, bl), BarcodeFormat::MicroPDF417);
 }
 
 static Result DecodePure(const BinaryBitmap& image)

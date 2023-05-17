@@ -26,12 +26,12 @@ std::vector<DataBlock> GetDataBlocks(const ByteArray& rawCodewords)
 	int nw = Size(rawCodewords);
 	int nc = nw / 3 + 2;
 	int nd = nw - nc;
-    int step = (nw + GField::GF - 2) / (GField::GF - 1);
+	int step = (nw + GField::GF - 2) / (GField::GF - 1);
 	//printf("nw %d, nc %d, nd %d, step %d\n", nw, nc, nd, step);
 
 	std::vector<DataBlock> result(step);
 
-    for (int start = 0; start < step; start++) {
+	for (int start = 0; start < step; start++) {
 		int ND = (nd - start + step - 1) / step;
 		int NW = (nw - start + step - 1) / step;
 

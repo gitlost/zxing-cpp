@@ -141,18 +141,18 @@ static int lookupPattern(int pattern)
 		{ 0x1d4, 62 },
 	};
 
-    int s = 0, e = GField::GF - 1;
+	int s = 0, e = GField::GF - 1;
 
-    while (s <= e) {
-        int m = (s + e) / 2;
-        if (dot_patterns[m][0] < pattern) {
-            s = m + 1;
-        } else if (dot_patterns[m][0] > pattern) {
-            e = m - 1;
-        } else {
-            return dot_patterns[m][1];
-        }
-    }
+	while (s <= e) {
+		int m = (s + e) / 2;
+		if (dot_patterns[m][0] < pattern) {
+			s = m + 1;
+		} else if (dot_patterns[m][0] > pattern) {
+			e = m - 1;
+		} else {
+			return dot_patterns[m][1];
+		}
+	}
 
 	return -1;
 }
@@ -170,7 +170,7 @@ static void addCodeword(struct State& state, bool val, ByteArray& result, std::v
 		state.pattern |= 1;
 	}
 	if (++state.pattern_i == 9) {
-        //printf(" %X", state.pattern);
+		//printf(" %X", state.pattern);
 		int codeword = lookupPattern(state.pattern);
 		if (codeword == -1) {
 			if (state.pattern != 0x1ff) { // Padding

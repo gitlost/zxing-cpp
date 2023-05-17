@@ -62,7 +62,7 @@ static void PrintUsage(const char* exePath)
 	for (auto f : BarcodeFormats::all()) {
 		std::cout << " " << ToString(f);
 	}
-    std::cout << "\nFormats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
+	std::cout << "\nFormats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
 
 	std::cout << "\n" << "Supported binarizers are:\n" << "   ";
 	for (int j = 0; j < 4; j++) {

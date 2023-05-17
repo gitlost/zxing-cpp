@@ -50,11 +50,11 @@ Reader::decode(const BinaryBitmap& image) const
 
 	//printf(" DCReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-        DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _hints.characterSet());
-        //printf("DecoderResult status %d\n", (int)decoderResult.errorCode());
-        if (decoderResult.isValid()) {
-		    return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);
-        }
+		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _hints.characterSet());
+		//printf("DecoderResult status %d\n", (int)decoderResult.errorCode());
+		if (decoderResult.isValid()) {
+			return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);
+		}
 	}
 	return {};
 }

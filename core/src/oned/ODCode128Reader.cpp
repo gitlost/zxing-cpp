@@ -210,7 +210,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	while (true) {
 		if (!next.skipSymbol()) {
 			Diagnostics::clear();
-            //printf("next.skip fail\n");
+			//printf("next.skip fail\n");
 			return {};
 		}
 
@@ -218,13 +218,13 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 		int code = decodePattern(next);
 		if (code == -1) {
 			Diagnostics::clear();
-            #if 0
-            if (Size(rawCodes)) {
-                printf("decodePattern(next) fail Size(rawCodes) %d: ", Size(rawCodes));
-                for (int i = 0; i < Size(rawCodes); i++) printf(" %d", rawCodes[i]);
-                printf("\n");
-            }
-            #endif
+			#if 0
+			if (Size(rawCodes)) {
+				printf("decodePattern(next) fail Size(rawCodes) %d: ", Size(rawCodes));
+				for (int i = 0; i < Size(rawCodes); i++) printf(" %d", rawCodes[i]);
+				printf("\n");
+			}
+			#endif
 			return {};
 		}
 		if (code == CODE_STOP) {

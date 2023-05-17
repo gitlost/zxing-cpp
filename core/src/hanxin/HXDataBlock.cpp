@@ -362,10 +362,10 @@ std::vector<DataBlock> GetDataBlocks(const ByteArray& rawCodewords, const int ve
 		2, 26, 26, 62, 33, 28, 0, 0, 0,
 		79, 18, 28, 4, 33, 30, 0, 0, 0
 	};
-    const int tablePos = ((version - 1) * 36) + ((ecLevel - 1) * 9);
+	const int tablePos = ((version - 1) * 36) + ((ecLevel - 1) * 9);
 
 	int numBlocks = 0;
-    for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 3; i++) {
 		numBlocks += table[tablePos + (3 * i)];
 	}
 	//printf("%s(%d) %s: numBlocks %d\n", __FILE__, __LINE__, __func__, numBlocks);
@@ -374,8 +374,8 @@ std::vector<DataBlock> GetDataBlocks(const ByteArray& rawCodewords, const int ve
 
 	int cw = 0;
 	int block = 0;
-    for (int i = 0; i < 3 && table[tablePos + (3 * i)]; i++) {
-        const int batchSize = table[tablePos + (3 * i)];
+	for (int i = 0; i < 3 && table[tablePos + (3 * i)]; i++) {
+		const int batchSize = table[tablePos + (3 * i)];
 		const int dataLength = table[tablePos + (3 * i) + 1];
 		const int eccLength = table[tablePos + (3 * i) + 2];
 
@@ -389,7 +389,7 @@ std::vector<DataBlock> GetDataBlocks(const ByteArray& rawCodewords, const int ve
 			}
 		}
 		block += batchSize;
-    }
+	}
 	//printf("%s(%d) %s: cw %d\n", __FILE__, __LINE__, __func__, cw); fflush(stdout);
 
 	return result;

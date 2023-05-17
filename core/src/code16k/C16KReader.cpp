@@ -42,16 +42,16 @@ constexpr int CODE_PAD = 103;
 class C16KDecoder {
 public:
 	int codeSet = 0;
-    bool _readerInit = false;
-    std::string txt;
+	bool _readerInit = false;
+	std::string txt;
 
 	bool fnc4All = false;
 	bool fnc4Next = false;
-    int shift = 0;
+	int shift = 0;
 	int shift_from = 0;
 
 public:
-    C16KDecoder(int _codeSet, int impliedShiftB) : codeSet(_codeSet)
+	C16KDecoder(int _codeSet, int impliedShiftB) : codeSet(_codeSet)
 	{
 		if (impliedShiftB) {
 			shift = impliedShiftB - CODE_C_SHIFT1B + 1;
@@ -60,7 +60,7 @@ public:
 		}
 	}
 
-    bool decode(int code);
+	bool decode(int code);
 	bool readerInit() const { return _readerInit; }
 	const std::string& text() const { return txt; }
 };
@@ -134,7 +134,7 @@ bool C16KDecoder::decode(int code)
 			Diagnostics::put("PAD");
 			break;
 		case CODE_AB_SHIFT1:
-        case CODE_AB_SHIFT2:
+		case CODE_AB_SHIFT2:
 			if (shift_from) {
 				Diagnostics::put("ShiftInShift");
 				return false; // Shift within shift makes no sense
@@ -144,8 +144,8 @@ bool C16KDecoder::decode(int code)
 			codeSet = codeSet == CODE_CODE_A ? CODE_CODE_B : CODE_CODE_A;
 			Diagnostics::fmt("Sh%d%c", shift, codeSet == CODE_CODE_A ? 'A' : 'B');
 			break;
-        case CODE_AB_SHIFT2C:
-        case CODE_AB_SHIFT3C:
+		case CODE_AB_SHIFT2C:
+		case CODE_AB_SHIFT3C:
 			if (shift_from) {
 				Diagnostics::put("ShiftInShift");
 				return false; // Shift within shift makes no sense
@@ -180,18 +180,18 @@ constexpr int CHAR_LEN = 6;
 constexpr int START_STOP_CHAR_LEN = 4;
 
 const std::array<std::array<int, START_STOP_CHAR_LEN>, 8> START_STOP_CODE_PATTERNS = { {
-    /* EN 12323 Table 3 and Table 4 - Start patterns and stop patterns */
-    { 3, 2, 1, 1 }, { 2, 2, 2, 1 }, { 2, 1, 2, 2 }, { 1, 4, 1, 1 },
-    { 1, 1, 3, 2 }, { 1, 2, 3, 1 }, { 1, 1, 1, 4 }, { 3, 1, 1, 2 }
+	/* EN 12323 Table 3 and Table 4 - Start patterns and stop patterns */
+	{ 3, 2, 1, 1 }, { 2, 2, 2, 1 }, { 2, 1, 2, 2 }, { 1, 4, 1, 1 },
+	{ 1, 1, 3, 2 }, { 1, 2, 3, 1 }, { 1, 1, 1, 4 }, { 3, 1, 1, 2 }
 } };
 
 /* EN 12323 Table 5 - Start and stop values defining row numbers */
 static const int StartValues[16] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7
+	0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7
 };
 
 static const int StopValues[16] = {
-    0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7, 0, 1, 2, 3
+	0, 1, 2, 3, 4, 5, 6, 7, 4, 5, 6, 7, 0, 1, 2, 3
 };
 
 const std::array<std::array<int, CHAR_LEN>, 107> CODE_PATTERNS = { {
@@ -307,145 +307,145 @@ const std::array<std::array<int, CHAR_LEN>, 107> CODE_PATTERNS = { {
 template <typename C>
 static bool DetectRowStartCode(const C& c, int row)
 {
-    float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StartValues[row]], MAX_INDIVIDUAL_VARIANCE);
+	float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StartValues[row]], MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
 
 template <typename C>
 static bool DetectRowStopCode(const C& c, int row)
 {
-    float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StopValues[row]], MAX_INDIVIDUAL_VARIANCE);
+	float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StopValues[row]], MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
 
 template <typename C>
 static int DecodeDigit(const C& c)
 {
-    return OneD::RowReader::DecodeDigit(c, CODE_PATTERNS, MAX_AVG_VARIANCE, MAX_INDIVIDUAL_VARIANCE, false);
+	return OneD::RowReader::DecodeDigit(c, CODE_PATTERNS, MAX_AVG_VARIANCE, MAX_INDIVIDUAL_VARIANCE, false);
 }
 
 Result DetectSymbol(const BinaryBitmap& image)
 {
-    PointI tl, tr, br, bl;
-    std::vector<std::vector <int>> rows;
+	PointI tl, tr, br, bl;
+	std::vector<std::vector <int>> rows;
 
-    std::vector<int> rawCodes;
-    int xStart = -1, xEnd = -1, lastRowNumber = -1;
-    for (int rowNumber = 0; rowNumber < image.height(); rowNumber++) {
-        //printf("rowNumber %d\n", rowNumber);
-        PatternRow bars;
+	std::vector<int> rawCodes;
+	int xStart = -1, xEnd = -1, lastRowNumber = -1;
+	for (int rowNumber = 0; rowNumber < image.height(); rowNumber++) {
+		//printf("rowNumber %d\n", rowNumber);
+		PatternRow bars;
 		if (!image.getPatternRow(rowNumber, 0 /*rotate*/, bars)) {
-            continue;
-        }
-        PatternView view(bars);
-        //printf("initial view:"); for (int i = 0; i < view.size(); i++) { printf(" %d", view[i]); } printf("\n");
+			continue;
+		}
+		PatternView view(bars);
+		//printf("initial view:"); for (int i = 0; i < view.size(); i++) { printf(" %d", view[i]); } printf("\n");
 
-        PatternView next = view.subView(0, START_STOP_CHAR_LEN);
-        if (!DetectRowStartCode(next, Size(rows))) {
-            //printf("!DetectRowStartCode %d\n", rowNumber);
-            continue;
-        }
-        xStart = next.pixelsInFront();
-        rawCodes.clear();
-        for (;;) {
-            if (!next.skipSymbol()) {
-                if (next.size() != CHAR_LEN) {
-                    return Result(DecoderResult(FormatError("Skip fail")), {}, BarcodeFormat::Code16K);
-                }
-                next = next.subView(0, START_STOP_CHAR_LEN);
-                if (!DetectRowStopCode(next, Size(rows))) {
-                    if (Size(rawCodes) == 5) {
-                        return Result(DecoderResult(FormatError("DetectRowStopCode fail")), {}, BarcodeFormat::Code16K);
-                    }
-                    rawCodes.clear();
-                } else {
-                    xEnd = next.pixelsTillEnd();
-                }
-                break;
-            }
-            if (next.size() == START_STOP_CHAR_LEN) {
-                next.shift(1); // Skip 1X guard
-                next = next.subView(0, CHAR_LEN);
-            }
-            int code = DecodeDigit(next);
-            if (code == -1) {
+		PatternView next = view.subView(0, START_STOP_CHAR_LEN);
+		if (!DetectRowStartCode(next, Size(rows))) {
+			//printf("!DetectRowStartCode %d\n", rowNumber);
+			continue;
+		}
+		xStart = next.pixelsInFront();
+		rawCodes.clear();
+		for (;;) {
+			if (!next.skipSymbol()) {
+				if (next.size() != CHAR_LEN) {
+					return Result(DecoderResult(FormatError("Skip fail")), {}, BarcodeFormat::Code16K);
+				}
+				next = next.subView(0, START_STOP_CHAR_LEN);
+				if (!DetectRowStopCode(next, Size(rows))) {
+					if (Size(rawCodes) == 5) {
+						return Result(DecoderResult(FormatError("DetectRowStopCode fail")), {}, BarcodeFormat::Code16K);
+					}
+					rawCodes.clear();
+				} else {
+					xEnd = next.pixelsTillEnd();
+				}
+				break;
+			}
+			if (next.size() == START_STOP_CHAR_LEN) {
+				next.shift(1); // Skip 1X guard
+				next = next.subView(0, CHAR_LEN);
+			}
+			int code = DecodeDigit(next);
+			if (code == -1) {
 				printf("code -1\n");
-                next = next.subView(0, START_STOP_CHAR_LEN);
-                if (!DetectRowStopCode(next, Size(rows))) {
-                    if (Size(rawCodes) == 5) {
-                        return Result(DecoderResult(FormatError("DetectRowStopCode fail")), {}, BarcodeFormat::Code16K);
-                    }
-                    rawCodes.clear();
-                } else {
-                    xEnd = next.pixelsTillEnd();
-                }
-                break;
-            }
+				next = next.subView(0, START_STOP_CHAR_LEN);
+				if (!DetectRowStopCode(next, Size(rows))) {
+					if (Size(rawCodes) == 5) {
+						return Result(DecoderResult(FormatError("DetectRowStopCode fail")), {}, BarcodeFormat::Code16K);
+					}
+					rawCodes.clear();
+				} else {
+					xEnd = next.pixelsTillEnd();
+				}
+				break;
+			}
 
-            rawCodes.push_back(narrow_cast<uint8_t>(code));
-        }
-        if (Size(rawCodes) != 5) {
-            continue;
-        }
+			rawCodes.push_back(narrow_cast<uint8_t>(code));
+		}
+		if (Size(rawCodes) != 5) {
+			continue;
+		}
 
-        if (rows.empty()) {
-            tl = PointI(xStart, rowNumber);
-            tr = PointI(xEnd, rowNumber);
-            rows.push_back(rawCodes);
-        } else {
-            rows.push_back(rawCodes);
-        }
-        lastRowNumber = rowNumber;
-    }
-    br = PointI(xEnd, lastRowNumber);
-    bl = PointI(xStart, lastRowNumber);
+		if (rows.empty()) {
+			tl = PointI(xStart, rowNumber);
+			tr = PointI(xEnd, rowNumber);
+			rows.push_back(rawCodes);
+		} else {
+			rows.push_back(rawCodes);
+		}
+		lastRowNumber = rowNumber;
+	}
+	br = PointI(xEnd, lastRowNumber);
+	bl = PointI(xStart, lastRowNumber);
 
 #if 0
-    for (int i = 0; i < Size(rows); i++) {
-        printf("row %d:", i);
-        for (int j = 0; j < Size(rows[i]); j++) printf(" %d,", rows[i][j]);
-        printf("\n");
-    }
+	for (int i = 0; i < Size(rows); i++) {
+		printf("row %d:", i);
+		for (int j = 0; j < Size(rows[i]); j++) printf(" %d,", rows[i][j]);
+		printf("\n");
+	}
 #endif
 
-    if (Size(rows) < 2) {
-        return Result(DecoderResult(FormatError("< 2 rows")), {}, BarcodeFormat::Code16K);
-    }
+	if (Size(rows) < 2) {
+		return Result(DecoderResult(FormatError("< 2 rows")), {}, BarcodeFormat::Code16K);
+	}
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)", Size(rows), Size(rows.front()));
 
-    int mode = rows[0][0] % 7;
-    int numberRows = (rows[0][0] - mode) / 7 + 2;
-    //printf("mode %d, numberRows %d\n", mode, numberRows);
-    if (numberRows != Size(rows)) {
-        return Result(DecoderResult(FormatError("number of rows mismatch")), {}, BarcodeFormat::Code16K);
-    }
+	int mode = rows[0][0] % 7;
+	int numberRows = (rows[0][0] - mode) / 7 + 2;
+	//printf("mode %d, numberRows %d\n", mode, numberRows);
+	if (numberRows != Size(rows)) {
+		return Result(DecoderResult(FormatError("number of rows mismatch")), {}, BarcodeFormat::Code16K);
+	}
 
-    int codeSet = CODE_CODE_A;
-    int impliedShiftB = 0;
-    AIFlag aiFlag = AIFlag::None;
+	int codeSet = CODE_CODE_A;
+	int impliedShiftB = 0;
+	AIFlag aiFlag = AIFlag::None;
 
-    if (mode == 1 || mode == 3) {
-        codeSet = CODE_CODE_B;
+	if (mode == 1 || mode == 3) {
+		codeSet = CODE_CODE_B;
 		if (mode == 3) {
 			aiFlag = AIFlag::GS1;
 		}
-    } else if (mode == 2 || mode >= 4) {
-        codeSet = CODE_CODE_C;
-        if (mode == 4) {
+	} else if (mode == 2 || mode >= 4) {
+		codeSet = CODE_CODE_C;
+		if (mode == 4) {
 			aiFlag = AIFlag::GS1;
-        } else if (mode == 5) {
-            impliedShiftB = CODE_C_SHIFT1B;
-        } else if (mode == 6) {
-            impliedShiftB = CODE_C_SHIFT2B;
-        }
-    }
+		} else if (mode == 5) {
+			impliedShiftB = CODE_C_SHIFT1B;
+		} else if (mode == 6) {
+			impliedShiftB = CODE_C_SHIFT2B;
+		}
+	}
 	Diagnostics::fmt("Mode(%d,%d,%d,%d)", mode, codeSet, impliedShiftB, (int)aiFlag);
 
 	C16KDecoder decoder(codeSet, impliedShiftB);
 	//printf("codeSet %d, shift %d, shift_from %d\n", decoder.codeSet, decoder.shift, decoder.shift_from);
 
-    std::string text;
+	std::string text;
 	int rowStart = 1;
 	bool haveD1Pad = false;
 	if (rows[0][1] == CODE_FNC_1) { // D1
@@ -469,15 +469,15 @@ Result DetectSymbol(const BinaryBitmap& image)
 		rowStart = 2;
 	}
 
-    for (int i = 0; i < Size(rows); i++) {
-        const std::vector<int>& row = rows[i];
-        for (int j = rowStart; j < Size(row) - (i + 1 == Size(rows) ? 2 : 0); j++) {
-            if (!decoder.decode(row[j])) {
-                return Result(DecoderResult(FormatError("Decode")), {}, BarcodeFormat::Code16K);
-            }
-        }
+	for (int i = 0; i < Size(rows); i++) {
+		const std::vector<int>& row = rows[i];
+		for (int j = rowStart; j < Size(row) - (i + 1 == Size(rows) ? 2 : 0); j++) {
+			if (!decoder.decode(row[j])) {
+				return Result(DecoderResult(FormatError("Decode")), {}, BarcodeFormat::Code16K);
+			}
+		}
 		rowStart = 0;
-    }
+	}
 
 	// EN 12323:2005 Annex E Table E.1
 	SymbologyIdentifier si = {'K', '0', 0, aiFlag};
@@ -489,10 +489,10 @@ Result DetectSymbol(const BinaryBitmap& image)
 		si.modifier = '4';
 	}
 
-    DecoderResult decoderResult(Content(ByteArray(decoder.text()), si, CharacterSet::ISO8859_1));
-    decoderResult.setReaderInit(decoder.readerInit());
+	DecoderResult decoderResult(Content(ByteArray(decoder.text()), si, CharacterSet::ISO8859_1));
+	decoderResult.setReaderInit(decoder.readerInit());
 
-    return Result(std::move(decoderResult), Position(tl, tr, br, bl), BarcodeFormat::Code16K);
+	return Result(std::move(decoderResult), Position(tl, tr, br, bl), BarcodeFormat::Code16K);
 }
 
 static Result DecodePure(const BinaryBitmap& image)
@@ -500,9 +500,9 @@ static Result DecodePure(const BinaryBitmap& image)
 	Result res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-        printf("ERROR: %s\n", ToString(res.error()).c_str());
+		printf("ERROR: %s\n", ToString(res.error()).c_str());
 		return {};
-    }
+	}
 
 	return res;
 }
@@ -514,7 +514,7 @@ Reader::decode(const BinaryBitmap& image) const
 		(void)image;
 		return {};
 	}
-    return DecodePure(image);
+	return DecodePure(image);
 }
 
 } // namespace ZXing::Code16K

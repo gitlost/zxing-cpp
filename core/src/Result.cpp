@@ -118,12 +118,12 @@ int Result::orientation() const
 
 std::vector<std::pair<int,int>> Result::ECIs() const
 {
-    std::vector<std::pair<int,int>> ret;
-    for (int i = 0, cnt = Size(_content.encodings); i < cnt; i++) {
-        if (_content.encodings[i].isECI)
-            ret.push_back(std::pair(ToInt(_content.encodings[i].eci), _content.encodings[i].pos));
-    }
-    return ret;
+	std::vector<std::pair<int,int>> ret;
+	for (int i = 0, cnt = Size(_content.encodings); i < cnt; i++) {
+		if (_content.encodings[i].isECI)
+			ret.push_back(std::pair(ToInt(_content.encodings[i].eci), _content.encodings[i].pos));
+	}
+	return ret;
 }
 
 std::string Result::symbologyIdentifier() const

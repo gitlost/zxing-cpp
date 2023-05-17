@@ -372,7 +372,7 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	}
 
 	RemovePairs(allPairs, pairs);
-    Diagnostics::fmt("Pairs(%d)", Size(pairs));
+	Diagnostics::fmt("Pairs(%d)", Size(pairs));
 
 	// TODO: EstimatePosition misses part of the symbol in the stacked case where the last row contains less pairs than
 	// the first

@@ -34,9 +34,9 @@ namespace ZXing::DotCode {
 namespace DecodedBitStreamParser {
 
 // Table 1
-constexpr int CODESET_C	= 1;
-constexpr int CODESET_A	= 2;
-constexpr int CODESET_B	= 3;
+constexpr int CODESET_C = 1;
+constexpr int CODESET_A = 2;
+constexpr int CODESET_B = 3;
 
 constexpr int CC_1710 = 100;
 constexpr int CC_LATCH_A = 101;
@@ -185,7 +185,7 @@ static void ProcessBinaryArray(std::vector<uint16_t>& binary, uint64_t& b103, in
 				} else {
 					eci = (binary[i + 1] << 16) | (binary[i + 2] << 8) | binary[i + 3];
 				}
-                result.switchEncoding(ECI(eci));
+					result.switchEncoding(ECI(eci));
 			}
 			i += cnt;
 		}
@@ -270,233 +270,233 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset)
 	ParseStructuredAppend(codewords, sai);
 	int length = Size(codewords);
 
-    try
-    {
-        for (position = 1; position < length; position++) {
-            int code = codewords[position];
-            if (code >= C_FNC1) { // Common to all codesets
-                switch (code) {
-                case C_FNC1:
-                    if (position == 1) {
-                        gs1 = false;
-                        position_macro++;
-                        Diagnostics::put("FNC1(Pos1)");
-                    } else if ((position == 2 && codewords[1] <= 99)
-                                || (position == 3 && codewords[1] == CC_LATCH_A && codewords[2] >= 33 && codewords[2] <= 58)
-                                || (position == 3 && codewords[1] >= CC_SHIFT_B && codewords[1] <= CC_LATCH_B
-                                    && ((codewords[2] >= 33 && codewords[2] <= 58)
-                                        || (codewords[2] >= 65 && codewords[2] <= 90)))) {
-                        // AIM Application Indicator format
-                        aim = true;
-                        Diagnostics::fmt("FNC1(Pos%d)", position);
-                        if (position == 2) {
-                            if (codewords[1] < 10) {
-                                result.push_back('0');
-                            }
-                            result.append(std::to_string(codewords[1]));
-                        } else if (position == 3 && codewords[1] == CC_LATCH_A) {
-                            result.push_back((char)(codewords[1] + 32));
-                        } else {
-                            result.push_back((char)(codewords[1] + 32));
-                        }
-                    } else {
-                        result.push_back('\x1D');
-                        Diagnostics::put("FNC1(<GS>)");
-                    }
-                    break;
-                case C_FNC2:
-                    set_position_macro = position + 2 == position_macro;
-                    // Note Structured Append FNC2 removed above if present, so only ECI
-                    result.switchEncoding(ParseECIValue(codewords, position));
-                    if (set_position_macro) {
-                        position_macro = position + 2; // Need LATCH_B so 2nd codeword (excluding initial mask codeword)
-                    }
-                    break;
-                case C_FNC3:
-                    if (position == 1) {
-                        readerInit = true;
-                        Diagnostics::put("FNC3(ReaderInit)");
-                    } else {
-                        // Symbol separation - ignore for now
-                        Diagnostics::put("FNC3");
-                    }
-                    break;
-                case C_UPPERSHIFT_A:
-                    if (position < length) {
-                        Diagnostics::put("UPSHA");
-                        code = codewords[++position];
-                        if (code < 64) {
-                            result.push_back((char)((code + 32) | 0x80));
-                        } else if (code < 96) {
-                            result.push_back((char)((code - 64) | 0x80));
-                        } else {
-                            Diagnostics::put("Error(UPSHA)");
-                        }
-                    }
-                    break;
-                case C_UPPERSHIFT_B:
-                    if (position < length) {
-                        Diagnostics::put("UPSHB");
-                        code = codewords[++position];
-                        if (code < 96) {
-                            result.push_back((char)((code + 32) | 0x80));
-                        } else {
-                            Diagnostics::put("Error(UPSHB)");
-                        }
-                    }
-                    break;
-                case C_BINARY_LATCH:
-                    Diagnostics::put("BIN_LATCH");
-                    if (position + 1 < length) {
-                        ProcessBinary(codewords, position, result, codeset);
-                    }
-                    break;
-                }
+	try
+	{
+		for (position = 1; position < length; position++) {
+			int code = codewords[position];
+			if (code >= C_FNC1) { // Common to all codesets
+					switch (code) {
+					case C_FNC1:
+						if (position == 1) {
+							gs1 = false;
+							position_macro++;
+							Diagnostics::put("FNC1(Pos1)");
+						} else if ((position == 2 && codewords[1] <= 99)
+									|| (position == 3 && codewords[1] == CC_LATCH_A && codewords[2] >= 33 && codewords[2] <= 58)
+									|| (position == 3 && codewords[1] >= CC_SHIFT_B && codewords[1] <= CC_LATCH_B
+										&& ((codewords[2] >= 33 && codewords[2] <= 58)
+											|| (codewords[2] >= 65 && codewords[2] <= 90)))) {
+							// AIM Application Indicator format
+							aim = true;
+							Diagnostics::fmt("FNC1(Pos%d)", position);
+							if (position == 2) {
+								if (codewords[1] < 10) {
+									result.push_back('0');
+								}
+								result.append(std::to_string(codewords[1]));
+							} else if (position == 3 && codewords[1] == CC_LATCH_A) {
+								result.push_back((char)(codewords[1] + 32));
+							} else {
+								result.push_back((char)(codewords[1] + 32));
+							}
+						} else {
+							result.push_back('\x1D');
+							Diagnostics::put("FNC1(<GS>)");
+						}
+						break;
+					case C_FNC2:
+						set_position_macro = position + 2 == position_macro;
+						// Note Structured Append FNC2 removed above if present, so only ECI
+						result.switchEncoding(ParseECIValue(codewords, position));
+						if (set_position_macro) {
+							position_macro = position + 2; // Need LATCH_B so 2nd codeword (excluding initial mask codeword)
+						}
+						break;
+					case C_FNC3:
+						if (position == 1) {
+							readerInit = true;
+							Diagnostics::put("FNC3(ReaderInit)");
+						} else {
+							// Symbol separation - ignore for now
+							Diagnostics::put("FNC3");
+						}
+						break;
+					case C_UPPERSHIFT_A:
+						if (position < length) {
+							Diagnostics::put("UPSHA");
+							code = codewords[++position];
+							if (code < 64) {
+								result.push_back((char)((code + 32) | 0x80));
+							} else if (code < 96) {
+								result.push_back((char)((code - 64) | 0x80));
+							} else {
+								Diagnostics::put("Error(UPSHA)");
+							}
+						}
+						break;
+					case C_UPPERSHIFT_B:
+						if (position < length) {
+							Diagnostics::put("UPSHB");
+							code = codewords[++position];
+							if (code < 96) {
+								result.push_back((char)((code + 32) | 0x80));
+							} else {
+								Diagnostics::put("Error(UPSHB)");
+							}
+						}
+						break;
+					case C_BINARY_LATCH:
+						Diagnostics::put("BIN_LATCH");
+						if (position + 1 < length) {
+							ProcessBinary(codewords, position, result, codeset);
+						}
+						break;
+					}
 
-            } else if ((shift == 0 && codeset == CODESET_C) || shift == CODESET_C) {
-                if (position == position_1710) {
-                    result.append("10");
-                    position_1710 = 0;
-                    Diagnostics::put("10(1710)");
-                }
-                if (code < 100) {
-                    if (code < 10) {
-                        result.push_back('0');
-                    }
-                    result.append(std::to_string(code));
-                    Diagnostics::fmt("%02d", code);
-                } else {
-                    if (position == 1 && code != CC_1710) {
-                        gs1 = false;
-                        Diagnostics::put("NotCNotGS1(Pos1)");
-                    }
-                    switch (code) {
-                    case CC_1710:
-                        result.append("17");
-                        position_1710 = position + 1 + 3;
-                        Diagnostics::put("17(1710)");
-                        break;
-                    case CC_LATCH_A:
-                        codeset = CODESET_A;
-                        shift = shift_cnt = position_1710 = 0;
-                        Diagnostics::put("LATCHA");
-                        break;
-                    case CC_SHIFT_B:
-                    case CC_2SHIFT_B:
-                    case CC_3SHIFT_B:
-                    case CC_4SHIFT_B:
-                        shift = CODESET_B;
-                        shift_cnt = 1 + code - CC_SHIFT_B + 1; // +1 to counter decrement below
-                        position_1710 = 0;
-                        Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
-                        break;
-                    case CC_LATCH_B:
-                        codeset = CODESET_B;
-                        shift = shift_cnt = position_1710 = 0;
-                        Diagnostics::put("LATCHB");
-                        break;
-                    }
-                }
+			} else if ((shift == 0 && codeset == CODESET_C) || shift == CODESET_C) {
+					if (position == position_1710) {
+						result.append("10");
+						position_1710 = 0;
+						Diagnostics::put("10(1710)");
+					}
+					if (code < 100) {
+						if (code < 10) {
+							result.push_back('0');
+						}
+						result.append(std::to_string(code));
+						Diagnostics::fmt("%02d", code);
+					} else {
+						if (position == 1 && code != CC_1710) {
+							gs1 = false;
+							Diagnostics::put("NotCNotGS1(Pos1)");
+						}
+						switch (code) {
+						case CC_1710:
+							result.append("17");
+							position_1710 = position + 1 + 3;
+							Diagnostics::put("17(1710)");
+							break;
+						case CC_LATCH_A:
+							codeset = CODESET_A;
+							shift = shift_cnt = position_1710 = 0;
+							Diagnostics::put("LATCHA");
+							break;
+						case CC_SHIFT_B:
+						case CC_2SHIFT_B:
+						case CC_3SHIFT_B:
+						case CC_4SHIFT_B:
+							shift = CODESET_B;
+							shift_cnt = 1 + code - CC_SHIFT_B + 1; // +1 to counter decrement below
+							position_1710 = 0;
+							Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
+							break;
+						case CC_LATCH_B:
+							codeset = CODESET_B;
+							shift = shift_cnt = position_1710 = 0;
+							Diagnostics::put("LATCHB");
+							break;
+						}
+					}
 
-            } else if ((shift == 0 && codeset == CODESET_A) || shift == CODESET_A) {
-                if (code < 96) {
-                    if (code < 64) {
-                        result.push_back((char)(code + 32));
-                    } else {
-                        result.push_back((char)(code - 64));
-                    }
-                } else {
-                    switch (code) {
-                    case CA_SHIFT_B:
-                    case CA_2SHIFT_B:
-                    case CA_3SHIFT_B:
-                    case CA_4SHIFT_B:
-                    case CA_5SHIFT_B:
-                    case CA_6SHIFT_B:
-                        shift = CODESET_B;
-                        shift_cnt = 1 + code - CA_SHIFT_B + 1; // +1 to counter decrement below
-                        Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
-                        break;
-                    case CA_LATCH_B:
-                        codeset = CODESET_B;
-                        shift = shift_cnt = 0;
-                        Diagnostics::put("LATCHB");
-                        break;
-                    case CA_2SHIFT_C:
-                    case CA_3SHIFT_C:
-                    case CA_4SHIFT_C:
-                        shift = CODESET_C;
-                        shift_cnt = 2 + code - CA_2SHIFT_C + 1; // +1 to counter decrement below
-                        Diagnostics::fmt("SHIFTC%d", shift_cnt - 1);
-                        break;
-                    case CA_LATCH_C:
-                        codeset = CODESET_C;
-                        shift = shift_cnt = 0;
-                        Diagnostics::put("LATCHC");
-                        break;
-                    }
-                }
+			} else if ((shift == 0 && codeset == CODESET_A) || shift == CODESET_A) {
+					if (code < 96) {
+						if (code < 64) {
+							result.push_back((char)(code + 32));
+						} else {
+							result.push_back((char)(code - 64));
+						}
+					} else {
+						switch (code) {
+						case CA_SHIFT_B:
+						case CA_2SHIFT_B:
+						case CA_3SHIFT_B:
+						case CA_4SHIFT_B:
+						case CA_5SHIFT_B:
+						case CA_6SHIFT_B:
+							shift = CODESET_B;
+							shift_cnt = 1 + code - CA_SHIFT_B + 1; // +1 to counter decrement below
+							Diagnostics::fmt("%dSHIFTB", shift_cnt - 1);
+							break;
+						case CA_LATCH_B:
+							codeset = CODESET_B;
+							shift = shift_cnt = 0;
+							Diagnostics::put("LATCHB");
+							break;
+						case CA_2SHIFT_C:
+						case CA_3SHIFT_C:
+						case CA_4SHIFT_C:
+							shift = CODESET_C;
+							shift_cnt = 2 + code - CA_2SHIFT_C + 1; // +1 to counter decrement below
+							Diagnostics::fmt("SHIFTC%d", shift_cnt - 1);
+							break;
+						case CA_LATCH_C:
+							codeset = CODESET_C;
+							shift = shift_cnt = 0;
+							Diagnostics::put("LATCHC");
+							break;
+						}
+					}
 
-            } else if ((shift == 0 && codeset == CODESET_B) || shift == CODESET_B) {
-                if (code < 96) {
-                    result.push_back((char)(code + 32));
-                } else {
-                    // Table 2 Code Set B dual-function macros/control chars
-                    static const char* macroBegins[] = { "[)>\03605\035", "[)>\03606\035", "[)>\03612\035", "[)>\036" };
-                    static const char* macroEnds[] = { "\036\004", "\036\004", "\036\004", "\004" };
-                    static const char ctrls[] = { '\x09', '\x1C', '\x1D', '\x1E' }; // HT, FS, GS, RS
-                    switch (code) {
-                    case CB_CRLF:
-                        result.append("\x0D\x0A");
-                        Diagnostics::put("CRLF");
-                        break;
-                    case CB_HT:
-                    case CB_FS:
-                    case CB_GS:
-                    case CB_RS:
-                        if (position == position_macro) {
-                            // Macros
-                            result.append(macroBegins[code - CB_HT]);
-                            macroEnd = macroEnds[code - CB_HT];
-                            Diagnostics::fmt("Macro%d", code);
-                        } else {
-                            result.push_back(ctrls[code - CB_HT]);
-                        }
-                        break;
-                    case CB_SHIFT_A:
-                        shift = CODESET_A;
-                        shift_cnt = 1 + 1; // +1 to counter decrement below
-                        Diagnostics::put("SHIFTA");
-                        break;
-                    case CB_LATCH_A:
-                        codeset = CODESET_A;
-                        shift = shift_cnt = 0;
-                        Diagnostics::put("LATCHA");
-                        break;
-                    case CB_2SHIFT_C:
-                    case CB_3SHIFT_C:
-                    case CB_4SHIFT_C:
-                        shift = CODESET_C;
-                        shift_cnt = 2 + code - CB_2SHIFT_C + 1; // +1 to counter decrement below
-                        Diagnostics::fmt("%dSHIFTC", shift_cnt - 1);
-                        break;
-                    case CB_LATCH_C:
-                        codeset = CODESET_C;
-                        shift = shift_cnt = 0;
-                        Diagnostics::put("LATCHC");
-                        break;
-                    }
-                }
-            }
-            if (shift && shift_cnt) {
-                shift_cnt--;
-                if (shift_cnt == 0) {
-                    shift = 0;
-                    Diagnostics::put("SHEND");
-                }
-            }
-        }
-    }
+			} else if ((shift == 0 && codeset == CODESET_B) || shift == CODESET_B) {
+					if (code < 96) {
+						result.push_back((char)(code + 32));
+					} else {
+						// Table 2 Code Set B dual-function macros/control chars
+						static const char* macroBegins[] = { "[)>\03605\035", "[)>\03606\035", "[)>\03612\035", "[)>\036" };
+						static const char* macroEnds[] = { "\036\004", "\036\004", "\036\004", "\004" };
+						static const char ctrls[] = { '\x09', '\x1C', '\x1D', '\x1E' }; // HT, FS, GS, RS
+						switch (code) {
+						case CB_CRLF:
+							result.append("\x0D\x0A");
+							Diagnostics::put("CRLF");
+							break;
+						case CB_HT:
+						case CB_FS:
+						case CB_GS:
+						case CB_RS:
+							if (position == position_macro) {
+								// Macros
+								result.append(macroBegins[code - CB_HT]);
+								macroEnd = macroEnds[code - CB_HT];
+								Diagnostics::fmt("Macro%d", code);
+							} else {
+								result.push_back(ctrls[code - CB_HT]);
+							}
+							break;
+						case CB_SHIFT_A:
+							shift = CODESET_A;
+							shift_cnt = 1 + 1; // +1 to counter decrement below
+							Diagnostics::put("SHIFTA");
+							break;
+						case CB_LATCH_A:
+							codeset = CODESET_A;
+							shift = shift_cnt = 0;
+							Diagnostics::put("LATCHA");
+							break;
+						case CB_2SHIFT_C:
+						case CB_3SHIFT_C:
+						case CB_4SHIFT_C:
+							shift = CODESET_C;
+							shift_cnt = 2 + code - CB_2SHIFT_C + 1; // +1 to counter decrement below
+							Diagnostics::fmt("%dSHIFTC", shift_cnt - 1);
+							break;
+						case CB_LATCH_C:
+							codeset = CODESET_C;
+							shift = shift_cnt = 0;
+							Diagnostics::put("LATCHC");
+							break;
+						}
+					}
+			}
+			if (shift && shift_cnt) {
+					shift_cnt--;
+					if (shift_cnt == 0) {
+						shift = 0;
+						Diagnostics::put("SHEND");
+					}
+			}
+		}
+	}
 	catch (const std::exception &)
 	{
 		// from readBits() calls

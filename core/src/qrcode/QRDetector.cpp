@@ -85,7 +85,7 @@ std::vector<ConcentricPattern> FindFinderPatterns(const BitMatrix& image, bool t
 					log(*pattern - PointF(.2, 0), 3);
 					log(*pattern + PointF(0, .2), 3);
 					log(*pattern - PointF(0, .2), 3);
-					//assert(image.get(pattern->x, pattern->y));
+					assert(image.get(pattern->x, pattern->y));
 					res.push_back(*pattern);
 				}
 			}

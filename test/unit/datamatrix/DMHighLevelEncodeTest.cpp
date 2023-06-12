@@ -78,7 +78,7 @@ namespace {
 TEST(DMHighLevelEncodeTest, ASCIIEncodation)
 {
 	std::string visualized = Encode("123456");
-    EXPECT_EQ(visualized, "142 164 186");
+	EXPECT_EQ(visualized, "142 164 186");
 
 	visualized = Encode("123456\u00A3");
 	EXPECT_EQ(visualized, "142 164 186 235 36");
@@ -92,7 +92,7 @@ TEST(DMHighLevelEncodeTest, C40EncodationBasic1)
 {
 	std::string visualized = Encode("AIMAIMAIM");
 	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 254");
-    //230 shifts to C40 encodation, 254 unlatches, "else" case
+	//230 shifts to C40 encodation, 254 unlatches, "else" case
 }
 
 TEST(DMHighLevelEncodeTest, C40EncodationBasic2)
@@ -135,143 +135,145 @@ TEST(DMHighLevelEncodeTest, C40EncodationSpecExample)
 
 TEST(DMHighLevelEncodeTest, C40EncodationSpecialCases1)
 {
-    //Special tests avoiding ultra-long test strings because these tests are only used
-    //with the 16x48 symbol (47 data codewords)
-    DataMatrix::OverrideSymbolSet(TEST_SYMBOLS, Size(TEST_SYMBOLS));
+	//Special tests avoiding ultra-long test strings because these tests are only used
+	//with the 16x48 symbol (47 data codewords)
+	DataMatrix::OverrideSymbolSet(TEST_SYMBOLS, Size(TEST_SYMBOLS));
 
 	std::string visualized = Encode("AIMAIMAIMAIMAIMAIM");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 91 11");
-    //case "a": Unlatch is not required
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 91 11");
+	//case "a": Unlatch is not required
 
 	visualized = Encode("AIMAIMAIMAIMAIMAI");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 90 241");
-    //case "b": Add trailing shift 0 and Unlatch is not required
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 90 241");
+	//case "b": Add trailing shift 0 and Unlatch is not required
 
 	visualized = Encode("AIMAIMAIMAIMAIMA");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 254 66");
-    //case "c": Unlatch and write last character in ASCII
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 254 66");
+	//case "c": Unlatch and write last character in ASCII
 
 	DataMatrix::UseDefaultSymbolSet();
 
 	visualized = Encode("AIMAIMAIMAIMAIMAI");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 254 66 74 129 237");
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 254 66 74 129 237");
 
 	visualized = Encode("AIMAIMAIMA");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 66");
-    //case "d": Skip Unlatch and write last character in ASCII
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 66");
+	//case "d": Skip Unlatch and write last character in ASCII
 }
 
 TEST(DMHighLevelEncodeTest, C40EncodationSpecialCases2) {
 
 	std::string visualized = Encode("AIMAIMAIMAIMAIMAIMAI");
-    EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 91 11 254 66 74");
-    //available > 2, rest = 2 --> unlatch and encode as ASCII
+	EXPECT_EQ(visualized, "230 91 11 91 11 91 11 91 11 91 11 91 11 254 66 74");
+	//available > 2, rest = 2 --> unlatch and encode as ASCII
 }
 
 TEST(DMHighLevelEncodeTest, TextEncodation)
 {
 	std::string visualized = Encode("aimaimaim");
-    EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254");
-    //239 shifts to Text encodation, 254 unlatches
+	EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254");
+	//239 shifts to Text encodation, 254 unlatches
 
 	visualized = Encode("aimaimaim'");
-    EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254 40 129");
-    //EXPECT_EQ(visualized, "239 91 11 91 11 91 11 7 49 254");
-    //This is an alternative, but doesn't strictly follow the rules in the spec.
+	EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254 40 129");
+	//EXPECT_EQ(visualized, "239 91 11 91 11 91 11 7 49 254");
+	//This is an alternative, but doesn't strictly follow the rules in the spec.
 
 	visualized = Encode("aimaimaIm");
-    EXPECT_EQ(visualized, "239 91 11 91 11 87 218 110");
+	EXPECT_EQ(visualized, "239 91 11 91 11 87 218 110");
 
 	visualized = Encode("aimaimaimB");
-    EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254 67 129");
+	EXPECT_EQ(visualized, "239 91 11 91 11 91 11 254 67 129");
 
 	visualized = Encode("aimaimaim{txt}\u0004");
-    EXPECT_EQ(visualized, "239 91 11 91 11 91 11 16 218 236 107 181 69 254 129 237");
+	EXPECT_EQ(visualized, "239 91 11 91 11 91 11 16 218 236 107 181 69 254 129 237");
 }
 
 TEST(DMHighLevelEncodeTest, X12Encodation)
 {
-    //238 shifts to X12 encodation, 254 unlatches
+	//238 shifts to X12 encodation, 254 unlatches
 	std::string visualized = Encode("ABC>ABC123>AB");
-    EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 67");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 67");
 
 	visualized = Encode("ABC>ABC123>ABC");
-    EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 254 67 68");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 254 67 68");
 
 	visualized = Encode("ABC>ABC123>ABCD");
-    EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 254");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 254");
 
 	visualized = Encode("ABC>ABC123>ABCDE");
-    EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 70");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 70");
 
 	visualized = Encode("ABC>ABC123>ABCDEF");
-    EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 254 70 71 129 237");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 254 70 71 129 237");
 
+	visualized = Encode("ABC>ABC123>ABCDEF");
+	EXPECT_EQ(visualized, "238 89 233 14 192 100 207 44 31 96 82 254 70 71 129 237");
 }
 
 TEST(DMHighLevelEncodeTest, EDIFACTEncodation)
 {
-    //240 shifts to EDIFACT encodation
+	//240 shifts to EDIFACT encodation
 	std::string visualized = Encode(".A.C1.3.DATA.123DATA.123DATA");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 16 21 1 187 28 179 16 21 1 187 28 179 16 21 1");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 16 21 1 187 28 179 16 21 1 187 28 179 16 21 1");
 
 	visualized = Encode(".A.C1.3.X.X2..");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50 47 47");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50 47 47");
 
 	visualized = Encode(".A.C1.3.X.X2.");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50 47 129");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50 47 129");
 
 	visualized = Encode(".A.C1.3.X.X2");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 50");
 
 	visualized = Encode(".A.C1.3.X.X");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 31");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 230 31");
 
 	visualized = Encode(".A.C1.3.X.");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 231 192");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 98 231 192");
 
 	visualized = Encode(".A.C1.3.X");
-    EXPECT_EQ(visualized, "240 184 27 131 198 236 238 89");
+	EXPECT_EQ(visualized, "240 184 27 131 198 236 238 89");
 
-    //Checking temporary unlatch from EDIFACT
+	//Checking temporary unlatch from EDIFACT
 	visualized = Encode(".XXX.XXX.XXX.XXX.XXX.XXX.\u00FCXX.XXX.XXX.XXX.XXX.XXX.XXX");
-    EXPECT_EQ(visualized, "240 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24"
-							" 124 47 235 125 240" //<-- this is the temporary unlatch
-							" 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 89 89");
+	EXPECT_EQ(visualized, "240 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24 185 134 24"
+						  " 124 47 235 125 240" //<-- this is the temporary unlatch
+						  " 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 97 139 152 89 89");
 }
 
 TEST(DMHighLevelEncodeTest, Base256Encodation)
 {
-    //231 shifts to Base256 encodation
+	//231 shifts to Base256 encodation
 	std::string visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB");
 	EXPECT_EQ(visualized, "231 44 108 59 226 126 1 104");
 	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00BB");
-    EXPECT_EQ(visualized, "231 51 108 59 226 126 1 141 254 129");
+	EXPECT_EQ(visualized, "231 51 108 59 226 126 1 141 254 129");
 	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00E0\u00E1\u00BB");
-    EXPECT_EQ(visualized, "231 44 108 59 226 126 1 141 36 147");
+	EXPECT_EQ(visualized, "231 44 108 59 226 126 1 141 36 147");
 
 	visualized = Encode(" 23\u00A3"); //ASCII only (for reference)
-    EXPECT_EQ(visualized, "33 153 235 36 129");
+	EXPECT_EQ(visualized, "33 153 235 36 129");
 
 	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 234"); //Mixed Base256 + ASCII
-    EXPECT_EQ(visualized, "231 51 108 59 226 126 1 104 99 153 53 129");
+	EXPECT_EQ(visualized, "231 51 108 59 226 126 1 104 99 153 53 129");
 
 	visualized = Encode("\u00AB\u00E4\u00F6\u00FC\u00E9\u00BB 23\u00A3 1234567890123456789");
-    EXPECT_EQ(visualized, "231 55 108 59 226 126 1 104 99 10 161 167 185 142 164 186 208"
-							" 220 142 164 186 208 58 129 59 209 104 254 150 45");
+	EXPECT_EQ(visualized, "231 55 108 59 226 126 1 104 99 10 161 167 185 142 164 186 208"
+						  " 220 142 164 186 208 58 129 59 209 104 254 150 45");
 
-    visualized = Encode(CreateBinaryMessage(20));
-    EXPECT_EQ(visualized, "231 44 108 59 226 126 1 141 36 5 37 187 80 230 123 17 166 60 210 103 253 150");
-    visualized = Encode(CreateBinaryMessage(19)); //padding necessary at the end
-    EXPECT_EQ(visualized, "231 63 108 59 226 126 1 141 36 5 37 187 80 230 123 17 166 60 210 103 1 129");
+	visualized = Encode(CreateBinaryMessage(20));
+	EXPECT_EQ(visualized, "231 44 108 59 226 126 1 141 36 5 37 187 80 230 123 17 166 60 210 103 253 150");
+	visualized = Encode(CreateBinaryMessage(19)); // padding necessary at the end
+	EXPECT_EQ(visualized, "231 63 108 59 226 126 1 141 36 5 37 187 80 230 123 17 166 60 210 103 1 129");
 
-    visualized = Encode(CreateBinaryMessage(276));
+	visualized = Encode(CreateBinaryMessage(276));
 	std::string expectedStart = "231 38 219 2 208 120 20 150 35";
 	std::string epxectedEnd = "146 40 194 129";
 	EXPECT_EQ(visualized.substr(0, expectedStart.length()), expectedStart);
 	EXPECT_EQ(visualized.substr(visualized.length() - epxectedEnd.length()), epxectedEnd);
 
-    visualized = Encode(CreateBinaryMessage(277));
+	visualized = Encode(CreateBinaryMessage(277));
 	expectedStart = "231 38 220 2 208 120 20 150 35";
 	epxectedEnd = "146 40 190 87";
 	EXPECT_EQ(visualized.substr(0, expectedStart.length()), expectedStart);
@@ -298,16 +300,16 @@ TEST(DMHighLevelEncodeTest, tHelloWorld)
 
 TEST(DMHighLevelEncodeTest, Bug1664266)
 {
-    //There was an exception and the encoder did not handle the unlatching from
-    //EDIFACT encoding correctly
+	// There was an exception and the encoder did not handle the unlatching from
+	// EDIFACT encoding correctly
 
 	std::string visualized = Encode("CREX-TAN:h");
 	EXPECT_EQ(visualized, "240 13 33 88 181 64 78 124 59 105");
 
-    visualized = Encode("CREX-TAN:hh");
+	visualized = Encode("CREX-TAN:hh");
 	EXPECT_EQ(visualized, "240 13 33 88 181 64 78 124 59 105 105 129");
 
-    visualized = Encode("CREX-TAN:hhh");
+	visualized = Encode("CREX-TAN:hhh");
 	EXPECT_EQ(visualized, "240 13 33 88 181 64 78 124 59 105 105 105");
 }
 
@@ -325,8 +327,8 @@ TEST(DMHighLevelEncodeTest, X12Unlatch2)
 
 TEST(DMHighLevelEncodeTest, Bug3048549)
 {
-    //There was an IllegalArgumentException for an illegal character here because
-    //of an encoding problem of the character 0x0060 in Java source code.
+	//There was an IllegalArgumentException for an illegal character here because
+	//of an encoding problem of the character 0x0060 in Java source code.
 	std::string visualized = Encode("fiykmj*Rh2`,e6");
 	EXPECT_EQ(visualized, "239 122 87 154 40 7 171 115 207 12 130 71 155 254 129 237");
 }
@@ -334,22 +336,22 @@ TEST(DMHighLevelEncodeTest, Bug3048549)
 TEST(DMHighLevelEncodeTest, MacroCharacters)
 {
 	std::string visualized = Encode("[)>\u001E""05\u001D""5555\u001C""6666\u001E\u0004");
-    //EXPECT_EQ(visualized, "92 42 63 31 135 30 185 185 29 196 196 31 5 129 87 237");
+	//EXPECT_EQ(visualized, "92 42 63 31 135 30 185 185 29 196 196 31 5 129 87 237");
 	EXPECT_EQ(visualized, "236 185 185 29 196 196 129 56");
 }
 
 TEST(DMHighLevelEncodeTest, EncodingWithStartAsX12AndLatchToEDIFACTInTheMiddle)
 {
-    std::string visualized = Encode("*MEMANT-1F-MESTECH");
-    EXPECT_EQ(visualized, "238 10 99 164 204 254 240 82 220 70 180 209 83 80 80 200");
+	std::string visualized = Encode("*MEMANT-1F-MESTECH");
+	EXPECT_EQ(visualized, "238 10 99 164 204 254 240 82 220 70 180 209 83 80 80 200");
 }
 
 TEST(DMHighLevelEncodeTest, EDIFACTWithEODBug)
 {
 	std::string visualized = Visualize(
 	DataMatrix::Encode("abc<->ABCDE", DataMatrix::SymbolShape::SQUARE, -1, -1, -1, -1));
-    // switch to EDIFACT on '<', uses 10 code words + 2 padding. Buggy code introduced invalid 254 after the 5
-    EXPECT_EQ(visualized, "98 99 100 240 242 223 129 8 49 5 129 147");
+	// switch to EDIFACT on '<', uses 10 code words + 2 padding. Buggy code introduced invalid 254 after the 5
+	EXPECT_EQ(visualized, "98 99 100 240 242 223 129 8 49 5 129 147");
 }
 
 //  @Ignore

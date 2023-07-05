@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project (ZXing VERSION "2.0.0")
+project (ZXing VERSION "2.1.0")
 set (ZXING_SONAME 3) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
 #add_definitions(-DPRINT_DEBUG=1)
@@ -29,6 +29,7 @@ set (ZXING_CORE_LOCAL_DEFINES
     $<$<BOOL:${BUILD_READERS}>:-DZXING_BUILD_READERS>
     $<$<BOOL:${BUILD_WRITERS}>:-DZXING_BUILD_WRITERS>
     $<$<BOOL:${BUILD_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
+    $<$<BOOL:${BUILD_EXPERIMENTAL_API}>:-DZXING_BUILD_EXPERIMENTAL_API>
 )
 if (MSVC)
     set (ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES}

@@ -9,6 +9,7 @@ option (BUILD_EXAMPLE_DECODER "Build the example Decoder application" OFF)
 option (BUILD_BLACKBOX_TESTS "Build the black box reader/writer tests" OFF)
 option (BUILD_UNIT_TESTS "Build the unit tests (don't enable for production builds)" OFF)
 option (BUILD_PYTHON_MODULE "Build the python module" OFF)
+option (BUILD_PYTHON_TESTS "Build the python tests" OFF)
 option (BUILD_C_API "Build the C-API" OFF)
 option (BUILD_EXPERIMENTAL_API "Build with experimental API" OFF)
 option (BUILD_SANITIZE "Build with sanitize" OFF) # BUILD_PYTHON_MODULE must be OFF

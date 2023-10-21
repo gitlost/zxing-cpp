@@ -9,11 +9,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface ZXIBarcodeWriter : NSObject
 
--(nullable CGImageRef)write:(NSString *)contents
-                      width:(int)width
-                     height:(int)height
-                     format:(ZXIFormat)format
-                      error:(NSError **)error;
+-(nullable CGImageRef)writeString:(NSString *)contents
+                            width:(int)width
+                           height:(int)height
+                           format:(ZXIFormat)format
+                            error:(NSError *__autoreleasing  _Nullable *)error;
+
+-(nullable CGImageRef)writeData:(NSData *)data
+                          width:(int)width
+                         height:(int)height
+                         format:(ZXIFormat)format
+                          error:(NSError *__autoreleasing  _Nullable *)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

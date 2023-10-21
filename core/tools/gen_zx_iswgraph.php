@@ -13,9 +13,9 @@
 
 $basename = basename(__FILE__);
 
-// Using Unicode 15.0.0 (draft as of 2022-04-26)
-$unicode_ver = '15.0.0';
-$file = 'https://www.unicode.org/Public/15.0.0/ucd/UnicodeData.txt';
+// Using Unicode 15.1.0
+$unicode_ver = '15.1.0';
+$file = 'https://www.unicode.org/Public/15.1.0/ucd/UnicodeData.txt';
 
 if (($get = file_get_contents($file)) === false) {
 	exit("$basename:" . __LINE__ . " ERROR: Could not read file \"$file\"" . PHP_EOL);

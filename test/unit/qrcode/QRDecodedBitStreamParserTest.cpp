@@ -8,8 +8,6 @@
 #include "ByteArray.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "qrcode/QRDataMask.h"
-#include "qrcode/QRDecoder.h"
 #include "qrcode/QRErrorCorrectionLevel.h"
 #include "qrcode/QRVersion.h"
 
@@ -33,7 +31,7 @@ TEST(QRDecodedBitStreamParserTest, SimpleByteMode)
 	ba.appendBits(0xF1, 8);
 	ba.appendBits(0xF2, 8);
 	ba.appendBits(0xF3, 8);
-	auto result = DecodeBitStream(ba.toBytes(), *Version::FromNumber(1), ErrorCorrectionLevel::Medium).text();
+	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\xF1\xF2\xF3", result);
 }
 
@@ -46,7 +44,7 @@ TEST(QRDecodedBitStreamParserTest, SimpleSJIS)
 	ba.appendBits(0xA2, 8);
 	ba.appendBits(0xA3, 8);
 	ba.appendBits(0xD0, 8);
-	auto result = DecodeBitStream(ba.toBytes(), *Version::FromNumber(1), ErrorCorrectionLevel::Medium).text();
+	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\uff61\uff62\uff63\uff90", result);
 }
 
@@ -60,7 +58,7 @@ TEST(QRDecodedBitStreamParserTest, ECI)
 	ba.appendBits(0xA1, 8);
 	ba.appendBits(0xA2, 8);
 	ba.appendBits(0xA3, 8);
-	auto result = DecodeBitStream(ba.toBytes(), *Version::FromNumber(1), ErrorCorrectionLevel::Medium).text();
+	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\xED\xF3\xFA", result);
 }
 
@@ -71,7 +69,7 @@ TEST(QRDecodedBitStreamParserTest, Hanzi)
 	ba.appendBits(0x01, 4); // Subset 1 = GB2312 encoding
 	ba.appendBits(0x01, 8); // 1 characters
 	ba.appendBits(0x03C1, 13);
-	auto result = DecodeBitStream(ba.toBytes(), *Version::FromNumber(1), ErrorCorrectionLevel::Medium).text();
+	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\u963f", result);
 }
 
@@ -84,13 +82,13 @@ TEST(QRDecodedBitStreamParserTest, HanziLevel1)
 	// A5A2 (U+30A2) => A5A2 - A1A1 = 401, 4*60 + 01 = 0181
 	ba.appendBits(0x0181, 13);
 
-	auto result = DecodeBitStream(ba.toBytes(), *Version::FromNumber(1), ErrorCorrectionLevel::Medium).text();
+	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\u30a2", result);
 }
 
 TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 {
-	const Version& version = *Version::FromNumber(1);
+	const Version& version = *Version::Model2(1);
 	const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Medium;
 	DecoderResult result;
 
@@ -139,7 +137,7 @@ TEST(QRDecodedBitStreamParserTest, MicroQROutOfRange)
 {
 	{
 		// Issue #404 Exception: BitSource::readBits: out of range
-		const Version& version = *Version::FromNumber(3, true /*isMicro*/);
+		const Version& version = *Version::Micro(3);
 		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Medium;
 		DecoderResult result;
 		result = DecodeBitStream({0x9D, 0x15, 0xE1, 0x85, 0xB5, 0xC1, 0xB1, 0x94, 0xC0}, version, ecLevel);
@@ -150,7 +148,7 @@ TEST(QRDecodedBitStreamParserTest, MicroQROutOfRange)
 	}
 	{
 		// Issue #413
-		const Version& version = *Version::FromNumber(3, true /*isMicro*/);
+		const Version& version = *Version::Micro(3);
 		const ErrorCorrectionLevel ecLevel = ErrorCorrectionLevel::Low;
 		DecoderResult result;
 		result = DecodeBitStream({0xA5, 0x91, 0xE5, 0xB9, 0x85, 0xB5, 0xCD, 0xBD, 0x99, 0xD0, 0xC0}, version, ecLevel);

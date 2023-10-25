@@ -242,12 +242,12 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 	Content result;
 	result.hintedCharset = hintedCharset;
 	Error error;
-	result.symbology = {'Q', '1', 1};
+	result.symbology = {'Q', version.isModel1() ? '0' : '1', 1};
 	StructuredAppendInfo structuredAppend;
 	const int modeBitLength = CodecModeBitsLength(version);
 	int appInd;
 
-	if (version.isQRCodeModel1())
+	if (version.isModel1())
 		bits.readBits(4); // Model 1 is leading with 4 0-bits -> drop them
 
 	try
@@ -257,7 +257,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			if (modeBitLength == 0)
 				mode = CodecMode::NUMERIC; // MicroQRCode version 1 is always NUMERIC and modeBitLength is 0
 			else
-				mode = CodecModeForBits(bits.readBits(modeBitLength), version.isMicroQRCode());
+				mode = CodecModeForBits(bits.readBits(modeBitLength), version.isMicro());
 
 			switch (mode) {
 			case CodecMode::TERMINATOR:
@@ -294,6 +294,8 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				Diagnostics::fmt("SAI(%d,%d,%s)", structuredAppend.index, structuredAppend.count, structuredAppend.id.c_str());
 				break;
 			case CodecMode::ECI:
+				if (version.isModel1())
+					throw FormatError("QRCode Model 1 does not support ECI");
 				// Count doesn't apply to ECI
 				result.switchEncoding(ParseECIValue(bits));
 				break;
@@ -338,18 +340,20 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 
 DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 {
-	bool isMicroQRCode = bits.height() < 21;
-	auto formatInfo = ReadFormatInformation(bits, isMicroQRCode);
+	if (!Version::HasValidSize(bits))
+		return FormatError("Invalid symbol size");
+
+	auto formatInfo = ReadFormatInformation(bits);
 	if (!formatInfo.isValid())
 		return FormatError("Invalid format information");
 
-	const Version* pversion = formatInfo.isModel1 ? Version::FromDimension(bits.height(), true) : ReadVersion(bits);
+	const Version* pversion = ReadVersion(bits, formatInfo.type());
 	if (!pversion)
 		return FormatError("Invalid version");
 
 	const Version& version = *pversion;
 
-	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %s%d)\n", bits.height(), bits.width(), version.isMicroQRCode() ? "M" : "", version.versionNumber());
+	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %s%d)\n", bits.height(), bits.width(), version.isMicro() ? "M" : "", version.versionNumber());
 	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask);
 
 	// Read codewords

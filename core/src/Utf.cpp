@@ -22,9 +22,11 @@ namespace ZXing {
 #  if defined(__GNUC__)
 #    pragma GCC diagnostic push
 #    pragma GCC diagnostic ignored "-Wc++20-compat"
+#  endif
 
 using char8_t = uint8_t;
 
+#  if defined(__GNUC__)
 #    pragma GCC diagnostic pop
 #  endif
 #endif

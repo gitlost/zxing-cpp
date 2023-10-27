@@ -16,6 +16,7 @@
 
 #include "Diagnostics.h"
 #include "ZXAlgorithms.h"
+#include "ZXCType.h"
 
 #include <cstdarg>
 #include <iomanip>
@@ -166,7 +167,7 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 						s << " ";
 					} else if (haveDecode) {
 						s << value;
-						if (!std::isspace(value.back())) {
+						if (!zx_isspace(value.back())) {
 							s << " ";
 						}
 					}
@@ -179,7 +180,7 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 				s << "\n";
 				for (std::string value : *p_diagnostics) {
 					s << value;
-					if (!std::isspace(value.back())) {
+					if (!zx_isspace(value.back())) {
 						s << " ";
 					}
 				}

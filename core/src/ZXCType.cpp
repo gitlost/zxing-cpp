@@ -1,5 +1,5 @@
 /*
-* Copyright 2022 gitlost
+* Copyright 2022-2023 gitlost
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -16,7 +16,7 @@ namespace ZXing {
 		U+110BD        KAITHI NUMBER SIGN
 		U+110CD        KAITHI NUMBER SIGN ABOVE
 	as they're visible. Note that General_Category C includes unassigned (Cn).
-	Note dependent on Unicode version used to generate tables (currently uses 15.0.0d6).
+	Note dependent on Unicode version used to generate tables.
  */
 int zx_iswgraph(uint32_t u) /* Returns 1 if is, zero if not */
 {
@@ -754,7 +754,7 @@ int zx_iswgraph(uint32_t u) /* Returns 1 if is, zero if not */
 	};
 	// End copy/paste of `zx_iswgraph()` tables output from "core/tools/gen_zx_iswgraph.php"
 
-	if (u <= 0xFFFF) {
+	if (u <= 0xFFFF) { // BMP
 		uint32_t v = u;
 		if (u >= 0x3400) {
 			if (u <= 0x4DBF) { // CJK Ideograph Extension A (all graphical)
@@ -783,7 +783,7 @@ int zx_iswgraph(uint32_t u) /* Returns 1 if is, zero if not */
 		v >>= 3;
 		return v < sizeof(zx_graph_bmp) && (zx_graph_bmp[v] & (1U << (u & 0x7))) != 0;
 	}
-	if (u <= 0x1FFFF) {
+	if (u <= 0x1FFFF) { // Plane 1
 		uint32_t v = u - 0x10000;
 		if (u >= 0x125C0) {
 			if (u <= 0x12F7F) { // Unassigned U+125C0-12F7F
@@ -837,19 +837,20 @@ int zx_iswgraph(uint32_t u) /* Returns 1 if is, zero if not */
 		return v < sizeof(zx_graph_1) && (zx_graph_1[v] & (1U << (u & 0x7))) != 0;
 	}
 	// Begin copy/paste of `zx_iswgraph()` if conditions output from "core/tools/gen_zx_iswgraph.php"
-	if (u <= 0x2FFFF) {
+	if (u <= 0x2FFFF) { // Plane 2
 		return (u >= 0x20000 && u <= 0x2A6DF) || (u >= 0x2A700 && u <= 0x2B739) || (u >= 0x2B740 && u <= 0x2B81D)
 				|| (u >= 0x2B820 && u <= 0x2CEA1) || (u >= 0x2CEB0 && u <= 0x2EBE0) || (u >= 0x2EBF0 && u <= 0x2EE5D)
 				|| (u >= 0x2F800 && u <= 0x2FA1D);
 	}
-	if (u <= 0x3FFFF) {
+	if (u <= 0x3FFFF) { // Plane 3
 		return (u >= 0x30000 && u <= 0x3134A) || (u >= 0x31350 && u <= 0x323AF);
 	}
-	if (u <= 0xEFFFF) {
+	if (u <= 0xEFFFF) { // Planes 4-14
 		return (u >= 0xE0100 && u <= 0xE01EF);
 	}
 	// End copy/paste of `zx_iswgraph()` if conditions output from "core/tools/gen_zx_iswgraph.php"
 
+	// Planes 15-16
 	return 0;
 }
 

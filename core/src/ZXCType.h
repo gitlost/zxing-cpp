@@ -1,6 +1,6 @@
 #pragma once
 /*
-* Copyright 2022 gitlost
+* Copyright 2022-2023 gitlost
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -17,7 +17,7 @@ static inline int zx_islower(uint32_t u) { return u >= 'a' && u <= 'z'; }
 static inline int zx_isdigit(uint32_t u) { return u <= '9' && u >= '0'; }
 static inline int zx_isspace(uint32_t u) { return u == ' ' || (u <= '\r' && u >= '\t'); }
 
-// Note this is dependent on Unicode version used to generate tables (currently uses 15.0.0d6).
+// Note this is dependent on Unicode version used to generate tables.
 int zx_iswgraph(uint32_t u); /* Returns 1 if is, zero if not */
 
 } // ZXing

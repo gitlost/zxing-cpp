@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright 2022 gitlost
+* Copyright 2022-2023 gitlost
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -135,7 +135,7 @@ function out_tab(&$out, $name, $graph, $skip_func, $comment = '', $unassigned_fu
 }
 
 /* Output if ranges to `$out` array */
-function out_ranges(&$out, $graph, $start) {
+function out_ranges(&$out, $graph, $start, $comment) {
 	$cnt = count($graph);
 	$j = 0;
 	$prev_start = $prev = -1;
@@ -154,7 +154,7 @@ function out_ranges(&$out, $graph, $start) {
 	}
 	$ranges[] = array($prev_start, $prev);
 	$tot = 0;
-	$out[] = sprintf("\tif (u <= 0x%X) {", $start + 0xFFFF);
+	$out[] = sprintf("\tif (u <= 0x%X) { // $comment", $start + 0xFFFF);
 	$line = "\t\t";
 	$begin_con_line = "\t\t\t\t";
 	foreach ($ranges as $i => $range) {
@@ -240,9 +240,9 @@ assert(count($graphs[0x10]) === 0);
 
 $out[] = "\t" . '// Begin copy/paste of `zx_iswgraph()` if conditions output from "core/tools/gen_zx_iswgraph.php"';
 
-out_ranges($out, $graphs[0x2], 0x20000);
-out_ranges($out, $graphs[0x3], 0x30000);
-out_ranges($out, $graphs[0xE], 0xE0000);
+out_ranges($out, $graphs[0x2], 0x20000, 'Plane 2');
+out_ranges($out, $graphs[0x3], 0x30000, 'Plane 3');
+out_ranges($out, $graphs[0xE], 0xE0000, 'Planes 4-14');
 
 $out[] = "\t" . '// End copy/paste of `zx_iswgraph()` if conditions output from "core/tools/gen_zx_iswgraph.php"';
 

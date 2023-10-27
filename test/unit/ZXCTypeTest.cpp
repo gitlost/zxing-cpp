@@ -14,6 +14,8 @@
 using namespace ZXing;
 using namespace testing;
 
+#define ZXCTypeTest_DUMP(u)	"u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u
+
 // General test
 TEST(ZXCTypeTest, IsWGraph)
 {
@@ -123,41 +125,41 @@ TEST(ZXCTypeTest, IsWGraphToStd)
 		// exceptions (see "core/src/ZXCType.cpp")
 
 		if (u == 0xA0) { // NO-BREAK SPACE
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0xAD) { // SHY
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x61C) { // ARABIC LETTER MARK
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x61D) { // ARABIC END OF TEXT MARK (Unicode 15)
-			EXPECT_TRUE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_TRUE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x6DD) { // ARABIC END OF AYAH
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x70F) { // SYRIAC ABBREVIATION MARK
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x180E) { // MONGOLIAN VOWEL SEPARATOR
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0x2007) { // FIGURE SPACE
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x200B && u <= 0x200F) { // ZERO WIDTH SPACE..RIGHT-TO-LEFT MARK
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x202A && u <= 0x202F) { // LEFT-TO-RIGHT EMBEDDING..NARROW NO-BREAK SPACE
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x2060 && u <= 0x2064) { // WORD JOINER..INVISIBLE PLUS
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x2066 && u <= 0x206F) { // LEFT-TO-RIGHT ISOLATE..NOMINAL DIGIT SHAPES
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0xE000 && u <= 0xF8FF) { // PUA - treating all as non-graphical (`std::iswgraph()` does opposite)
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u == 0xFEFF) { // ZERO WIDTH NO-BREAK SPACE
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0xFFF9 && u <= 0xFFFB) { // INTERLINEAR ANNOTATION ANCHOR..INTERLINEAR ANNOTATION TERMINATOR
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x13430 && u <= 0x13438) { // EGYPTIAN HIEROGLYPH VERTICAL JOINER..EGYPTIAN HIEROGLYPH END SEGMENT
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x1BCA0 && u <= 0x1BCA3) { // SHORTHAND FORMAT LETTER OVERLAP..SHORTHAND FORMAT UP STEP
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 		} else if (u >= 0x1D173 && u <= 0x1D17A) { // MUSICAL SYMBOL BEGIN BEAM..MUSICAL SYMBOL END PHRASE
-			EXPECT_FALSE(zx) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_FALSE(zx) << ZXCTypeTest_DUMP(u);
 
 		// These are newish and unlikely to be in `std::iswgraph()` yet
 		} else if (u == 0x61D || (u >= 0x870 && u <= 0x089F) || u == 0x08B5 || (u >= 0x08BE && u <= 0x08D2)
@@ -194,7 +196,7 @@ TEST(ZXCTypeTest, IsWGraphToStd)
 				|| (u >= 0x1FAE0 && u <= 0x1FAE8) || (u >= 0x1FAF0 && u <= 0x1FAF8) || (u >= 0x1FB00 && u <= 0x1FBCA)
 				|| (u >= 0x1FBF0 && u <= 0x1FBF9)) {
 		} else {
-			EXPECT_EQ(zx, wc) << "u U+" << std::setfill('0') << std::setw(4) << std::uppercase << std::hex << u;
+			EXPECT_EQ(zx, wc) << ZXCTypeTest_DUMP(u);
 		}
 	}
 

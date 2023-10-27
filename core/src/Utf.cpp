@@ -19,7 +19,14 @@ namespace ZXing {
 
 // TODO: c++20 has char8_t
 #if __cplusplus <= 201703L
+#  if defined(__GNUC__)
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wc++20-compat"
+
 using char8_t = uint8_t;
+
+#    pragma GCC diagnostic pop
+#  endif
 #endif
 using utf8_t = std::basic_string_view<char8_t>;
 

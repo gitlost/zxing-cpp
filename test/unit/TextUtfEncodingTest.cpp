@@ -95,6 +95,10 @@ TEST(TextUtfEncodingTest, ToUtf8AngleEscape)
 	EXPECT_EQ(TextUtfEncoding::ToUtf8(L"A\xDC00", angleEscape), "A<0xED><0xB0><0x80>"); // Unpaired low surrogate
 	EXPECT_EQ(EscapeNonGraphical("A\xED\xB0\x80"), "A<0xED><0xB0><0x80>");
 
+	// Malformed UTF-8
+	EXPECT_EQ(EscapeNonGraphical("A\x80\x91\xA2" "B\xC2" "C\xE2\xA4\xF0\x90\x8D" "D"),
+				"A<0x80><0x91><0xA2>B<0xC2>C<0xE2><0xA4><0xF0><0x90><0x8D>D");
+
 #if defined(__clang__) || defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif

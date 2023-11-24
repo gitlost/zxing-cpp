@@ -12,6 +12,7 @@
 #include <stdexcept>
 
 using namespace ZXing;
+using namespace std::string_literals;
 
 static const char* JavaBarcodeFormatName(BarcodeFormat format)
 {
@@ -113,108 +114,65 @@ static jstring ThrowJavaException(JNIEnv* env, const char* message)
 {
 	//	if (env->ExceptionCheck())
 	//		return 0;
-	jclass jcls = env->FindClass("java/lang/RuntimeException");
-	env->ThrowNew(jcls, message);
+	jclass cls = env->FindClass("java/lang/RuntimeException");
+	env->ThrowNew(cls, message);
 	return nullptr;
 }
 
-static jobject CreateAndroidPoint(JNIEnv* env, const PointT<int>& point)
+static jobject NewPosition(JNIEnv* env, const Position& position)
 {
-	jclass cls = env->FindClass("android/graphics/Point");
-	auto constructor = env->GetMethodID(cls, "<init>", "(II)V");
-	return env->NewObject(cls, constructor, point.x, point.y);
-}
-
-static jobject CreatePosition(JNIEnv* env, const Position& position)
-{
-	jclass cls = env->FindClass("com/zxingcpp/ZXingCpp$Position");
-	auto constructor = env->GetMethodID(
-		cls, "<init>",
+	jclass clsPosition = env->FindClass("com/zxingcpp/ZXingCpp$Position");
+	jclass clsPoint = env->FindClass("android/graphics/Point");
+	jmethodID midPointInit= env->GetMethodID(clsPoint, "<init>", "(II)V");
+	auto NewPoint = [&](const PointI& point) {
+		return env->NewObject(clsPoint, midPointInit, point.x, point.y);
+	};
+	jmethodID midPositionInit= env->GetMethodID(
+		clsPosition, "<init>",
 		"(Landroid/graphics/Point;"
 		"Landroid/graphics/Point;"
 		"Landroid/graphics/Point;"
 		"Landroid/graphics/Point;"
 		"D)V");
 	return env->NewObject(
-		cls, constructor,
-		CreateAndroidPoint(env, position.topLeft()),
-		CreateAndroidPoint(env, position.topRight()),
-		CreateAndroidPoint(env, position.bottomLeft()),
-		CreateAndroidPoint(env, position.bottomRight()),
-		position.orientation());
+			clsPosition, midPositionInit,
+			NewPoint(position[0]),
+			NewPoint(position[1]),
+			NewPoint(position[2]),
+			NewPoint(position[3]),
+			position.orientation());
 }
 
-static jbyteArray CreateByteArray(JNIEnv* env, const void* data,
-	unsigned int length)
+static jbyteArray NewByteArray(JNIEnv* env, const std::vector<uint8_t>& byteArray)
 {
-	auto size = static_cast<jsize>(length);
-	jbyteArray byteArray = env->NewByteArray(size);
-	env->SetByteArrayRegion(
-		byteArray, 0, size, reinterpret_cast<const jbyte*>(data));
-	return byteArray;
+	auto size = static_cast<jsize>(byteArray.size());
+	jbyteArray res = env->NewByteArray(size);
+	env->SetByteArrayRegion(res, 0, size, reinterpret_cast<const jbyte*>(byteArray.data()));
+	return res;
 }
 
-static jbyteArray CreateByteArray(JNIEnv* env,
-	const std::vector<uint8_t>& byteArray)
+static jobject NewEnum(JNIEnv* env, const char* value, const char* type)
 {
-	return CreateByteArray(env,
-		reinterpret_cast<const void*>(byteArray.data()),
-		byteArray.size());
-}
-
-static jobject CreateEnum(JNIEnv* env, const char* enumClass,
-	const char* value)
-{
-	jclass cls = env->FindClass(enumClass);
-	jfieldID fidCT = env->GetStaticFieldID(cls, value,
-		("L" + std::string(enumClass) + ";").c_str());
+	auto className = "com/zxingcpp/ZXingCpp$"s + type;
+	jclass cls = env->FindClass(className.c_str());
+	jfieldID fidCT = env->GetStaticFieldID(cls, value, ("L" + className + ";").c_str());
 	return env->GetStaticObjectField(cls, fidCT);
 }
 
-static jobject CreateErrorType(JNIEnv* env, Error::Type errorType)
-{
-	return CreateEnum(env,
-		"com/zxingcpp/ZXingCpp$ErrorType",
-		JavaErrorTypeName(errorType));
-}
-
-static jobject CreateError(JNIEnv* env, const Error& error)
+static jobject NewError(JNIEnv* env, const Error& error)
 {
 	jclass cls = env->FindClass("com/zxingcpp/ZXingCpp$Error");
-	auto constructor = env->GetMethodID(
-		cls, "<init>",
-		"(Lcom/zxingcpp/ZXingCpp$ErrorType;"
-		"Ljava/lang/String;)V");
-	return env->NewObject(
-		cls, constructor,
-		CreateErrorType(env, error.type()),
-		C2JString(env, error.msg()));
+	jmethodID midInit = env->GetMethodID(cls, "<init>", "(Lcom/zxingcpp/ZXingCpp$ErrorType;" "Ljava/lang/String;)V");
+	return env->NewObject(cls, midInit, NewEnum(env, JavaErrorTypeName(error.type()), "ErrorType"), C2JString(env, error.msg()));
 }
 
-static jobject CreateContentType(JNIEnv* env, ContentType contentType)
+static jobject NewResult(JNIEnv* env, const Result& result, int time)
 {
-	return CreateEnum(env,
-		"com/zxingcpp/ZXingCpp$ContentType",
-		JavaContentTypeName(contentType));
-}
-
-static jobject CreateFormat(JNIEnv* env, BarcodeFormat format)
-{
-	return CreateEnum(env,
-		"com/zxingcpp/ZXingCpp$Format",
-		JavaBarcodeFormatName(format));
-}
-
-static jobject CreateResult(JNIEnv* env, const Result& result,
-	const jstring& timeString)
-{
-	jclass cls = env->FindClass(
-		"com/zxingcpp/ZXingCpp$Result");
-	auto constructor = env->GetMethodID(
+	jclass cls = env->FindClass("com/zxingcpp/ZXingCpp$Result");
+	jmethodID midInit = env->GetMethodID(
 		cls, "<init>",
 		"(Lcom/zxingcpp/ZXingCpp$Format;"
 		"[B"
-		"Ljava/lang/String;"
 		"Ljava/lang/String;"
 		"Lcom/zxingcpp/ZXingCpp$ContentType;"
 		"Lcom/zxingcpp/ZXingCpp$Position;"
@@ -226,16 +184,15 @@ static jobject CreateResult(JNIEnv* env, const Result& result,
 		"Ljava/lang/String;"
 		"Z"
 		"I"
-		"Lcom/zxingcpp/ZXingCpp$Error;)V");
+		"Lcom/zxingcpp/ZXingCpp$Error;"
+		"I)V");
 	bool valid = result.isValid();
-	return env->NewObject(
-		cls, constructor,
-		CreateFormat(env, result.format()),
-		valid ? CreateByteArray(env, result.bytes()) : nullptr,
+	return env->NewObject(cls, midInit,
+		NewEnum(env, JavaBarcodeFormatName(result.format()), "Format"),
+		valid ? NewByteArray(env, result.bytes()) : nullptr,
 		valid ? C2JString(env, result.text()) : nullptr,
-		timeString,
-		CreateContentType(env, result.contentType()),
-		CreatePosition(env, result.position()),
+		NewEnum(env, JavaContentTypeName(result.contentType()), "ContentType"),
+		NewPosition(env, result.position()),
 		result.orientation(),
 		valid ? C2JString(env, result.ecLevel()) : nullptr,
 		valid ? C2JString(env, result.symbologyIdentifier()) : nullptr,
@@ -244,7 +201,9 @@ static jobject CreateResult(JNIEnv* env, const Result& result,
 		valid ? C2JString(env, result.sequenceId()) : nullptr,
 		result.readerInit(),
 		result.lineCount(),
-		result.error() ? CreateError(env, result.error()) : nullptr);
+		result.error() ? NewError(env, result.error()) : nullptr,
+		time
+	);
 }
 
 static jobject Read(JNIEnv *env, ImageView image, const DecodeHints& hints)
@@ -254,19 +213,16 @@ static jobject Read(JNIEnv *env, ImageView image, const DecodeHints& hints)
 		auto results = ReadBarcodes(image, hints);
 		auto duration = std::chrono::high_resolution_clock::now() - startTime;
 //		LOGD("time: %4d ms\n", (int)std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
-		auto time = std::to_wstring(std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
-		auto timeString = C2JString(env, time);
+		auto time = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
 
-		auto cls = env->FindClass("java/util/ArrayList");
-		auto list = env->NewObject(cls,
-			env->GetMethodID(cls, "<init>", "()V"));
+		jclass clsList = env->FindClass("java/util/ArrayList");
+		jobject objList = env->NewObject(clsList, env->GetMethodID(clsList, "<init>", "()V"));
 		if (!results.empty()) {
-			auto add = env->GetMethodID(cls, "add", "(Ljava/lang/Object;)Z");
-			for (const auto& result: results) {
-				env->CallBooleanMethod(list, add, CreateResult(env, result, timeString));
-			}
+			jmethodID midAdd = env->GetMethodID(clsList, "add", "(Ljava/lang/Object;)Z");
+			for (const auto& result: results)
+				env->CallBooleanMethod(objList, midAdd, NewResult(env, result, time));
 		}
-		return list;
+		return objList;
 	} catch (const std::exception& e) {
 		return ThrowJavaException(env, e.what());
 	} catch (...) {
@@ -274,78 +230,70 @@ static jobject Read(JNIEnv *env, ImageView image, const DecodeHints& hints)
 	}
 }
 
-static bool GetBooleanField(JNIEnv* env, jclass cls, jobject hints,
-	const char* name)
+static bool GetBooleanField(JNIEnv* env, jclass cls, jobject hints, const char* name)
 {
 	return env->GetBooleanField(hints, env->GetFieldID(cls, name, "Z"));
 }
 
-static int GetIntField(JNIEnv* env, jclass cls, jobject hints,
-	const char* name)
+static int GetIntField(JNIEnv* env, jclass cls, jobject hints, const char* name)
 {
 	return env->GetIntField(hints, env->GetFieldID(cls, name, "I"));
 }
 
-static std::string GetEnumField(JNIEnv* env, jclass hintClass, jobject hints,
-	const char* enumClass, const char* name)
+static std::string GetEnumField(JNIEnv* env, jclass cls, jobject hints, const char* name, const char* type)
 {
-	jclass cls = env->FindClass(enumClass);
-	jstring s = (jstring) env->CallObjectMethod(
-		env->GetObjectField(hints, env->GetFieldID(hintClass, name,
-			("L" + std::string(enumClass) + ";").c_str())),
-		env->GetMethodID(cls, "name", "()Ljava/lang/String;"));
-	return J2CString(env, s);
+	auto className = "com/zxingcpp/ZXingCpp$"s + type;
+	jmethodID midName = env->GetMethodID(env->FindClass(className.c_str()), "name", "()Ljava/lang/String;");
+	jobject objField = env->GetObjectField(hints, env->GetFieldID(cls, name, ("L"s + className + ";").c_str()));
+	return J2CString(env, static_cast<jstring>(env->CallObjectMethod(objField, midName)));
 }
 
-static std::string JoinFormats(JNIEnv* env, jclass hintClass, jobject hints)
+static BarcodeFormats GetFormats(JNIEnv* env, jclass hintClass, jobject hints)
 {
-	const char* setClass = "java/util/Set";
-	jclass cls = env->FindClass(setClass);
-	jstring jStr = (jstring) env->CallObjectMethod(
-		env->GetObjectField(hints, env->GetFieldID(hintClass, "formats",
-			("L" + std::string(setClass) + ";").c_str())),
-		env->GetMethodID(cls, "toString", "()Ljava/lang/String;"));
-	std::string s = J2CString(env, jStr);
-	s.erase(0, s.find_first_not_of("["));
-	s.erase(s.find_last_not_of("]") + 1);
-	return s;
+	jobject objField = env->GetObjectField(hints, env->GetFieldID(hintClass, "formats", "Ljava/util/Set;"));
+	jmethodID midToArray = env->GetMethodID(env->FindClass("java/util/Set"), "toArray", "()[Ljava/lang/Object;");
+	auto objArray = static_cast<jobjectArray>(env->CallObjectMethod(objField, midToArray));
+	if (!objArray)
+		return {};
+
+	jmethodID midName = env->GetMethodID(env->FindClass("com/zxingcpp/ZXingCpp$Format"), "name", "()Ljava/lang/String;");
+	BarcodeFormats ret;
+	for (int i = 0, size = env->GetArrayLength(objArray); i < size; ++i) {
+		auto objName = static_cast<jstring>(env->CallObjectMethod(env->GetObjectArrayElement(objArray, i), midName));
+		ret |= BarcodeFormatFromString(J2CString(env, objName));
+	}
+	return ret;
 }
 
 static DecodeHints CreateDecodeHints(JNIEnv* env, jobject hints)
 {
 	jclass cls = env->GetObjectClass(hints);
 	return DecodeHints()
-		.setFormats(BarcodeFormatsFromString(JoinFormats(env, cls, hints)))
+		.setFormats(GetFormats(env, cls, hints))
 		.setTryHarder(GetBooleanField(env, cls, hints, "tryHarder"))
 		.setTryRotate(GetBooleanField(env, cls, hints, "tryRotate"))
 		.setTryInvert(GetBooleanField(env, cls, hints, "tryInvert"))
 		.setTryDownscale(GetBooleanField(env, cls, hints, "tryDownscale"))
 		.setIsPure(GetBooleanField(env, cls, hints, "isPure"))
+		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints, "binarizer", "Binarizer")))
+		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"))
+		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
+		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
+		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
 		.setTryCode39ExtendedMode(GetBooleanField(env, cls, hints, "tryCode39ExtendedMode"))
 		.setValidateCode39CheckSum(GetBooleanField(env, cls, hints, "validateCode39CheckSum"))
 		.setValidateITFCheckSum(GetBooleanField(env, cls, hints, "validateITFCheckSum"))
 		.setReturnCodabarStartEnd(GetBooleanField(env, cls, hints, "returnCodabarStartEnd"))
 		.setReturnErrors(GetBooleanField(env, cls, hints, "returnErrors"))
-		.setDownscaleFactor(GetIntField(env, cls, hints, "downscaleFactor"))
-		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints,
-			"com/zxingcpp/ZXingCpp$EanAddOnSymbol",
-			"eanAddOnSymbol")))
-		.setBinarizer(BinarizerFromString(GetEnumField(env, cls, hints,
-			"com/zxingcpp/ZXingCpp$Binarizer",
-			"binarizer")))
-		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints,
-			"com/zxingcpp/ZXingCpp$TextMode",
-			"textMode")))
-		.setMinLineCount(GetIntField(env, cls, hints, "minLineCount"))
-		.setMaxNumberOfSymbols(GetIntField(env, cls, hints, "maxNumberOfSymbols"))
-		.setDownscaleThreshold(GetIntField(env, cls, hints, "downscaleThreshold"));
+		.setEanAddOnSymbol(EanAddOnSymbolFromString(GetEnumField(env, cls, hints, "eanAddOnSymbol", "EanAddOnSymbol")))
+		.setTextMode(TextModeFromString(GetEnumField(env, cls, hints, "textMode", "TextMode")))
+		;
 }
 
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_zxingcpp_ZXingCpp_readYBuffer(
 	JNIEnv *env, jobject thiz, jobject yBuffer, jint rowStride,
-	jint left, jint top, jint width, jint height, jint rotation,
-	jobject hints)
+	jint left, jint top, jint width, jint height, jint rotation, jobject hints)
 {
 	const uint8_t* pixels = static_cast<uint8_t *>(env->GetDirectBufferAddress(yBuffer));
 
@@ -378,8 +326,7 @@ struct LockedPixels
 extern "C" JNIEXPORT jobject JNICALL
 Java_com_zxingcpp_ZXingCpp_readBitmap(
 	JNIEnv* env, jobject thiz, jobject bitmap,
-	jint left, jint top, jint width, jint height, jint rotation,
-	jobject hints)
+	jint left, jint top, jint width, jint height, jint rotation, jobject hints)
 {
 	AndroidBitmapInfo bmInfo;
 	AndroidBitmap_getInfo(env, bitmap, &bmInfo);
@@ -396,9 +343,10 @@ Java_com_zxingcpp_ZXingCpp_readBitmap(
 	if (!pixels)
 		return ThrowJavaException(env, "Failed to lock/Read AndroidBitmap data");
 
-	auto image = ImageView{pixels, (int)bmInfo.width, (int)bmInfo.height, fmt, (int)bmInfo.stride}
-		.cropped(left, top, width, height)
-		.rotated(rotation);
+	auto image =
+		ImageView{pixels, (int)bmInfo.width, (int)bmInfo.height, fmt, (int)bmInfo.stride}
+			.cropped(left, top, width, height)
+			.rotated(rotation);
 
 	return Read(env, image, CreateDecodeHints(env, hints));
 }

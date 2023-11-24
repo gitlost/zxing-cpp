@@ -297,8 +297,10 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n"
+			std::string text = result.text(TextMode::Plain);
+			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n"
 					  //<< "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
+					  << "Length:     " << text.size() << "\n"
 					  << "Format:     " << ToString(result.format()) << "\n"
 					  << "Identifier: " << result.symbologyIdentifier() << "\n";
 

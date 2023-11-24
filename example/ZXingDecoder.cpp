@@ -439,7 +439,9 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(result.text(TextMode::Plain)) : result.text(TextMode::Plain)) << "\"\n";
+	std::string text = result.text(TextMode::Plain);
+	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
+	std::cout << "Length:     " << text.size() << "\n";
 
 	if (Size(result.ECIs()))
 		std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";

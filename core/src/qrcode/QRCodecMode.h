@@ -6,10 +6,9 @@
 
 #pragma once
 
-#include "qrcode/QRErrorCorrectionLevel.h" // For Type
-
 namespace ZXing::QRCode {
 
+enum class Type;
 class Version;
 
 /**
@@ -36,7 +35,7 @@ enum class CodecMode
  * @return Mode encoded by these bits
  * @throws FormatError if bits do not correspond to a known mode
  */
-CodecMode CodecModeForBits(int bits, Type type = Type::Model2);
+CodecMode CodecModeForBits(int bits, Type type);
 
 /**
  * @param version version in question

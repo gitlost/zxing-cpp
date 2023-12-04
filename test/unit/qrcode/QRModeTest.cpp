@@ -16,12 +16,12 @@ using namespace ZXing::QRCode;
 
 TEST(QRModeTest, ForBits)
 {
-	ASSERT_EQ(CodecMode::TERMINATOR, CodecModeForBits(0x00));
-	ASSERT_EQ(CodecMode::NUMERIC, CodecModeForBits(0x01));
-	ASSERT_EQ(CodecMode::ALPHANUMERIC, CodecModeForBits(0x02));
-	ASSERT_EQ(CodecMode::BYTE, CodecModeForBits(0x04));
-	ASSERT_EQ(CodecMode::KANJI, CodecModeForBits(0x08));
-	ASSERT_THROW(CodecModeForBits(0x10), Error);
+	ASSERT_EQ(CodecMode::TERMINATOR, CodecModeForBits(0x00, Type::Model2));
+	ASSERT_EQ(CodecMode::NUMERIC, CodecModeForBits(0x01, Type::Model2));
+	ASSERT_EQ(CodecMode::ALPHANUMERIC, CodecModeForBits(0x02, Type::Model2));
+	ASSERT_EQ(CodecMode::BYTE, CodecModeForBits(0x04, Type::Model2));
+	ASSERT_EQ(CodecMode::KANJI, CodecModeForBits(0x08, Type::Model2));
+	ASSERT_THROW(CodecModeForBits(0x10, Type::Model2), Error);
 }
 
 TEST(QRModeTest, CharacterCount)

@@ -409,11 +409,8 @@ int main(int argc, char* argv[])
 		OneD::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 
-	} else if (hints.formats() == BarcodeFormat::QRCode) {
-		QRCode::Reader reader(hints);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
-
-	} else if (hints.formats() == BarcodeFormat::MicroQRCode) {
+	} else if (hints.formats() == BarcodeFormat::QRCode || hints.formats() == BarcodeFormat::MicroQRCode
+			|| hints.formats() == BarcodeFormat::rMQR) {
 		QRCode::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}

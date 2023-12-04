@@ -67,6 +67,7 @@ add_executable (UnitTest
     qrcode/QRModeTest.cpp
     qrcode/QRVersionTest.cpp
     qrcode/QRWriterTest.cpp
+    qrcode/RMQRDecoderTest.cpp
     pdf417/PDF417DecoderTest.cpp
     pdf417/PDF417ErrorCorrectionTest.cpp
     pdf417/PDF417HighLevelEncoderTest.cpp

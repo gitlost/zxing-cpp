@@ -44,12 +44,13 @@ enum class BarcodeFormat
 	DotCode         = (1 << 19), ///< DotCode
 	CodablockF      = (1 << 20), ///< Codablock-F
 	Code16K         = (1 << 21), ///< Code 16K
+	rMQR            = (1 << 22), ///< Rectangular Micro QR Code
 
 	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
-	MatrixCodes = Aztec | CodablockF | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode,
+	MatrixCodes = Aztec | CodablockF | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode | rMQR,
 	Any         = LinearCodes | MatrixCodes,
 
-	_max = Code16K, ///> implementation detail, don't use
+	_max = rMQR, ///> implementation detail, don't use
 };
 
 ZX_DECLARE_FLAGS(BarcodeFormats, BarcodeFormat)

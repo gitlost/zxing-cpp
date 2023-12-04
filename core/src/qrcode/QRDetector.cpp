@@ -642,7 +642,7 @@ DetectorResult DetectPureRMQR(const BitMatrix& image)
 		return {};
 
 	// Horizontal corner finder patterns (for vertical ones see below)
-	for (std::pair [p, d] : {std::pair(tr, PointI{-1, 0}) /*Need explicit 1st pair for initializer to work*/, {bl, {1, 0}}}) {
+	for (auto [p, d] : {std::pair(tr, PointI{-1, 0}) /*Need explicit 1st pair for initializer to work*/, {bl, {1, 0}}}) {
 		auto corner = BitMatrixCursorI(image, p, d).readPatternFromBlack<CornerEdgePattern>(1);
 		if (!IsPattern(corner, CORNER_EDGE_RMQR))
 			return {};
@@ -766,13 +766,13 @@ DetectorResult SampleRMQR(const BitMatrix& image, const ConcentricPattern& fp)
 	for (int i = 0; i < 4; ++i) {
 		auto mod2Pix = PerspectiveTransform(srcQuad, RotatedCorners(*fpQuad, i));
 
-		auto check = [&](int i, int on) {
+		auto check = [&](int i, bool on) {
 			auto p = mod2Pix(centered(FORMAT_INFO_EDGE_COORDS[i]));
 			return image.isIn(p) && image.get(p) == on;
 		};
 
 		// check that we see top edge timing pattern modules
-		if (!check(0, 1) || !check(1, 0) || !check(2, 1) || !check(3, 0))
+		if (!check(0, true) || !check(1, false) || !check(2, true) || !check(3, false))
 			continue;
 
 		int formatInfoBits = 0;

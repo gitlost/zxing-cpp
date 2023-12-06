@@ -621,9 +621,8 @@ DetectorResult DetectPureRMQR(const BitMatrix& image)
 	constexpr int MAX_MODULES_H = 17;
 
 	int left, top, width, height;
-	if (!image.findBoundingBox(left, top, width, height, MIN_MODULES)) {
+	if (!image.findBoundingBox(left, top, width, height, MIN_MODULES))
 		return {};
-	}
 	int right  = left + width - 1;
 	int bottom = top + height - 1;
 
@@ -653,7 +652,8 @@ DetectorResult DetectPureRMQR(const BitMatrix& image)
 	int dimW = narrow_cast<int>(std::lround(width / moduleSize));
 	int dimH = narrow_cast<int>(std::lround(height / moduleSize));
 
-	if (dimW < MIN_MODULES_W || dimW > MAX_MODULES_W || dimH < MIN_MODULES_H ||dimH > MAX_MODULES_H ||
+	if (dimW == dimH || !(dimW & 1) || !(dimH & 1) ||
+		dimW < MIN_MODULES_W || dimW > MAX_MODULES_W || dimH < MIN_MODULES_H || dimH > MAX_MODULES_H ||
 		!image.isIn(PointF{left + moduleSize / 2 + (dimW - 1) * moduleSize,
 						   top + moduleSize / 2 + (dimH - 1) * moduleSize}))
 		return {};
@@ -664,7 +664,7 @@ DetectorResult DetectPureRMQR(const BitMatrix& image)
 		if (!IsPattern(corner, CORNER_EDGE_RMQR))
 			return {};
 		if (dimH > 9) { // No bottom left for R9
-			auto corner = BitMatrixCursorI(image, bl, {0, -1}).readPatternFromBlack<CornerEdgePattern>(1);
+			corner = BitMatrixCursorI(image, bl, {0, -1}).readPatternFromBlack<CornerEdgePattern>(1);
 			if (!IsPattern(corner, CORNER_EDGE_RMQR))
 				return {};
 		}
@@ -775,11 +775,11 @@ DetectorResult SampleRMQR(const BitMatrix& image, const ConcentricPattern& fp)
 		if (!check(0, true) || !check(1, false) || !check(2, true) || !check(3, false))
 			continue;
 
-		int formatInfoBits = 0;
+		uint32_t formatInfoBits = 0;
 		for (int i = 0; i < Size(FORMAT_INFO_COORDS); ++i)
 			AppendBit(formatInfoBits, image.get(mod2Pix(centered(FORMAT_INFO_COORDS[i]))));
 
-		auto fi = FormatInformation::DecodeRMQR(formatInfoBits, 0);
+		auto fi = FormatInformation::DecodeRMQR(formatInfoBits, 0 /*formatInfoBits2*/);
 		if (fi.hammingDistance < bestFI.hammingDistance) {
 			bestFI = fi;
 			bestPT = mod2Pix;

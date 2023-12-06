@@ -410,7 +410,7 @@ int main(int argc, char* argv[])
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 
 	} else if (hints.formats() == BarcodeFormat::QRCode || hints.formats() == BarcodeFormat::MicroQRCode
-			|| hints.formats() == BarcodeFormat::rMQR) {
+			|| hints.formats() == BarcodeFormat::RMQRCode) {
 		QRCode::Reader reader(hints);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
 	}

@@ -189,23 +189,19 @@ bool Result::operator==(const Result& o) const
 	if (lineCount() > 1 && o.lineCount() > 1)
 		return HaveIntersectingBoundingBoxes(o.position(), position());
 
-	// the following code is only meant for this->lineCount == 1
-	// assert(lineCount() == 1);
+	// the following code is only meant for this or other lineCount == 1
+	assert(lineCount() == 1 || o.lineCount() == 1);
+
+	const auto& r1 = lineCount() == 1 ? *this : o;
+	const auto& r2 = lineCount() == 1 ? o : *this;
 
 	// if one line is less than half the length of the other away from the
 	// latter, we consider it to belong to the same symbol. additionally, both need to have
 	// roughly the same length (see #367)
-	auto dTop = maxAbsComponent(o.position().topLeft() - position().topLeft());
-	int dBot, length, dLength;
-	if (lineCount() <= o.lineCount()) {
-		dBot = maxAbsComponent(o.position().bottomLeft() - position().topLeft());
-		length = maxAbsComponent(position().topLeft() - position().bottomRight());
-		dLength = std::abs(length - maxAbsComponent(o.position().topLeft() - o.position().bottomRight()));
-	} else {
-		dBot = maxAbsComponent(position().bottomLeft() - o.position().topLeft());
-		length = maxAbsComponent(o.position().topLeft() - o.position().bottomRight());
-		dLength = std::abs(length - maxAbsComponent(position().topLeft() - position().bottomRight()));
-	}
+	auto dTop = maxAbsComponent(r2.position().topLeft() - r1.position().topLeft());
+	auto dBot = maxAbsComponent(r2.position().bottomLeft() - r1.position().topLeft());
+	auto length = maxAbsComponent(r1.position().topLeft() - r1.position().bottomRight());
+	auto dLength = std::abs(length - maxAbsComponent(r2.position().topLeft() - r2.position().bottomRight()));
 
 	return std::min(dTop, dBot) < length / 2 && dLength < length / 5;
 }

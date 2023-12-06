@@ -31,7 +31,7 @@ enum class CodecMode
 
 /**
  * @param bits variable number of bits encoding a QR Code data mode
- * @param isMicro is this a MicroQRCode
+ * @param type type of QR Code
  * @return Mode encoded by these bits
  * @throws FormatError if bits do not correspond to a known mode
  */

@@ -516,7 +516,6 @@ static std::string DecodeBase900toBase10(const std::vector<int>& codewords, int 
 * @param codewords The array of codewords (data + error)
 * @param codeIndex The current index into the codeword array.
 * @param result    The decoded data is appended to the result.
-* @param encoding  Currently active character encoding.
 * @return The next index into the codeword array.
 */
 static int NumericCompaction(const std::vector<int>& codewords, int codeIndex, Content& result)
@@ -780,6 +779,8 @@ DecoderResult Decode(const std::vector<int>& codewords)
 				}
 			}
 		}
+	} catch (std::exception& e) {
+		return FormatError(e.what());
 	} catch (Error e) {
 		return e;
 	}

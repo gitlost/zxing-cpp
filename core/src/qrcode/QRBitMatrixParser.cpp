@@ -77,9 +77,9 @@ FormatInformation ReadFormatInformation(const BitMatrix& bitMatrix)
 			for (int y = 5; y >= 1; y--)
 				AppendBit(formatInfoBits1, getBit(bitMatrix, x, y));
 		// Read bottom-right format info bits
-		int formatInfoBits2 = 0;
-		int width = bitMatrix.width();
-		int height = bitMatrix.height();
+		uint32_t formatInfoBits2 = 0;
+		const int width = bitMatrix.width();
+		const int height = bitMatrix.height();
 		for (int x = 3; x <= 5; x++)
 			AppendBit(formatInfoBits2, getBit(bitMatrix, width - x, height - 6));
 		for (int x = 6; x <= 8; x++)
@@ -266,8 +266,8 @@ static ByteArray ReadRMQRCodewords(const BitMatrix& bitMatrix, const Version& ve
 	uint8_t currentByte = 0;
 	bool readingUp = true;
 	int bitsRead = 0;
-	int width = bitMatrix.width();
-	int height = bitMatrix.height();
+	const int width = bitMatrix.width();
+	const int height = bitMatrix.height();
 	// Read columns in pairs, from right to left
 	for (int x = width - 1 - 1; x > 0; x -= 2) { // Skip right edge alignment
 		// Read alternatingly from bottom to top then top to bottom

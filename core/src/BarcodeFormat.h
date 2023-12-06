@@ -1,4 +1,4 @@
-/*
+﻿/*
 * Copyright 2016 Nu-book Inc.
 * Copyright 2016 ZXing authors
 */
@@ -39,18 +39,18 @@ enum class BarcodeFormat
 	UPCA            = (1 << 14), ///< UPC-A
 	UPCE            = (1 << 15), ///< UPC-E
 	MicroQRCode     = (1 << 16), ///< Micro QR Code
-	MicroPDF417     = (1 << 17), ///< MicroPDF417
-	HanXin          = (1 << 18), ///< HanXin
-	DotCode         = (1 << 19), ///< DotCode
-	CodablockF      = (1 << 20), ///< Codablock-F
-	Code16K         = (1 << 21), ///< Code 16K
-	rMQR            = (1 << 22), ///< Rectangular Micro QR Code
+	RMQRCode        = (1 << 17), ///< Rectangular Micro QR Code
+	MicroPDF417     = (1 << 18), ///< MicroPDF417
+	HanXin          = (1 << 19), ///< HanXin
+	DotCode         = (1 << 20), ///< DotCode
+	CodablockF      = (1 << 21), ///< Codablock-F
+	Code16K         = (1 << 22), ///< Code 16K
 
 	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | UPCA | UPCE,
-	MatrixCodes = Aztec | CodablockF | DataMatrix | DotCode | HanXin | MaxiCode | PDF417 | QRCode | MicroQRCode | rMQR,
+	MatrixCodes = Aztec | DataMatrix | MaxiCode | PDF417 | QRCode | MicroQRCode | RMQRCode,
 	Any         = LinearCodes | MatrixCodes,
 
-	_max = rMQR, ///> implementation detail, don't use
+	_max = Code16K, ///> implementation detail, don't use
 };
 
 ZX_DECLARE_FLAGS(BarcodeFormats, BarcodeFormat)

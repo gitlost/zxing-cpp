@@ -110,7 +110,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset, co
 			int mode = bits.readBits(4);
 			switch (mode) {
 			case M_PAD: {
-					int padding = 0;
+					int padding = 1;
 					while (bits.available() >= 4) {
 						mode = bits.readBits(4);
 						if (mode != M_PAD) {

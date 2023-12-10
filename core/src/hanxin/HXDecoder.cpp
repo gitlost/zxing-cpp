@@ -96,11 +96,11 @@ static ECI ParseECIValue(BitSource& bits)
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset, const int ecLevel)
+DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, const int ecLevel)
 {
 	BitSource bits(codewords);
 	Content result;
-	result.hintedCharset = hintedCharset;
+	result.optionsCharset = optionsCharset;
 	result.defaultCharset = CharacterSet::ISO8859_1;
 	bool gs1 = false, uri = false, uni = false;
 
@@ -346,7 +346,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 }
 
 DecoderResult
-Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
+Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	int version;
 	int ecLevel;
@@ -383,7 +383,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 	Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), hintedCharset, ecLevel);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel);
 }
 
 } // namespace ZXing::HanXin

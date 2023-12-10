@@ -17,20 +17,20 @@
 #include "HXReader.h"
 
 #include "BinaryBitmap.h"
-#include "DecodeHints.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
+#include "Diagnostics.h"
+#include "ReaderOptions.h"
+#include "Result.h"
 #include "HXDecoder.h"
 #include "HXDetector.h"
-#include "Diagnostics.h"
-#include "Result.h"
 
 namespace ZXing::HanXin {
 
-Reader::Reader(const DecodeHints& hints)
-	: ZXing::Reader(hints)
+Reader::Reader(const ReaderOptions& options)
+	: ZXing::Reader(options)
 {
-	_formatSpecified = hints.hasFormat(BarcodeFormat::HanXin);
+	_formatSpecified = options.hasFormat(BarcodeFormat::HanXin);
 }
 
 Result
@@ -45,11 +45,11 @@ Reader::decode(const BinaryBitmap& image) const
 		return {};
 	}
 
-	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
+	auto detectorResult = Detect(*binImg, _opts.tryHarder(), _opts.isPure());
 
 	//printf(" HXReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-		return Result(Decoder::Decode(detectorResult.bits(), _hints.characterSet()), {}, BarcodeFormat::HanXin);
+		return Result(Decoder::Decode(detectorResult.bits(), _opts.characterSet()), {}, BarcodeFormat::HanXin);
 	}
 	return {};
 }

@@ -102,7 +102,7 @@ std::string Content::render(bool withECI) const
 	if (withECI)
 		res = symbology.toString(true);
 	ECI lastECI = ECI::Unknown;
-	CharacterSet fallbackCS = hintedCharset;
+	CharacterSet fallbackCS = optionsCharset;
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
 			fallbackCS = defaultCharset;

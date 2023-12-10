@@ -236,11 +236,11 @@ bool IsEndOfStream(const BitSource& bits, const Version& version)
 */
 ZXING_EXPORT_TEST_ONLY
 DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel,
-							  const CharacterSet hintedCharset = CharacterSet::Unknown)
+							  const CharacterSet optionsCharset = CharacterSet::Unknown)
 {
 	BitSource bits(bytes);
 	Content result;
-	result.hintedCharset = hintedCharset;
+	result.optionsCharset = optionsCharset;
 	Error error;
 	result.symbology = {'Q', version.isModel1() ? '0' : '1', 1};
 	StructuredAppendInfo structuredAppend;
@@ -338,7 +338,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 		.setStructuredAppend(structuredAppend);
 }
 
-DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
+DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	if (!Version::HasValidSize(bits))
 		return FormatError("Invalid symbol size");
@@ -387,7 +387,7 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");
-	return DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, hintedCharset).setIsMirrored(formatInfo.isMirrored);
+	return DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset).setIsMirrored(formatInfo.isMirrored);
 }
 
 } // namespace ZXing::QRCode

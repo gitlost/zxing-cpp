@@ -17,7 +17,7 @@ public:
 
 	Result decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const override;
 
-	CodabarReader(const DecodeHints& hints);
+	CodabarReader(const ReaderOptions& options);
 private:
 	bool _formatSpecified;
 };

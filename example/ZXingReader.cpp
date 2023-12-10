@@ -71,36 +71,36 @@ static void PrintUsage(const char* exePath)
 	std::cout << "\n";
 }
 
-static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLine, bool& angleEscape, bool& bytesOnly,
+static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& oneLine, bool& angleEscape, bool& bytesOnly,
 						 std::vector<std::string>& filePaths, std::string& outPath)
 {
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
-	hints.setTryDenoise(true);
+	options.setTryDenoise(true);
 #endif
 
 	for (int i = 1; i < argc; ++i) {
 		auto is = [&](const char* str) { return strncmp(argv[i], str, strlen(argv[i])) == 0; };
 		if (is("-fast")) {
-			hints.setTryHarder(false);
+			options.setTryHarder(false);
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
-			hints.setTryDenoise(false);
+			options.setTryDenoise(false);
 #endif
 		} else if (is("-norotate")) {
-			hints.setTryRotate(false);
+			options.setTryRotate(false);
 		} else if (is("-noinvert")) {
-			hints.setTryInvert(false);
+			options.setTryInvert(false);
 		} else if (is("-noscale")) {
-			hints.setTryDownscale(false);
+			options.setTryDownscale(false);
 		} else if (is("-ispure")) {
-			hints.setIsPure(true);
-			hints.setBinarizer(Binarizer::FixedThreshold);
+			options.setIsPure(true);
+			options.setBinarizer(Binarizer::FixedThreshold);
 		} else if (is("-errors")) {
-			hints.setReturnErrors(true);
+			options.setReturnErrors(true);
 		} else if (is("-format")) {
 			if (++i == argc)
 				return false;
 			try {
-				hints.setFormats(BarcodeFormatsFromString(argv[i]));
+				options.setFormats(BarcodeFormatsFromString(argv[i]));
 			} catch (const std::exception& e) {
 				std::cerr << e.what() << "\n";
 				return false;
@@ -112,7 +112,7 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 			int j;
 			for (j = 0; j < 4; j++) {
 				if (binarizer == binarizers[j]) {
-					hints.setBinarizer((Binarizer)j);
+					options.setBinarizer((Binarizer)j);
 					break;
 				}
 			}
@@ -125,11 +125,11 @@ static bool ParseOptions(int argc, char* argv[], DecodeHints& hints, bool& oneLi
 				std::cerr << "No argument for -charset\n";
 				return false;
 			}
-			hints.setCharacterSet(argv[i]);
+			options.setCharacterSet(argv[i]);
 		} else if (is("-diagnostics")) {
 #ifdef ZX_DIAGNOSTICS
-			hints.setEnableDiagnostics(true);
-			hints.setReturnErrors(true);
+			options.setEnableDiagnostics(true);
+			options.setReturnErrors(true);
 #else
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
@@ -199,7 +199,7 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 
 int main(int argc, char* argv[])
 {
-	DecodeHints hints;
+	ReaderOptions options;
 	std::vector<std::string> filePaths;
 	Results allResults;
 	std::string outPath;
@@ -208,10 +208,10 @@ int main(int argc, char* argv[])
 	bool bytesOnly = false;
 	int ret = 0;
 
-	hints.setTextMode(TextMode::HRI);
-	hints.setEanAddOnSymbol(EanAddOnSymbol::Read);
+	options.setTextMode(TextMode::HRI);
+	options.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
-	if (!ParseOptions(argc, argv, hints, oneLine, angleEscape, bytesOnly, filePaths, outPath)) {
+	if (!ParseOptions(argc, argv, options, oneLine, angleEscape, bytesOnly, filePaths, outPath)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
@@ -230,11 +230,11 @@ int main(int argc, char* argv[])
 		ImageView image{buffer.get(), width, height, ImageFormat::RGB};
 		Results results;
 		try {
-			results = ReadBarcodes(image, hints);
+			results = ReadBarcodes(image, options);
 		} catch (Error e) {
 			std::cerr << filePath << " Exception: " << e.msg() << "\n";
 #ifdef ZX_DIAGNOSTICS
-			if (hints.enableDiagnostics()) {
+			if (options.enableDiagnostics()) {
 				std::cerr << "  Diagnostics: " << Diagnostics::print(nullptr);
 				Diagnostics::clear();
 			}
@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
 			}
 
 #ifdef ZX_DIAGNOSTICS
-			if (hints.enableDiagnostics()) {
+			if (options.enableDiagnostics()) {
 				result.setContentDiagnostics();
 			}
 #endif
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
 				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
 							<< " \"" << EscapeNonGraphical(result.text(TextMode::Plain)) << "\" " << ToString(result.error());
 #ifdef ZX_DIAGNOSTICS
-				if (hints.enableDiagnostics() && !result.diagnostics().empty()) {
+				if (options.enableDiagnostics() && !result.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
 				}
 #endif
@@ -375,7 +375,7 @@ int main(int argc, char* argv[])
 				std::cout << "Reader Initialisation/Programming\n";
 
 #ifdef ZX_DIAGNOSTICS
-			if (hints.enableDiagnostics())
+			if (options.enableDiagnostics())
 				std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
 #endif
 		}
@@ -391,7 +391,7 @@ int main(int argc, char* argv[])
 			int blockSize = 1;
 			do {
 				for (int i = 0; i < blockSize; ++i)
-					ReadBarcodes(image, hints);
+					ReadBarcodes(image, options);
 				N += blockSize;
 				duration = std::chrono::high_resolution_clock::now() - startTime;
 				if (blockSize < 1000 && duration < std::chrono::milliseconds(100))

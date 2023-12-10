@@ -14,10 +14,10 @@
 
 namespace ZXing::MicroPdf417 {
 
-Reader::Reader(const DecodeHints& hints)
-	: ZXing::Reader(hints)
+Reader::Reader(const ReaderOptions& options)
+	: ZXing::Reader(options)
 {
-	_formatSpecified = hints.hasFormat(BarcodeFormat::MicroPDF417);
+	_formatSpecified = options.hasFormat(BarcodeFormat::MicroPDF417);
 }
 
 static const FixedPattern<6, 10> LRRAPs[] = {

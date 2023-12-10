@@ -12,10 +12,10 @@
 
 namespace ZXing::Code16K {
 
-Reader::Reader(const DecodeHints& hints)
-	: ZXing::Reader(hints)
+Reader::Reader(const ReaderOptions& options)
+	: ZXing::Reader(options)
 {
-	_formatSpecified = hints.hasFormat(BarcodeFormat::Code16K);
+	_formatSpecified = options.hasFormat(BarcodeFormat::Code16K);
 }
 
 constexpr float MAX_AVG_VARIANCE = 0.25f;

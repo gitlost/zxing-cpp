@@ -18,20 +18,20 @@
 
 #include "BinaryBitmap.h"
 #include "BitMatrix.h"
-#include "DecodeHints.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "DCDecoder.h"
 #include "DCDetector.h"
 #include "Diagnostics.h"
+#include "ReaderOptions.h"
 #include "Result.h"
 
 namespace ZXing::DotCode {
 
-Reader::Reader(const DecodeHints& hints)
-	: ZXing::Reader(hints)
+Reader::Reader(const ReaderOptions& options)
+	: ZXing::Reader(options)
 {
-	_formatSpecified = hints.hasFormat(BarcodeFormat::DotCode);
+	_formatSpecified = options.hasFormat(BarcodeFormat::DotCode);
 }
 
 Result
@@ -46,11 +46,11 @@ Reader::decode(const BinaryBitmap& image) const
 		return {};
 	}
 
-	auto detectorResult = Detect(*binImg, _hints.tryHarder(), _hints.isPure());
+	auto detectorResult = Detect(*binImg, _opts.tryHarder(), _opts.isPure());
 
 	//printf(" DCReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _hints.characterSet());
+		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
 		//printf("DecoderResult status %d\n", (int)decoderResult.errorCode());
 		if (decoderResult.isValid()) {
 			return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);

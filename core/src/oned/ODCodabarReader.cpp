@@ -7,7 +7,7 @@
 
 #include "ODCodabarReader.h"
 
-#include "DecodeHints.h"
+#include "ReaderOptions.h"
 #include "Result.h"
 #include "ZXAlgorithms.h"
 
@@ -30,9 +30,9 @@ static_assert(Size(ALPHABET) - 1 == Size(CHARACTER_ENCODINGS), "table size misma
 // some industries use a checksum standard but this is not part of the original codabar standard
 // for more information see : http://www.mecsw.com/specs/codabar.html
 
-CodabarReader::CodabarReader(const DecodeHints& hints) : RowReader(hints)
+CodabarReader::CodabarReader(const ReaderOptions& options) : RowReader(options)
 {
-	_formatSpecified = hints.hasFormat(BarcodeFormat::Codabar);
+	_formatSpecified = options.hasFormat(BarcodeFormat::Codabar);
 }
 
 // each character has 4 bars and 3 spaces
@@ -55,7 +55,7 @@ CodabarReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<D
 {
 	// minimal number of characters that must be present (including start, stop and checksum characters)
 	// absolute minimum would be 2 (meaning 0 'content'). everything below 4 produces too many false
-	// positives, but allow 3 if format specified in hints.
+	// positives, but allow 3 if format specified in options.
 	const int minCharCount = _formatSpecified ? 3 : 4;
 	auto isStartOrStopSymbol = [](char c) { return 'A' <= c && c <= 'D'; };
 
@@ -89,7 +89,7 @@ CodabarReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<D
 		return {};
 
 	// remove stop/start characters
-	if (!_hints.returnCodabarStartEnd())
+	if (!_opts.returnCodabarStartEnd())
 		txt = txt.substr(1, txt.size() - 2);
 
 	// symbology identifier ISO/IEC 15424:2008 4.4.9

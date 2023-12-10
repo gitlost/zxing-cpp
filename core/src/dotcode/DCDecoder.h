@@ -32,7 +32,7 @@ namespace DotCode {
 class Decoder
 {
 public:
-	static DecoderResult Decode(const BitMatrix& bits, const CharacterSet characterSet);
+	static DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset);
 };
 
 } // DotCode

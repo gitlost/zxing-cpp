@@ -252,10 +252,10 @@ static void ProcessBinary(const ByteArray& codewords, int& position, Content& re
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& codewords, const CharacterSet hintedCharset)
+DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset)
 {
 	Content result;
-	result.hintedCharset = hintedCharset;
+	result.optionsCharset = optionsCharset;
 	std::string macroEnd;
 	int position;
 	int codeset = CODESET_C;
@@ -572,7 +572,7 @@ Unmask(ByteArray& codewords)
 }
 
 DecoderResult
-Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
+Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	static GField field;
 	std::vector<int> erasureLocs;
@@ -611,7 +611,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet hintedCharset)
 
 	Diagnostics::fmt("  Unmasked:   (%d)", resultBytes.size()); Diagnostics::dump(resultBytes, "\n");
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), hintedCharset);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset);
 }
 
 } // namespace ZXing::DotCode

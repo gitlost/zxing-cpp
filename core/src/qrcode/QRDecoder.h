@@ -15,7 +15,7 @@ class BitMatrix;
 
 namespace QRCode {
 
-DecoderResult Decode(const BitMatrix& bits, const CharacterSet hintedCharset = CharacterSet::Unknown);
+DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset = CharacterSet::Unknown);
 
 } // QRCode
 } // ZXing

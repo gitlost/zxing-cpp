@@ -21,7 +21,7 @@
 
 namespace ZXing {
 
-class DecodeHints;
+class ReaderOptions;
 
 namespace DotCode {
 
@@ -30,7 +30,7 @@ class Reader : public ZXing::Reader
 	bool _formatSpecified;
 
 public:
-	explicit Reader(const DecodeHints& hints);
+	explicit Reader(const ReaderOptions& options);
 	Result decode(const BinaryBitmap& image) const override;
 };
 

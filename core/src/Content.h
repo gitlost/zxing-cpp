@@ -7,8 +7,8 @@
 
 #include "ByteArray.h"
 #include "CharacterSet.h"
-#include "DecodeHints.h"
 #include "Diagnostics.h"
+#include "ReaderOptions.h"
 
 #include <string>
 #include <vector>
@@ -53,7 +53,7 @@ public:
 	std::vector<Encoding> encodings;
 	SymbologyIdentifier symbology;
 	CharacterSet defaultCharset = CharacterSet::Unknown;
-	CharacterSet hintedCharset = CharacterSet::Unknown;
+	CharacterSet optionsCharset = CharacterSet::Unknown;
 	bool hasECI = false;
 	std::list<std::string>* p_diagnostics = nullptr;
 

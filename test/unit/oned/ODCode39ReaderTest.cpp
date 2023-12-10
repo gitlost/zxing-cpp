@@ -5,7 +5,7 @@
 
 #include "oned/ODCode39Reader.h"
 
-#include "DecodeHints.h"
+#include "ReaderOptions.h"
 #include "Diagnostics.h"
 #include "Result.h"
 
@@ -15,9 +15,9 @@ using namespace ZXing;
 using namespace ZXing::OneD;
 
 // Helper to call decodePattern()
-static Result parse(PatternRow row, DecodeHints hints = {})
+static Result parse(PatternRow row, ReaderOptions opts = {})
 {
-	Code39Reader reader(hints);
+	Code39Reader reader(opts);
 
 	row.insert(row.begin(), { 0, 1, 2, 1, 1, 2, 1, 2, 1, 1, 0 });
 	row.insert(row.end(), { 0, 1, 2, 1, 1, 2, 1, 2, 1, 1, 0 });
@@ -39,7 +39,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 	{
 		// "A" with checksum
 		PatternRow row({ 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
-		auto result = parse(row, DecodeHints().setValidateCode39CheckSum(true));
+		auto result = parse(row, ReaderOptions().setValidateCode39CheckSum(true));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A3");
 		EXPECT_EQ(result.text(), "A");
 
@@ -50,7 +50,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 	{
 		// Extended "a"
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
-		auto result = parse(row, DecodeHints().setTryCode39ExtendedMode(true));
+		auto result = parse(row, ReaderOptions().setTryCode39ExtendedMode(true));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A4");
 		EXPECT_EQ(result.text(), "a");
 
@@ -61,7 +61,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 	{
 		// Extended "a" with checksum
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 2, 1, 1, 2, 1, 1 });
-		auto result = parse(row, DecodeHints().setTryCode39ExtendedMode(true).setValidateCode39CheckSum(true));
+		auto result = parse(row, ReaderOptions().setTryCode39ExtendedMode(true).setValidateCode39CheckSum(true));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A7");
 		EXPECT_EQ(result.text(), "a");
 

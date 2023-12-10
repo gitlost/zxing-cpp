@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project (ZXing VERSION "2.1.0")
+project (ZXing VERSION "2.2.0")
 set (ZXING_SONAME 3) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
 #add_definitions(-DPRINT_DEBUG=1)
@@ -111,6 +111,7 @@ if (BUILD_READERS)
         src/Content.h
         src/Content.cpp
         src/DecodeHints.h
+        src/DecodeHints.cpp
         src/DecoderResult.h
         src/DetectorResult.h
         src/Error.h
@@ -128,6 +129,7 @@ if (BUILD_READERS)
         src/PerspectiveTransform.h
         src/PerspectiveTransform.cpp
         src/Reader.h
+        src/ReaderOptions.h
         src/ReadBarcode.h
         src/ReadBarcode.cpp
         src/ReedSolomonDecoder.h
@@ -181,6 +183,7 @@ if (BUILD_READERS)
         src/Point.h
         src/Quadrilateral.h
         src/ReadBarcode.h
+        src/ReaderOptions.h
         src/Result.h
         src/ResultMetadata.h
         src/StructuredAppend.h

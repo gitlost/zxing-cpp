@@ -36,6 +36,9 @@ constexpr int CHAR_LEN = 6;
 template <typename C>
 static bool DetectStartCode(const C& c)
 {
+	if (!c.isValid(CHAR_LEN)) {
+		return false;
+	}
 	float variance = OneD::Code128Reader::PatternMatchVariance(c, OneD::Code128::CODE_PATTERNS[CODE_START_A], MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
@@ -43,13 +46,19 @@ static bool DetectStartCode(const C& c)
 template <typename C>
 static bool DetectStopCode(const C& c)
 {
-	float variance = OneD::Code128Reader::PatternMatchVariance(c, FixedPattern<7, 13>{2, 3, 3, 1, 1, 1, 2}, MAX_INDIVIDUAL_VARIANCE);
+	if (!c.isValid(CHAR_LEN + 1)) {
+		return false;
+	}
+	float variance = OneD::Code128Reader::PatternMatchVariance(c, FixedPattern<CHAR_LEN + 1, 13>{2, 3, 3, 1, 1, 1, 2}, MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
 
 template <typename C>
 static int DecodeDigit(const C& c)
 {
+	if (!c.isValid(CHAR_LEN)) {
+		return -1;
+	}
 	return OneD::RowReader::DecodeDigit(c, OneD::Code128::CODE_PATTERNS, MAX_AVG_VARIANCE, MAX_INDIVIDUAL_VARIANCE, false);
 }
 

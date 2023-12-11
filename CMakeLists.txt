@@ -8,10 +8,10 @@ option (BUILD_EXAMPLES "Build the example barcode reader/writer applications" ON
 option (BUILD_EXAMPLE_DECODER "Build the example Decoder application" OFF)
 option (BUILD_BLACKBOX_TESTS "Build the black box reader/writer tests" OFF)
 option (BUILD_UNIT_TESTS "Build the unit tests (don't enable for production builds)" OFF)
-option (BUILD_PYTHON_MODULE "Build the python module" OFF)
+option (BUILD_PYTHON_MODULE "Build the python module" OFF) # Ignored if BUILD_SANITIZE
 option (BUILD_C_API "Build the C-API" OFF)
 option (BUILD_EXPERIMENTAL_API "Build with experimental API" OFF)
-option (BUILD_SANITIZE "Build with sanitize" OFF) # BUILD_PYTHON_MODULE must be OFF
+option (BUILD_SANITIZE "Build with sanitize" OFF)
 option (BUILD_DIAGNOSTICS "Build with diagnostics" OFF)
 set(BUILD_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
 
@@ -101,7 +101,7 @@ endif()
 if (BUILD_UNIT_TESTS)
     add_subdirectory (test/unit)
 endif()
-if (BUILD_PYTHON_MODULE)
+if (BUILD_PYTHON_MODULE AND NOT BUILD_SANITIZE)
     add_subdirectory (wrappers/python)
 endif()
 if (BUILD_C_API)

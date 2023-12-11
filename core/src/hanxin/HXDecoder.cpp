@@ -145,13 +145,13 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 								Diagnostics::put("NERR0");
 								return FormatError();
 							}
-							sprintf(buf, num == 0x3FD ? "%d" : num == 0x3FE ? "%02d" : "%03d", prevNum);
+							snprintf(buf, sizeof(buf), num == 0x3FD ? "%d" : num == 0x3FE ? "%02d" : "%03d", prevNum);
 							result.append(buf);
 							Diagnostics::put("NTERM");
 							break;
 						}
 						if (prevNum != -1) {
-							sprintf(buf, "%03d", prevNum);
+							snprintf(buf, sizeof(buf), "%03d", prevNum);
 							result.append(buf);
 						}
 						prevNum = num;

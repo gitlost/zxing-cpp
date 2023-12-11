@@ -47,15 +47,15 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(opts));
 	#if 1
-	if (!formats.testFlag(BarcodeFormat::CodablockF))
+	if (formats.testFlag(BarcodeFormat::CodablockF))
 		_readers.emplace_back(new CodablockF::Reader(opts));
-	if (!formats.testFlag(BarcodeFormat::Code16K))
+	if (formats.testFlag(BarcodeFormat::Code16K))
 		_readers.emplace_back(new Code16K::Reader(opts));
-	if (!formats.testFlag(BarcodeFormat::DotCode))
+	if (formats.testFlag(BarcodeFormat::DotCode))
 		_readers.emplace_back(new DotCode::Reader(opts));
-	if (!formats.testFlag(BarcodeFormat::HanXin))
+	if (formats.testFlag(BarcodeFormat::HanXin))
 		_readers.emplace_back(new HanXin::Reader(opts));
-	if (!formats.testFlag(BarcodeFormat::MicroPDF417))
+	if (formats.testFlag(BarcodeFormat::MicroPDF417))
 		_readers.emplace_back(new MicroPdf417::Reader(opts));
 	#endif
 

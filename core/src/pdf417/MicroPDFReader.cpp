@@ -139,6 +139,9 @@ constexpr int CHAR_LEN = 8;
 template <typename C>
 static int DetectLRRAPCode(const C& c)
 {
+	if (!c.isValid(RAP_CHAR_LEN)) {
+		return -1;
+	}
 	int bestCode = 0;
 	float bestVariance = MAX_AVG_VARIANCE;
 	for (int code = 0; code < Size(LRRAPs); code++) {
@@ -154,6 +157,9 @@ static int DetectLRRAPCode(const C& c)
 template <typename C>
 static int DetectCRAPCode(const C& c)
 {
+	if (!c.isValid(RAP_CHAR_LEN)) {
+		return -1;
+	}
 	int bestCode = 0;
 	float bestVariance = MAX_AVG_VARIANCE;
 	for (int code = 0; code < Size(CRAPs); code++) {
@@ -170,7 +176,10 @@ static int DetectCRAPCode(const C& c)
 template <typename C>
 static int DecodeCodeword(const C& c, const int cluster)
 {
-	const std::array<int, 8>& np = NormalizedPattern<8, 17>(c);
+	if (!c.isValid(CHAR_LEN)) {
+		return -1;
+	}
+	const std::array<int, CHAR_LEN>& np = NormalizedPattern<CHAR_LEN, 17>(c);
 	int patternCluster = (np[0] - np[2] + np[4] - np[6] + 9) % 9;
 	//printf("0x%X: patternCluster %d, cluster %d\n", ToInt(np), patternCluster, cluster);
 	if (patternCluster != cluster) {

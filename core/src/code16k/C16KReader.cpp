@@ -307,6 +307,9 @@ const std::array<std::array<int, CHAR_LEN>, 107> CODE_PATTERNS = { {
 template <typename C>
 static bool DetectRowStartCode(const C& c, int row)
 {
+	if (!c.isValid(START_STOP_CHAR_LEN)) {
+		return false;
+	}
 	float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StartValues[row]], MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
@@ -314,6 +317,9 @@ static bool DetectRowStartCode(const C& c, int row)
 template <typename C>
 static bool DetectRowStopCode(const C& c, int row)
 {
+	if (!c.isValid(START_STOP_CHAR_LEN)) {
+		return false;
+	}
 	float variance = OneD::Code128Reader::PatternMatchVariance(c, START_STOP_CODE_PATTERNS[StopValues[row]], MAX_INDIVIDUAL_VARIANCE);
 	return variance < MAX_AVG_VARIANCE;
 }
@@ -321,6 +327,9 @@ static bool DetectRowStopCode(const C& c, int row)
 template <typename C>
 static int DecodeDigit(const C& c)
 {
+	if (!c.isValid(CHAR_LEN)) {
+		return false;
+	}
 	return OneD::RowReader::DecodeDigit(c, CODE_PATTERNS, MAX_AVG_VARIANCE, MAX_INDIVIDUAL_VARIANCE, false);
 }
 

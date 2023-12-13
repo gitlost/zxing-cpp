@@ -34,6 +34,7 @@ static BarcodeFormatName NAMES[] = {
 	{BarcodeFormat::DataBarExpanded, "DataBarExpanded"},
 	{BarcodeFormat::DataMatrix, "DataMatrix"},
 	{BarcodeFormat::DotCode, "DotCode"},
+	{BarcodeFormat::DXFilmEdge, "DXFilmEdge"},
 	{BarcodeFormat::EAN8, "EAN-8"},
 	{BarcodeFormat::EAN13, "EAN-13"},
 	{BarcodeFormat::HanXin, "HanXin"},

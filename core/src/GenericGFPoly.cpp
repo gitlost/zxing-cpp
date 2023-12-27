@@ -19,18 +19,15 @@ namespace ZXing {
 int
 GenericGFPoly::evaluateAt(int a) const
 {
-	if (a == 0)
-		// Just return the x^0 coefficient
+	if (a == 0) // return the x^0 coefficient
 		return constant();
 
 	if (a == 1)
 		// Just the sum of the coefficients
-		return Reduce(_coefficients, 0, [this](int a, int b) { return _field->add(a, b); });
+		return Reduce(_coefficients, 0, [this](auto s, auto c) { return _field->add(s, c); });
 
-	int result = _coefficients[0];
-	for (size_t i = 1; i < _coefficients.size(); ++i)
-		result = _field->add(_field->multiply(a, result), _coefficients[i]);
-	return result;
+	return std::accumulate(_coefficients.begin(), _coefficients.end(), 0,
+						   [this, a](auto s, auto c) { return _field->add(_field->multiply(a, s), c); });
 }
 
 GenericGFPoly& GenericGFPoly::subtract(GenericGFPoly& other)

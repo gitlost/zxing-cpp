@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
-#include <numeric>
 #include <stdexcept>
 #include <string>
 
@@ -31,10 +30,6 @@ static const uint8_t MACRO_05 = 236;
 static const uint8_t MACRO_06 = 237;
 static const uint8_t C40_UNLATCH = 254;
 static const uint8_t X12_UNLATCH = 254;
-
-static const std::string MACRO_05_HEADER = "[)>\x1E""05\x1D";
-static const std::string MACRO_06_HEADER = "[)>\x1E""06\x1D";
-static const std::string MACRO_TRAILER = "\x1E\x04";
 
 enum
 {
@@ -845,12 +840,13 @@ namespace Base256Encoder {
 
 } // Base256Encoder
 
-static bool StartsWith(const std::string& s, const std::string& ss)
+//TODO: c++20
+static bool StartsWith(std::string_view s, std::string_view ss)
 {
 	return s.length() > ss.length() && s.compare(0, ss.length(), ss) == 0;
 }
 
-static bool EndsWith(const std::string& s, const std::string& ss)
+static bool EndsWith(std::string_view s, std::string_view ss)
 {
 	return s.length() > ss.length() && s.compare(s.length() - ss.length(), ss.length(), ss) == 0;
 }
@@ -886,6 +882,10 @@ ByteArray Encode(const std::string& msg, CharacterSet charset, SymbolShape shape
 	EncoderContext context(TextEncoder::FromUnicode(msg, charset));
 	context.setSymbolShape(shape);
 	context.setSizeConstraints(minWidth, minHeight, maxWidth, maxHeight);
+
+	constexpr std::string_view MACRO_05_HEADER = "[)>\x1E""05\x1D";
+	constexpr std::string_view MACRO_06_HEADER = "[)>\x1E""06\x1D";
+	constexpr std::string_view MACRO_TRAILER = "\x1E\x04";
 
 	if (StartsWith(msg, MACRO_05_HEADER) && EndsWith(msg, MACRO_TRAILER)) {
 		context.addCodeword(MACRO_05);

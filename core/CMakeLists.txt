@@ -146,6 +146,8 @@ if (BUILD_READERS)
         src/ThresholdBinarizer.h
         src/WhiteRectDetector.h
         src/WhiteRectDetector.cpp
+        $<$<BOOL:${BUILD_C_API}>:${CMAKE_SOURCE_DIR}/wrappers/c/zxing-c.h>
+        $<$<BOOL:${BUILD_C_API}>:${CMAKE_SOURCE_DIR}/wrappers/c/zxing-c.cpp>
     )
 endif()
 if (BUILD_WRITERS)
@@ -187,6 +189,7 @@ if (BUILD_READERS)
         src/Result.h
         src/ResultMetadata.h
         src/StructuredAppend.h
+        $<$<BOOL:${BUILD_C_API}>:${CMAKE_SOURCE_DIR}/wrappers/c/zxing-c.h>
     )
 endif()
 if (BUILD_WRITERS)

@@ -448,12 +448,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 2, 2, 180 },
 		});
 
-		runTests("ean8-1", "EAN-8", 8, {
+		runTests("ean8-1", "EAN-8", 9, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 8, 8, 0   },
-			{ 8, 8, 180 },
+			{ 9, 9, 0   },
+			{ 9, 9, 180 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 7, 0, pure },
+			{ 8, 0, pure },
 		});
 
 		runTests("ean8-extension-1", "EAN-8", 1, {

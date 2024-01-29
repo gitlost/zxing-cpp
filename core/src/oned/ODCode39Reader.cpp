@@ -114,28 +114,24 @@ Result Code39Reader::decodePattern(int rowNumber, PatternView& next, std::unique
 	if (Size(txt) < minCharCount - 2 || !next.hasQuietZoneAfter(QUIET_ZONE_SCALE))
 		return {};
 
-	auto lastChar = txt.back();
-	txt.pop_back();
-	int checksum = TransformReduce(txt, 0, [](char c) { return IndexOf(ALPHABET, c); });
-	bool hasValidCheckSum = lastChar == ALPHABET[checksum % 43];
-	if (!hasValidCheckSum)
-		txt.push_back(lastChar);
+	Error error;
+	if (_opts.validateCode39CheckSum()) {
+		auto checkDigit = txt.back();
+		txt.pop_back();
+		int checksum = TransformReduce(txt, 0, [](char c) { return IndexOf(ALPHABET, c); });
+		if (checkDigit != ALPHABET[checksum % 43])
+			error = ChecksumError();
+	}
 
-	const char shiftChars[] = "$%/+";
-	auto fullASCII = DecodeCode39AndCode93FullASCII(txt, shiftChars);
-	bool hasFullASCII = !fullASCII.empty() && std::find_first_of(txt.begin(), txt.end(), shiftChars, shiftChars + 4) != txt.end();
-	if (hasFullASCII)
-		txt = fullASCII;
-
-	if (hasValidCheckSum)
-		txt.push_back(lastChar);
+	if (!error && _opts.tryCode39ExtendedMode() && (txt = DecodeCode39AndCode93FullASCII(txt, "$%/+")).empty())
+		error = FormatError("Decoding extended Code39/Code93 failed");
 
 	// Symbology identifier modifiers ISO/IEC 16388:2007 Annex C Table C.1
-	constexpr const char symbologyModifiers[4] = { '0', '1' /*checksum*/, '4' /*full ASCII*/, '5' /*checksum + full ASCII*/ };
-	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)hasValidCheckSum + 2 * (int)hasFullASCII]};
+	constexpr const char symbologyModifiers[4] = { '0', '3' /*checksum*/, '4' /*extended*/, '7' /*checksum,extended*/ };
+	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)_opts.tryCode39ExtendedMode() * 2 + (int)_opts.validateCode39CheckSum()]};
 
 	int xStop = next.pixelsTillEnd();
-	return Result(std::move(txt), rowNumber, xStart, xStop, BarcodeFormat::Code39, symbologyIdentifier);
+	return Result(std::move(txt), rowNumber, xStart, xStop, BarcodeFormat::Code39, symbologyIdentifier, error);
 }
 
 } // namespace ZXing::OneD

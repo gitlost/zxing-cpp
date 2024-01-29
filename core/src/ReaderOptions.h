@@ -143,14 +143,14 @@ public:
 	/// The maximum number of symbols (barcodes) to detect / look for in the image with ReadBarcodes
 	ZX_PROPERTY(uint8_t, maxNumberOfSymbols, setMaxNumberOfSymbols)
 
-	/// Deprecated / does nothing. The Code39 was decoded from full ASCII iff symbologyIdentifier()[2] >= '4'
-	ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode, [[deprecated]])
+	/// If true, the Code-39 reader will try to read extended mode.
+	ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode)
 
-	/// Deprecated / does nothing. The Code39 symbol has a valid checksum iff symbologyIdentifier()[2] is an odd digit
-	ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum, [[deprecated]])
+	/// Assume Code-39 codes employ a check digit and validate it.
+	ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum)
 
-	/// Deprecated / does nothing. The ITF symbol has a valid checksum iff symbologyIdentifier()[2] == '1'.
-	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum, [[deprecated]])
+	/// Assume ITF codes employ a GS1 check digit and validate it.
+	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum)
 
 	/// If true, return the start and end chars in a Codabar barcode instead of stripping them.
 	ZX_PROPERTY(bool, returnCodabarStartEnd, setReturnCodabarStartEnd)

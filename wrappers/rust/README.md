@@ -15,7 +15,7 @@ In your Cargo.toml:
 # `bundled` causes cargo to compile and statically link an up to
 # date version of the c++ core library. This is the most convenient
 # and safe way to build the library.
-zxing-cpp = { version = "0.2.1", features = ["bundled", "image"] }
+zxing-cpp = { version = "0.2.2", features = ["bundled", "image"] }
 ```
 
 Simple example usage:
@@ -25,18 +25,17 @@ use zxing_cpp::{ImageView, ReaderOptions, BarcodeFormat, read_barcodes};
 
 fn main() -> anyhow::Result<()> {
 	let image = image::open("some-image-file.jpg")?;
-	let iv = ImageView::try_from(&image)?;
 	let opts = ReaderOptions::default()
 		.formats(BarcodeFormat::QRCode | BarcodeFormat::LinearCodes)
 		.try_invert(false);
 
-	let results = read_barcodes(&iv, &opts)?;
+	let barcodes = read_barcodes(&image, &opts)?;
 
-	if results.is_empty() {
+	if barcodes.is_empty() {
 		println!("No barcode found.");
 	} else {
-		for result in results {
-			println!("{}: {}", result.format(), result.text());
+		for barcode in barcodes {
+			println!("{}: {}", barcode.format(), barcode.text());
 		}
 	}
 

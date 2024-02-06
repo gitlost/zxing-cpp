@@ -81,10 +81,10 @@ public:
 		  _tryInvert(1),
 		  _tryDownscale(1),
 		  _isPure(0),
-		  _tryCode39ExtendedMode(0),
+		  _tryCode39ExtendedMode(1),
 		  _validateCode39CheckSum(0),
 		  _validateITFCheckSum(0),
-		  _returnCodabarStartEnd(0),
+		  _returnCodabarStartEnd(1),
 		  _returnErrors(0),
 		  _enableDiagnostics(0),
 		  _downscaleFactor(3),
@@ -99,7 +99,7 @@ public:
 	{}
 
 #define ZX_PROPERTY(TYPE, GETTER, SETTER, ...) \
-	__VA_ARGS__ TYPE GETTER() const noexcept { return _##GETTER; } \
+	TYPE GETTER() const noexcept { return _##GETTER; } \
 	__VA_ARGS__ ReaderOptions& SETTER(TYPE v)& { return (void)(_##GETTER = std::move(v)), *this; } \
 	__VA_ARGS__ ReaderOptions&& SETTER(TYPE v)&& { return (void)(_##GETTER = std::move(v)), std::move(*this); }
 
@@ -143,7 +143,7 @@ public:
 	/// The maximum number of symbols (barcodes) to detect / look for in the image with ReadBarcodes
 	ZX_PROPERTY(uint8_t, maxNumberOfSymbols, setMaxNumberOfSymbols)
 
-	/// If true, the Code-39 reader will try to read extended mode.
+	/// Enable the heuristic to detect and decode "full ASCII"/extended Code39 symbols
 	ZX_PROPERTY(bool, tryCode39ExtendedMode, setTryCode39ExtendedMode)
 
 	/// Assume Code-39 codes employ a check digit and validate it.
@@ -152,8 +152,8 @@ public:
 	/// Assume ITF codes employ a GS1 check digit and validate it.
 	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum)
 
-	/// If true, return the start and end chars in a Codabar barcode instead of stripping them.
-	ZX_PROPERTY(bool, returnCodabarStartEnd, setReturnCodabarStartEnd)
+	/// Deprecated / does nothing. Codabar start/stop characters are always returned.
+	ZX_PROPERTY(bool, returnCodabarStartEnd, setReturnCodabarStartEnd, [[deprecated]])
 
 	/// If true, return the barcodes with errors as well (e.g. checksum errors, see @Result::error())
 	ZX_PROPERTY(bool, returnErrors, setReturnErrors)

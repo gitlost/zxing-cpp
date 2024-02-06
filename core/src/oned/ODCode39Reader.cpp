@@ -123,12 +123,21 @@ Result Code39Reader::decodePattern(int rowNumber, PatternView& next, std::unique
 			error = ChecksumError();
 	}
 
-	if (!error && _opts.tryCode39ExtendedMode() && (txt = DecodeCode39AndCode93FullASCII(txt, "$%/+")).empty())
-		error = FormatError("Decoding extended Code39/Code93 failed");
+	const char shiftChars[] = "$%/+";
+	bool hasFullASCII = false;
+	if (!error && _opts.tryCode39ExtendedMode()) {
+		auto fullASCII = DecodeCode39AndCode93FullASCII(txt, shiftChars);
+		if (fullASCII.empty()) {
+			error = FormatError("Decoding extended Code39/Code93 failed");
+		} else {
+			if ((hasFullASCII = std::find_first_of(txt.begin(), txt.end(), shiftChars, shiftChars + 4) != txt.end()))
+				txt = fullASCII;
+		}
+	}
 
 	// Symbology identifier modifiers ISO/IEC 16388:2007 Annex C Table C.1
 	constexpr const char symbologyModifiers[4] = { '0', '3' /*checksum*/, '4' /*extended*/, '7' /*checksum,extended*/ };
-	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)_opts.tryCode39ExtendedMode() * 2 + (int)_opts.validateCode39CheckSum()]};
+	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)_opts.validateCode39CheckSum() + 2 * (int)hasFullASCII]};
 
 	int xStop = next.pixelsTillEnd();
 	return Result(std::move(txt), rowNumber, xStart, xStop, BarcodeFormat::Code39, symbologyIdentifier, error);

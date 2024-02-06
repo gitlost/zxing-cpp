@@ -26,6 +26,7 @@ use std::fmt::{Display, Formatter};
 use std::io::ErrorKind;
 use std::marker::PhantomData;
 use std::mem::transmute;
+use std::rc::Rc;
 
 pub type Error = std::io::Error;
 
@@ -45,6 +46,13 @@ fn c2r_vec(buf: *mut u8, len: c_int) -> Vec<u8> {
 		unsafe { zxing_free(buf as *mut c_void) };
 	}
 	res
+}
+
+fn last_error() -> Error {
+	match unsafe { zxing_LastErrorMsg().as_mut() } {
+		None => panic!("Internal error: zxing_LastErrorMsg() returned NULL"),
+		Some(error) => Error::new(ErrorKind::InvalidInput, c2r_str(error)),
+	}
 }
 
 macro_rules! last_error_or {
@@ -107,17 +115,20 @@ impl Display for ContentType {
 	}
 }
 
-pub struct ImageView<'a>(*mut zxing_ImageView, PhantomData<&'a u8>);
+#[derive(Debug, PartialEq)]
+struct ImageViewOwner<'a>(*mut zxing_ImageView, PhantomData<&'a u8>);
 
-impl Drop for ImageView<'_> {
+impl Drop for ImageViewOwner<'_> {
 	fn drop(&mut self) {
 		unsafe { zxing_ImageView_delete(self.0) }
 	}
 }
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImageView<'a>(Rc<ImageViewOwner<'a>>);
 
-impl<'a> AsRef<ImageView<'a>> for ImageView<'a> {
-	fn as_ref(&self) -> &ImageView<'a> {
-		self
+impl<'a> From<&'a ImageView<'a>> for ImageView<'a> {
+	fn from(img: &'a ImageView) -> Self {
+		img.clone()
 	}
 }
 
@@ -133,8 +144,9 @@ impl<'a> ImageView<'a> {
 	/// # Safety
 	///
 	/// The memory gets accessed inside the c++ library at random places between
-	/// `ptr` and `ptr + height * row_stride + width * pix_stride. Note that both
-	/// the stride values could be negative, e.g. if the image view is rotated.
+	/// `ptr` and `ptr + height * row_stride` or `ptr + width * pix_stride`.
+	/// Note that both the stride values could be negative, e.g. if the image
+	/// view is rotated.
 	pub unsafe fn from_ptr<T: TryInto<c_int>, U: TryInto<c_int>>(
 		ptr: *const u8,
 		width: T,
@@ -143,40 +155,47 @@ impl<'a> ImageView<'a> {
 		row_stride: U,
 		pix_stride: U,
 	) -> Result<Self, Error> {
-		let res = ImageView(
-			zxing_ImageView_new(
-				ptr,
+		let iv = zxing_ImageView_new(
+			ptr,
+			Self::try_into_int(width)?,
+			Self::try_into_int(height)?,
+			format as zxing_ImageFormat,
+			Self::try_into_int(row_stride)?,
+			Self::try_into_int(pix_stride)?,
+		);
+		if iv.is_null() {
+			Err(last_error())
+		} else {
+			Ok(ImageView(Rc::new(ImageViewOwner(iv, PhantomData))))
+		}
+	}
+
+	pub fn from_slice<T: TryInto<c_int>>(data: &'a [u8], width: T, height: T, format: ImageFormat) -> Result<Self, Error> {
+		unsafe {
+			let iv = zxing_ImageView_new_checked(
+				data.as_ptr(),
+				data.len() as c_int,
 				Self::try_into_int(width)?,
 				Self::try_into_int(height)?,
 				format as zxing_ImageFormat,
-				Self::try_into_int(row_stride)?,
-				Self::try_into_int(pix_stride)?,
-			),
-			PhantomData,
-		);
-		Ok(res)
-	}
-
-	pub fn from_slice<T: TryInto<c_int> + Clone>(data: &'a [u8], width: T, height: T, format: ImageFormat) -> Result<Self, Error> {
-		let pix_size = match format {
-			ImageFormat::Lum => 1,
-			ImageFormat::RGB => 3,
-			ImageFormat::RGBX => 4,
-		};
-		if Self::try_into_int(data.len())? < Self::try_into_int(width.clone())? * Self::try_into_int(height.clone())? * pix_size {
-			Err(Error::new(ErrorKind::InvalidInput, "data.len() < width * height * pix_size"))
-		} else {
-			unsafe { Self::from_ptr(data.as_ptr(), width, height, format, 0, 0) }
+				0,
+				0,
+			);
+			if iv.is_null() {
+				Err(last_error())
+			} else {
+				Ok(ImageView(Rc::new(ImageViewOwner(iv, PhantomData))))
+			}
 		}
 	}
 
 	pub fn cropped(self, left: i32, top: i32, width: i32, height: i32) -> Self {
-		unsafe { zxing_ImageView_crop(self.0, left, top, width, height) }
+		unsafe { zxing_ImageView_crop((self.0).0, left, top, width, height) }
 		self
 	}
 
 	pub fn rotated(self, degree: i32) -> Self {
-		unsafe { zxing_ImageView_rotate(self.0, degree) }
+		unsafe { zxing_ImageView_rotate((self.0).0, degree) }
 		self
 	}
 }
@@ -268,11 +287,11 @@ impl ReaderOptions {
 	property!(min_line_count, i32);
 }
 
-pub struct ReaderResult(*mut zxing_Result);
+pub struct Barcode(*mut zxing_Barcode);
 
-impl Drop for ReaderResult {
+impl Drop for Barcode {
 	fn drop(&mut self) {
-		unsafe { zxing_Result_delete(self.0) }
+		unsafe { zxing_Barcode_delete(self.0) }
 	}
 }
 
@@ -303,12 +322,12 @@ impl Display for Position {
 macro_rules! getter {
 	($r_name:ident, $c_name:ident, $conv:expr, $type:ty) => {
 		pub fn $r_name(&self) -> $type {
-			paste! { unsafe { $conv([<zxing_Result_ $c_name>](self.0)) } }
+			paste! { unsafe { $conv([<zxing_Barcode_ $c_name>](self.0)) } }
 		}
 	};
 }
 
-impl ReaderResult {
+impl Barcode {
 	getter!(is_valid, isValid, transmute, bool);
 	getter!(format, format, (|f| BarcodeFormats::new(f).unwrap().into_iter().last().unwrap()), BarcodeFormat);
 	getter!(content_type, contentType, transmute, ContentType);
@@ -325,11 +344,11 @@ impl ReaderResult {
 
 	pub fn bytes(&self) -> Vec<u8> {
 		let mut len: c_int = 0;
-		unsafe { c2r_vec(zxing_Result_bytes(self.0, &mut len), len) }
+		unsafe { c2r_vec(zxing_Barcode_bytes(self.0, &mut len), len) }
 	}
 	pub fn bytes_eci(&self) -> Vec<u8> {
 		let mut len: c_int = 0;
-		unsafe { c2r_vec(zxing_Result_bytesECI(self.0, &mut len), len) }
+		unsafe { c2r_vec(zxing_Barcode_bytesECI(self.0, &mut len), len) }
 	}
 }
 
@@ -343,19 +362,22 @@ pub fn barcode_formats_from_string(str: impl AsRef<str>) -> Result<BarcodeFormat
 	}
 }
 
-pub fn read_barcodes<'a>(image: impl AsRef<ImageView<'a>>, opts: impl AsRef<ReaderOptions>) -> Result<Vec<ReaderResult>, Error> {
+pub fn read_barcodes<'a>(image: impl TryInto<ImageView<'a>>, opts: impl AsRef<ReaderOptions>) -> Result<Vec<Barcode>, Error> {
+	let iv_: ImageView = image
+		.try_into()
+		.map_err(|_| Error::new(ErrorKind::InvalidInput, "Failed to image.try_into::<ImageView>()"))?;
 	unsafe {
-		let results = zxing_ReadBarcodes(image.as_ref().0, opts.as_ref().0);
+		let results = zxing_ReadBarcodes((iv_.0).0, opts.as_ref().0);
 		if !results.is_null() {
-			let size = zxing_Results_size(results);
-			let mut vec = Vec::<ReaderResult>::with_capacity(size as usize);
+			let size = zxing_Barcodes_size(results);
+			let mut vec = Vec::<Barcode>::with_capacity(size as usize);
 			for i in 0..size {
-				vec.push(ReaderResult(zxing_Results_move(results, i)));
+				vec.push(Barcode(zxing_Barcodes_move(results, i)));
 			}
-			zxing_Results_delete(results);
+			zxing_Barcodes_delete(results);
 			Ok(vec)
 		} else {
-			last_error_or!(Vec::<ReaderResult>::default())
+			Err(last_error())
 		}
 	}
 }

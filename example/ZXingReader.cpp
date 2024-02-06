@@ -117,8 +117,16 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& o
 				}
 			}
 			if (j == 4) {
-				std::cerr << "Unknown binarizer '" << binarizer << "'\n";
-				return false;
+				if (is("local"))
+					options.setBinarizer(Binarizer::LocalAverage);
+				else if (is("global"))
+					options.setBinarizer(Binarizer::GlobalHistogram);
+				else if (is("fixed"))
+					options.setBinarizer(Binarizer::FixedThreshold);
+				else {
+					std::cerr << "Unknown binarizer '" << binarizer << "'\n";
+					return false;
+				}
 			}
 		} else if (is("-charset")) {
 			if (++i == argc) {

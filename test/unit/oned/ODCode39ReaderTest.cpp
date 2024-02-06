@@ -55,7 +55,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 		EXPECT_EQ(result.symbologyIdentifier(), "]A4");
 		EXPECT_EQ(result.text(), "a");
 
-		result = parse(row);
+		result = parse(row, ReaderOptions().setTryCode39ExtendedMode(false));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A0");
 		EXPECT_EQ(result.text(), "+A");
 	}
@@ -66,7 +66,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 		EXPECT_EQ(result.symbologyIdentifier(), "]A7");
 		EXPECT_EQ(result.text(), "a");
 
-		result = parse(row);
+		result = parse(row, ReaderOptions().setTryCode39ExtendedMode(false));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A0");
 		EXPECT_EQ(result.text(), "+A8");
 	}

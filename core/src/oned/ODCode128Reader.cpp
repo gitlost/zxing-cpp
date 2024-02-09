@@ -14,9 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <initializer_list>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace ZXing::OneD {

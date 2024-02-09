@@ -14,7 +14,6 @@
 #include "ImageLoader.h"
 #include "ReadBarcode.h"
 #include "ZXAlgorithms.h"
-#include "ZXFilesystem.h"
 
 #include <cstdlib>
 #include <cstring>

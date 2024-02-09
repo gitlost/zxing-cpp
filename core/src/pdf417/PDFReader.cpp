@@ -29,7 +29,7 @@
 
 #ifdef PRINT_DEBUG
 #include "BitMatrixIO.h"
-#include <iostream>
+#include <cstdio>
 #endif
 
 namespace ZXing {

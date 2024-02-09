@@ -10,7 +10,6 @@
 #include "AZDetectorResult.h"
 #include "BitArray.h"
 #include "BitMatrix.h"
-#include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"

@@ -9,7 +9,6 @@
 #include "ECI.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "TextDecoder.h"
 #include "ZXAlgorithms.h"
 
 #include <cmath>

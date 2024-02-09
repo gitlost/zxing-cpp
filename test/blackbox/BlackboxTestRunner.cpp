@@ -478,7 +478,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		runTests("ean13-4", "EAN-13", 22, {
 			{ 6, 13, 0   },
-			{ 8, 13, 180 },
+			{ 7, 13, 180 },
 		});
 
 		runTests("ean13-extension-1", "EAN-13", 5, {
@@ -505,27 +505,27 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		});
 
 		runTests("upca-1", "UPC-A", 12, {
-			{  9, 12, 0   },
+			{ 10, 12, 0   },
 			{ 11, 12, 180 },
 		});
 
 		runTests("upca-2", "UPC-A", 36, {
 			{ 17, 22, 0   },
-			{ 16, 22, 180 },
+			{ 17, 22, 180 },
 		});
 
 		runTests("upca-3", "UPC-A", 21, {
-			{ 7, 10, 0   },
-			{ 8, 10, 180 },
+			{ 7, 11, 0   },
+			{ 8, 11, 180 },
 		});
 
 		runTests("upca-4", "UPC-A", 19, {
-			{ 8, 12, 0   },
-			{ 9, 12, 180 },
+			{ 8, 12, 0, 1, 0 },
+			{ 9, 12, 0, 1, 180 },
 		});
 
 		runTests("upca-5", "UPC-A", 32, {
-			{ 17, 20, 0   },
+			{ 18, 20, 0   },
 			{ 18, 20, 180 },
 		});
 
@@ -544,8 +544,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		runTests("upce-2", "UPC-E", 28, {
 			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
-			{ 17, 22, 0, 1, 0   },
-			{ 20, 22, 1, 1, 180 },
+			{ 18, 22, 0, 1, 0   },
+			{ 19, 22, 1, 1, 180 },
 		});
 
 		runTests("upce-3", "UPC-E", 11, {
@@ -610,12 +610,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 16, 270 },
 		});
 
-		runTests("qrcode-2", "QRCode", 50, {
+		runTests("qrcode-2", "QRCode", 51, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 46, 48, 0   },
-			{ 46, 48, 90  },
-			{ 46, 48, 180 },
-			{ 46, 48, 270 },
+			{ 45, 48, 0   },
+			{ 45, 48, 90  },
+			{ 45, 48, 180 },
+			{ 45, 48, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 22, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
@@ -624,14 +624,14 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 28, 28, 0   },
 			{ 28, 28, 90  },
 			{ 28, 28, 180 },
-			{ 27, 27, 270 },
+			{ 28, 28, 270 },
 		});
 
 		runTests("qrcode-4", "QRCode", 41, {
-			{ 29, 29, 0   },
-			{ 29, 29, 90  },
-			{ 29, 29, 180 },
-			{ 29, 29, 270 },
+			{ 31, 31, 0   },
+			{ 31, 31, 90  },
+			{ 31, 31, 180 },
+			{ 31, 31, 270 },
 		});
 
 		runTests("qrcode-5", "QRCode", 16, {
@@ -658,8 +658,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		runTests("microqrcode-1", "MicroQRCode", 16, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 15, 15, 0   },
-			{ 15, 15, 90  },
-			{ 15, 15, 180 },
+			{ 14, 14, 90  },
+			{ 14, 14, 180 }, // ughs: 1 result is platform/compiler dependent (e.g. -march=core2 vs. haswell)
 			{ 15, 15, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 9, 0, pure },

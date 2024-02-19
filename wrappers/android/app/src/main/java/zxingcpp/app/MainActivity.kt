@@ -1,18 +1,7 @@
 /*
 * Copyright 2021 Axel Waggershauser
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*      http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
 */
+// SPDX-License-Identifier: Apache-2.0
 
 package zxingcpp.app
 
@@ -31,9 +20,11 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.View
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.CaptureRequestOptions
+import androidx.camera.camera2.interop.ExperimentalCamera2Interop
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -129,6 +120,7 @@ class MainActivity : AppCompatActivity() {
 		}
 	}
 
+	@OptIn(ExperimentalCamera2Interop::class)
 	private fun bindCameraUseCases() = binding.viewFinder.post {
 
 		val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
@@ -216,6 +208,8 @@ class MainActivity : AppCompatActivity() {
 						hints[DecodeHintType.POSSIBLE_FORMATS] = arrayListOf(BarcodeFormat.QR_CODE)
 					if (binding.tryHarder.isChecked)
 						hints[DecodeHintType.TRY_HARDER] = true
+					if (binding.tryInvert.isChecked)
+						hints[DecodeHintType.ALSO_INVERTED] = true
 
 					resultText = try {
 						val bitmap = BinaryBitmap(

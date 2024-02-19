@@ -46,6 +46,17 @@ else()
         -Wall -Wextra -Wno-missing-braces -Werror=undef -Werror=return-type)
 endif()
 
+include (CheckCXXCompilerFlag)
+
+# This is needed for reproducible builds across different build directories.
+# Without this, the usage of the __FILE__ macro leaves the build directory in
+# the binary. When building the Python extension with build isolation enabled
+# this would lead to random paths in the binary.
+set(FILE_PREFIX_ARG "-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=")
+check_cxx_compiler_flag("${FILE_PREFIX_ARG}" HAS_FILE_PREFIX_ARG)
+if(HAS_FILE_PREFIX_ARG)
+    set(ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES} "${FILE_PREFIX_ARG}")
+endif()
 
 ################# Source files
 
@@ -145,8 +156,8 @@ if (BUILD_READERS)
         src/ThresholdBinarizer.h
         src/WhiteRectDetector.h
         src/WhiteRectDetector.cpp
-        $<$<BOOL:${BUILD_C_API}>:src/zxing-c.h>
-        $<$<BOOL:${BUILD_C_API}>:src/zxing-c.cpp>
+        $<$<BOOL:${BUILD_C_API}>:src/ZXingC.h>
+        $<$<BOOL:${BUILD_C_API}>:src/ZXingC.cpp>
     )
 endif()
 if (BUILD_WRITERS)
@@ -188,7 +199,7 @@ if (BUILD_READERS)
         src/Result.h
         src/ResultMetadata.h
         src/StructuredAppend.h
-        $<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/zxing-c.h>
+        $<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>
     )
 endif()
 if (BUILD_WRITERS)
@@ -537,8 +548,6 @@ target_compile_options (ZXing
     PRIVATE ${ZXING_CORE_LOCAL_DEFINES}
 )
 
-include (CheckCXXCompilerFlag)
-
 target_compile_features(ZXing PUBLIC cxx_std_17)
 
 target_link_libraries (ZXing PRIVATE Threads::Threads)
@@ -560,7 +569,7 @@ endif()
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
-list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/zxing-c.h>")
+list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>")
 target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})
 set_source_files_properties(src/libzueci/zueci.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 set_source_files_properties(src/DecodeHints.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)

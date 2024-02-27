@@ -4,15 +4,15 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-
+#include "BitMatrixIO.h"
 #ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
 #endif
-#include "ReadBarcode.h"
 #include "GTIN.h"
+#include "ReadBarcode.h"
 #include "Utf.h"
-#include "pdf417/PDFDecoderResultExtra.h"
 #include "ZXVersion.h"
+#include "pdf417/PDFDecoderResultExtra.h"
 
 #include <chrono>
 #include <cstring>
@@ -32,6 +32,18 @@ using namespace ZXing;
 
 static const char *binarizers[] = { "LocalAverage", "GlobalHistogram", "FixedThreshold", "BoolCast" };
 
+struct CLI
+{
+	std::vector<std::string> filePaths;
+	std::string outPath;
+	int forceChannels = 0;
+	int rotate = 0;
+	bool oneLine = false;
+	bool bytesOnly = false;
+	bool showSymbol = false;
+	bool angleEscape = false;
+};
+
 static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath << " [options] <image file>...\n"
@@ -47,6 +59,9 @@ static void PrintUsage(const char* exePath)
 			  << "    -1            Print main details on one line per file/barcode (implies '-escape')\n"
 			  << "    -escape       Escape non-graphical characters in angle brackets\n"
 			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+			  << "    -symbol       Print the detected symbol (if available)\n"
+#endif
 			  << "    -pngout <file name>\n"
 			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
 			  << "    -binarizer <BINARIZER>\n"
@@ -72,8 +87,7 @@ static void PrintUsage(const char* exePath)
 	std::cout << "\n";
 }
 
-static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& oneLine, bool& angleEscape, bool& bytesOnly,
-						 int& forceChannels, int& rotate, std::vector<std::string>& filePaths, std::string& outPath)
+static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cli)
 {
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 	options.setTryDenoise(true);
@@ -145,23 +159,25 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& o
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
 		} else if (is("-1")) {
-			oneLine = true;
+			cli.oneLine = true;
 		} else if (is("-escape")) {
-			angleEscape = true;
+			cli.angleEscape = true;
 		} else if (is("-bytes")) {
-			bytesOnly = true;
+			cli.bytesOnly = true;
+		} else if (is("-symbol")) {
+			cli.showSymbol = true;
 		} else if (is("-pngout")) {
 			if (++i == argc)
 				return false;
-			outPath = argv[i];
+			cli.outPath = argv[i];
 		} else if (is("-channels")) {
 			if (++i == argc)
 				return false;
-			forceChannels = atoi(argv[i]);
+			cli.forceChannels = atoi(argv[i]);
 		} else if (is("-rotate")) {
 			if (++i == argc)
 				return false;
-			rotate = atoi(argv[i]);
+			cli.rotate = atoi(argv[i]);
 		} else if (is("-help") || is("--help")) {
 			PrintUsage(argv[0]);
 			exit(0);
@@ -169,11 +185,11 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, bool& o
 			std::cout << "ZXingReader " << ZXING_VERSION_STR << "\n";
 			exit(0);
 		} else {
-			filePaths.push_back(argv[i]);
+			cli.filePaths.push_back(argv[i]);
 		}
 	}
 
-	return !filePaths.empty();
+	return !cli.filePaths.empty();
 }
 
 std::ostream& operator<<(std::ostream& os, const Position& points)
@@ -219,43 +235,37 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 int main(int argc, char* argv[])
 {
 	ReaderOptions options;
-	std::vector<std::string> filePaths;
-	Results allResults;
-	std::string outPath;
-	bool oneLine = false;
-	bool angleEscape = false;
-	bool bytesOnly = false;
-	int forceChannels = 0;
-	int rotate = 0;
+	CLI cli;
+	Barcodes allBarcodes;
 	int ret = 0;
 
 	options.setTextMode(TextMode::HRI);
 	options.setEanAddOnSymbol(EanAddOnSymbol::Read);
 
-	if (!ParseOptions(argc, argv, options, oneLine, angleEscape, bytesOnly, forceChannels, rotate, filePaths, outPath)) {
+	if (!ParseOptions(argc, argv, options, cli)) {
 		PrintUsage(argv[0]);
 		return argc == 1 ? 0 : -1;
 	}
 
 	std::cout.setf(std::ios::boolalpha);
 
-	for (const auto& filePath : filePaths) {
+	for (const auto& filePath : cli.filePaths) {
 		int width, height, channels;
-		std::unique_ptr<stbi_uc, void (*)(void*)> buffer(stbi_load(filePath.c_str(), &width, &height, &channels, forceChannels),
+		std::unique_ptr<stbi_uc, void (*)(void*)> buffer(stbi_load(filePath.c_str(), &width, &height, &channels, cli.forceChannels),
 														 stbi_image_free);
 		if (buffer == nullptr) {
 			std::cerr << "Failed to read image: " << filePath << " (" << stbi_failure_reason() << ")" << "\n";
 			continue;
 		}
-		channels = forceChannels ? forceChannels : channels;
+		channels = cli.forceChannels ? cli.forceChannels : channels;
 
 		//std::cerr << "File " << filePath << "\n";
 
-		auto ImageFormatFromChannels = std::array{ImageFormat::None, ImageFormat::Lum, ImageFormat::LumX, ImageFormat::RGB, ImageFormat::RGBX};
+		auto ImageFormatFromChannels = std::array{ImageFormat::None, ImageFormat::Lum, ImageFormat::LumA, ImageFormat::RGB, ImageFormat::RGBA};
 		ImageView image{buffer.get(), width, height, ImageFormatFromChannels.at(channels)};
-		Results results;
+		Barcodes barcodes;
 		try {
-			results = ReadBarcodes(image.rotated(rotate), options);
+			barcodes = ReadBarcodes(image.rotated(cli.rotate), options);
 		} catch (Error e) {
 			std::cerr << filePath << " Exception: " << e.msg() << "\n";
 #ifdef ZX_DIAGNOSTICS
@@ -268,114 +278,114 @@ int main(int argc, char* argv[])
 		}
 
 		// if we did not find anything, insert a dummy to produce some output for each file
-		if (results.empty())
-			results.emplace_back();
+		if (barcodes.empty())
+			barcodes.emplace_back();
 
-		allResults.insert(allResults.end(), results.begin(), results.end());
-		if (filePath == filePaths.back()) {
-			auto merged = MergeStructuredAppendSequences(allResults);
+		allBarcodes.insert(allBarcodes.end(), barcodes.begin(), barcodes.end());
+		if (filePath == cli.filePaths.back()) {
+			auto merged = MergeStructuredAppendSequences(allBarcodes);
 			// report all merged sequences as part of the last file to make the logic not overly complicated here
-			results.insert(results.end(), std::make_move_iterator(merged.begin()), std::make_move_iterator(merged.end()));
+			barcodes.insert(barcodes.end(), std::make_move_iterator(merged.begin()), std::make_move_iterator(merged.end()));
 		}
 
-		for (auto&& result : results) {
+		for (auto&& barcode : barcodes) {
 
-			if (!outPath.empty())
-				drawRect(image, result.position(), bool(result.error()));
+			if (!cli.outPath.empty())
+				drawRect(image, barcode.position(), bool(barcode.error()));
 
-			ret |= static_cast<int>(result.error().type());
+			ret |= static_cast<int>(barcode.error().type());
 
-			if (bytesOnly) {
-				std::cout.write(reinterpret_cast<const char*>(result.bytes().data()), result.bytes().size());
+			if (cli.bytesOnly) {
+				std::cout.write(reinterpret_cast<const char*>(barcode.bytes().data()), barcode.bytes().size());
 				continue;
 			}
 
 #ifdef ZX_DIAGNOSTICS
 			if (options.enableDiagnostics()) {
-				result.setContentDiagnostics();
+				barcode.setContentDiagnostics();
 			}
 #endif
 
-			if (oneLine) {
-				std::cout << filePath << " " << ToString(result.format()) << " " << result.symbologyIdentifier()
-							<< " \"" << EscapeNonGraphical(result.text(TextMode::Plain)) << "\" " << ToString(result.error());
+			if (cli.oneLine) {
+				std::cout << filePath << " " << ToString(barcode.format()) << " " << barcode.symbologyIdentifier()
+							<< " \"" << EscapeNonGraphical(barcode.text(TextMode::Plain)) << "\" " << ToString(barcode.error());
 #ifdef ZX_DIAGNOSTICS
-				if (options.enableDiagnostics() && !result.diagnostics().empty()) {
-					std::cout << Diagnostics::print(&result.diagnostics(), true /*skipToDecode*/);
+				if (options.enableDiagnostics() && !barcode.diagnostics().empty()) {
+					std::cout << Diagnostics::print(&barcode.diagnostics(), true /*skipToDecode*/);
 				}
 #endif
 				std::cout << "\n";
 				continue;
 			}
 
-			if (filePaths.size() > 1 || results.size() > 1) {
+			if (cli.filePaths.size() > 1 || barcodes.size() > 1) {
 				static bool firstFile = true;
 				if (!firstFile)
 					std::cout << "\n";
-				if (filePaths.size() > 1)
+				if (cli.filePaths.size() > 1)
 					std::cout << "File:       " << filePath << "\n";
 				firstFile = false;
 			}
 
-			if (result.format() == BarcodeFormat::None) {
+			if (barcode.format() == BarcodeFormat::None) {
 				std::cout << "No barcode found\n";
 				continue;
 			}
 
-			std::string text = result.text(TextMode::Plain);
-			std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n"
-					  //<< "Bytes:      (" << Size(result.bytes()) << ") " << ToHex(result.bytes()) << "\n"
+			std::string text = barcode.text(TextMode::Plain);
+			std::cout << "Text:       \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n"
+					  //<< "Bytes:      (" << Size(barcode.bytes()) << ") " << ToHex(barcode.bytes()) << "\n"
 					  << "Length:     " << text.size() << "\n"
-					  << "Format:     " << ToString(result.format()) << "\n"
-					  << "Identifier: " << result.symbologyIdentifier() << "\n";
+					  << "Format:     " << ToString(barcode.format()) << "\n"
+					  << "Identifier: " << barcode.symbologyIdentifier() << "\n";
 
-			if (result.contentType() == ContentType::GS1 || result.contentType() == ContentType::ISO15434)
-				std::cout << "HRI:        \"" << result.text(TextMode::HRI) << "\"\n";
+			if (barcode.contentType() == ContentType::GS1 || barcode.contentType() == ContentType::ISO15434)
+				std::cout << "HRI:        \"" << barcode.text(TextMode::HRI) << "\"\n";
 
-			if (Size(result.ECIs()))
-				std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
+			if (Size(barcode.ECIs()))
+				std::cout << "ECIs:       (" << Size(barcode.ECIs()) << ") " << barcode.ECIs() << "\n";
 
-			std::cout << "Position:   " << result.position() << "\n";
-			if (result.orientation())
-				std::cout << "Rotation:   " << result.orientation() << " deg\n";
-			if (result.isMirrored())
-				std::cout << "IsMirrored: " << result.isMirrored() << "\n";
-			if (result.isInverted())
-				std::cout << "IsInverted: " << result.isInverted() << "\n";
+			std::cout << "Position:   " << barcode.position() << "\n";
+			if (barcode.orientation())
+				std::cout << "Rotation:   " << barcode.orientation() << " deg\n";
+			if (barcode.isMirrored())
+				std::cout << "IsMirrored: " << barcode.isMirrored() << "\n";
+			if (barcode.isInverted())
+				std::cout << "IsInverted: " << barcode.isInverted() << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {
 				if (!v.empty())
 					std::cout << key << v << "\n";
 			};
 
-			printOptional("EC Level:   ", result.ecLevel());
-			printOptional("Version:    ", result.version());
-			printOptional("Error:      ", ToString(result.error()));
+			printOptional("EC Level:   ", barcode.ecLevel());
+			printOptional("Version:    ", barcode.version());
+			printOptional("Error:      ", ToString(barcode.error()));
 
-			if (result.lineCount())
-				std::cout << "Lines:      " << result.lineCount() << "\n";
+			if (barcode.lineCount())
+				std::cout << "Lines:      " << barcode.lineCount() << "\n";
 
 			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
-					.testFlag(result.format())) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(TextMode::Plain), result.format()));
-				printOptional("Add-On:     ", GTIN::EanAddOn(result));
-				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(result)));
-				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(result)));
-			} else if (result.format() == BarcodeFormat::ITF && Size(result.bytes()) == 14) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(result.text(TextMode::Plain), result.format()));
+					.testFlag(barcode.format())) {
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
+				printOptional("Add-On:     ", GTIN::EanAddOn(barcode));
+				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(barcode)));
+				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(barcode)));
+			} else if (barcode.format() == BarcodeFormat::ITF && Size(barcode.bytes()) == 14) {
+				printOptional("Country:    ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
 			}
 
-			if (result.isPartOfSequence()) {
+			if (barcode.isPartOfSequence()) {
 				std::cout << "Structured Append\n";
-				if (result.sequenceSize() > 0)
-					std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of " << result.sequenceSize() << "\n";
+				if (barcode.sequenceSize() > 0)
+					std::cout << "    Sequence: " << barcode.sequenceIndex() + 1 << " of " << barcode.sequenceSize() << "\n";
 				else
-					std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
-				if (!result.sequenceId().empty())
-					std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
+					std::cout << "    Sequence: " << barcode.sequenceIndex() + 1 << " of unknown number\n";
+				if (!barcode.sequenceId().empty())
+					std::cout << "    Id:       \"" << barcode.sequenceId() << "\"\n";
 			}
 
-			const auto& meta = result.metadata();
+			const auto& meta = barcode.metadata();
 			if (meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA)) {
 				const auto& extra = std::dynamic_pointer_cast<Pdf417::DecoderResultExtra>(meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA));
 				if (!extra->empty()) {
@@ -396,17 +406,21 @@ int main(int argc, char* argv[])
 				}
 			}
 
-			if (result.readerInit())
+			if (barcode.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 
 #ifdef ZX_DIAGNOSTICS
 			if (options.enableDiagnostics())
-				std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
+				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
+#endif
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+			if (auto& symbol = barcode.symbol(); cli.showSymbol && !symbol.empty())
+				std::cout << "Symbol:\n" << ToString(symbol);
 #endif
 		}
 
-		if (Size(filePaths) == 1 && !outPath.empty())
-			stbi_write_png(outPath.c_str(), image.width(), image.height(), 3, image.data(0, 0), image.rowStride());
+		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())
+			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(0, 0), image.rowStride());
 
 #ifdef NDEBUG
 		if (getenv("MEASURE_PERF")) {

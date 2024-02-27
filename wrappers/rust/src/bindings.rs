@@ -22,12 +22,13 @@ pub struct ZXing_Barcodes {
 }
 pub const ZXing_ImageFormat_None: ZXing_ImageFormat = 0;
 pub const ZXing_ImageFormat_Lum: ZXing_ImageFormat = 16777216;
+pub const ZXing_ImageFormat_LumA: ZXing_ImageFormat = 33554432;
 pub const ZXing_ImageFormat_RGB: ZXing_ImageFormat = 50331906;
 pub const ZXing_ImageFormat_BGR: ZXing_ImageFormat = 50462976;
-pub const ZXing_ImageFormat_RGBX: ZXing_ImageFormat = 67109122;
-pub const ZXing_ImageFormat_XRGB: ZXing_ImageFormat = 67174915;
-pub const ZXing_ImageFormat_BGRX: ZXing_ImageFormat = 67240192;
-pub const ZXing_ImageFormat_XBGR: ZXing_ImageFormat = 67305985;
+pub const ZXing_ImageFormat_RGBA: ZXing_ImageFormat = 67109122;
+pub const ZXing_ImageFormat_ARGB: ZXing_ImageFormat = 67174915;
+pub const ZXing_ImageFormat_BGRA: ZXing_ImageFormat = 67240192;
+pub const ZXing_ImageFormat_ABGR: ZXing_ImageFormat = 67305985;
 pub type ZXing_ImageFormat = ::core::ffi::c_uint;
 pub const ZXing_BarcodeFormat_None: ZXing_BarcodeFormat = 0;
 pub const ZXing_BarcodeFormat_Aztec: ZXing_BarcodeFormat = 1;
@@ -77,6 +78,11 @@ pub const ZXing_ContentType_GS1: ZXing_ContentType = 3;
 pub const ZXing_ContentType_ISO15434: ZXing_ContentType = 4;
 pub const ZXing_ContentType_UnknownECI: ZXing_ContentType = 5;
 pub type ZXing_ContentType = ::core::ffi::c_uint;
+pub const ZXing_ErrorType_None: ZXing_ErrorType = 0;
+pub const ZXing_ErrorType_Format: ZXing_ErrorType = 1;
+pub const ZXing_ErrorType_Checksum: ZXing_ErrorType = 2;
+pub const ZXing_ErrorType_Unsupported: ZXing_ErrorType = 3;
+pub type ZXing_ErrorType = ::core::ffi::c_uint;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct ZXing_PointI {
@@ -150,6 +156,7 @@ extern "C" {
 	pub fn ZXing_ContentTypeToString(type_: ZXing_ContentType) -> *mut ::core::ffi::c_char;
 	pub fn ZXing_PositionToString(position: ZXing_Position) -> *mut ::core::ffi::c_char;
 	pub fn ZXing_Barcode_isValid(barcode: *const ZXing_Barcode) -> bool;
+	pub fn ZXing_Barcode_errorType(barcode: *const ZXing_Barcode) -> ZXing_ErrorType;
 	pub fn ZXing_Barcode_errorMsg(barcode: *const ZXing_Barcode) -> *mut ::core::ffi::c_char;
 	pub fn ZXing_Barcode_format(barcode: *const ZXing_Barcode) -> ZXing_BarcodeFormat;
 	pub fn ZXing_Barcode_contentType(barcode: *const ZXing_Barcode) -> ZXing_ContentType;

@@ -111,7 +111,7 @@ macro_rules! make_zxing_flags {
     }
 }
 #[rustfmt::skip] // workaround for broken #[rustfmt::skip::macros(make_zxing_enum)]
-make_zxing_enum!(ImageFormat { Lum, RGB, RGBX });
+make_zxing_enum!(ImageFormat { Lum, LumA, RGB, BGR, RGBA, ARGB, BGRA, ABGR });
 #[rustfmt::skip]
 make_zxing_enum!(ContentType { Text, Binary, Mixed, GS1, ISO15434, UnknownECI });
 #[rustfmt::skip]
@@ -258,13 +258,14 @@ impl<'a> TryFrom<&'a image::DynamicImage> for ImageView<'a> {
 	fn try_from(img: &'a image::DynamicImage) -> Result<Self, Error> {
 		let format = match img {
 			image::DynamicImage::ImageLuma8(_) => Some(ImageFormat::Lum),
+			image::DynamicImage::ImageLumaA8(_) => Some(ImageFormat::LumA),
 			image::DynamicImage::ImageRgb8(_) => Some(ImageFormat::RGB),
-			image::DynamicImage::ImageRgba8(_) => Some(ImageFormat::RGBX),
+			image::DynamicImage::ImageRgba8(_) => Some(ImageFormat::RGBA),
 			_ => None,
 		};
 		match format {
 			Some(format) => Ok(ImageView::from_slice(img.as_bytes(), img.width(), img.height(), format)?),
-			None => Err(Error::InvalidInput("Invalid image format (must be either luma8|rgb8|rgba8)".to_string())),
+			None => Err(Error::InvalidInput("Invalid image format (must be either luma8|lumaA8|rgb8|rgba8)".to_string())),
 		}
 	}
 }
@@ -275,6 +276,21 @@ impl Drop for Barcode {
 	fn drop(&mut self) {
 		unsafe { ZXing_Barcode_delete(self.0) }
 	}
+}
+
+#[derive(Error, Debug, PartialEq)]
+pub enum BarcodeError {
+	#[error("")]
+	None(),
+
+	#[error("{0}")]
+	Checksum(String),
+
+	#[error("{0}")]
+	Format(String),
+
+	#[error("{0}")]
+	Unsupported(String),
 }
 
 pub type PointI = ZXing_PointI;
@@ -315,7 +331,6 @@ impl Barcode {
 	getter!(content_type, contentType, transmute, ContentType);
 	getter!(text, text, c2r_str, String);
 	getter!(ec_level, ecLevel, c2r_str, String);
-	getter!(error_message, errorMsg, c2r_str, String);
 	getter!(symbology_identifier, symbologyIdentifier, c2r_str, String);
 	getter!(position, position, transmute, Position);
 	getter!(orientation, orientation, transmute, i32);
@@ -331,6 +346,19 @@ impl Barcode {
 	pub fn bytes_eci(&self) -> Vec<u8> {
 		let mut len: c_int = 0;
 		unsafe { c2r_vec(ZXing_Barcode_bytesECI(self.0, &mut len), len) }
+	}
+
+	pub fn error(&self) -> BarcodeError {
+		let error_type = unsafe { ZXing_Barcode_errorType(self.0) };
+		let error_msg = unsafe { c2r_str(ZXing_Barcode_errorMsg(self.0)) };
+		#[allow(non_upper_case_globals)]
+		match error_type {
+			ZXing_ErrorType_None => BarcodeError::None(),
+			ZXing_ErrorType_Format => BarcodeError::Format(error_msg),
+			ZXing_ErrorType_Checksum => BarcodeError::Checksum(error_msg),
+			ZXing_ErrorType_Unsupported => BarcodeError::Unsupported(error_msg),
+			_ => panic!("Internal error: invalid ZXing_ErrorType"),
+		}
 	}
 }
 

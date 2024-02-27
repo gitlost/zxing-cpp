@@ -52,7 +52,7 @@ include (CheckCXXCompilerFlag)
 # Without this, the usage of the __FILE__ macro leaves the build directory in
 # the binary. When building the Python extension with build isolation enabled
 # this would lead to random paths in the binary.
-set(FILE_PREFIX_ARG "-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=")
+set(FILE_PREFIX_ARG "-fmacro-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}/=")
 check_cxx_compiler_flag("${FILE_PREFIX_ARG}" HAS_FILE_PREFIX_ARG)
 if(HAS_FILE_PREFIX_ARG)
     set(ZXING_CORE_LOCAL_DEFINES ${ZXING_CORE_LOCAL_DEFINES} "${FILE_PREFIX_ARG}")
@@ -114,6 +114,8 @@ set (COMMON_FILES
 )
 if (BUILD_READERS)
     set (COMMON_FILES ${COMMON_FILES}
+        src/Barcode.h
+        src/Barcode.cpp
         src/BinaryBitmap.h
         src/BinaryBitmap.cpp
         src/BitSource.h
@@ -125,6 +127,7 @@ if (BUILD_READERS)
         src/DecoderResult.h
         src/DetectorResult.h
         src/Error.h
+        src/Error.cpp
         src/GlobalHistogramBinarizer.h
         src/GlobalHistogramBinarizer.cpp
         src/GridSampler.h
@@ -144,8 +147,7 @@ if (BUILD_READERS)
         src/ReadBarcode.cpp
         src/ReedSolomonDecoder.h
         src/ReedSolomonDecoder.cpp
-        src/Result.h
-        src/Result.cpp
+        src/Result.h # [[deprecated]]
         src/ResultMetadata.h
         src/ResultMetadata.cpp
         src/ResultPoint.h
@@ -186,9 +188,10 @@ set (PUBLIC_HEADERS
 )
 if (BUILD_READERS)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        src/Barcode.h
         src/Content.h
         src/CustomData.h
-        src/DecodeHints.h
+        src/DecodeHints.h # [[deprecated]]
         src/Diagnostics.h
         src/Error.h
         src/ImageView.h
@@ -196,7 +199,7 @@ if (BUILD_READERS)
         src/Quadrilateral.h
         src/ReadBarcode.h
         src/ReaderOptions.h
-        src/Result.h
+        src/Result.h # [[deprecated]]
         src/ResultMetadata.h
         src/StructuredAppend.h
         $<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>
@@ -570,9 +573,39 @@ set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
 list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${BUILD_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>")
+list(REMOVE_ITEM PRECOMPILE_HEADERS src/DecodeHints.h) # [[deprecated]]
+list(REMOVE_ITEM PRECOMPILE_HEADERS src/Result.h)      # [[deprecated]]
 target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})
 set_source_files_properties(src/libzueci/zueci.c PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
 set_source_files_properties(src/DecodeHints.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    # The following is a list of translation units that fulfill two criteria regarding the use of -Os vs -O3:
+    #  1. their binary size decreases significantly
+    #  2. the runtime of ReaderTest is not (measurably) affected
+    # Compiling them with -Os saves about 40kB (3%) with clang and 190kB (12%) with gcc.
+    check_cxx_compiler_flag("-Os" COMPILER_KNOWS_Os)
+    if(COMPILER_KNOWS_Os)
+    set_source_files_properties(
+        src/BitMatrixIO.cpp
+        src/Error.cpp
+        src/MultiFormatReader.cpp
+        src/ZXingC.cpp
+        src/aztec/AZHighLevelEncoder.cpp
+        src/datamatrix/DMDataBlock.cpp
+        src/datamatrix/DMHighLevelEncoder.cpp
+        src/oned/ODDataBarExpandedBitDecoder.cpp
+        src/pdf417/PDFHighLevelEncoder.cpp
+        src/qrcode/QRBitMatrixParser.cpp
+        src/qrcode/QRDataBlock.cpp
+        src/qrcode/QRDecoder.cpp
+        src/qrcode/QREncoder.cpp
+        src/qrcode/QRMaskUtil.cpp
+        src/qrcode/QRReader.cpp
+        src/qrcode/QRVersion.cpp
+        PROPERTIES SKIP_PRECOMPILE_HEADERS ON COMPILE_FLAGS -Os)
+    endif()
+endif()
 
 include (GNUInstallDirs)
 

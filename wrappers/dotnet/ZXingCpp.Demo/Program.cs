@@ -29,8 +29,8 @@ public static class SkBitmapBarcodeReader
 		var format = img.Info.ColorType switch
 		{
 			SKColorType.Gray8 => ImageFormat.Lum,
-			SKColorType.Rgba8888 => ImageFormat.RGBX,
-			SKColorType.Bgra8888 => ImageFormat.BGRX,
+			SKColorType.Rgba8888 => ImageFormat.RGBA,
+			SKColorType.Bgra8888 => ImageFormat.BGRA,
 			_ => ImageFormat.None,
 		};
 		if (format == ImageFormat.None)
@@ -60,12 +60,13 @@ public class Program
 
 		var reader = new BarcodeReader() {
 			TryInvert = false,
+			ReturnErrors = true,
 		};
 
 		if (args.Length >= 2)
 			reader.Formats = BarcodeReader.FormatsFromString(args[1]);
 	
 		foreach (var b in reader.Read(img))
-			Console.WriteLine($"{b.Format} ({b.ContentType}): {b.Text} / [{string.Join(", ", b.Bytes)}]");
+			Console.WriteLine($"{b.Format} ({b.ContentType}): {b.Text} / [{string.Join(", ", b.Bytes)}] {b.ErrorMsg}");
 	}
 }

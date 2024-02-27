@@ -7,11 +7,13 @@
 
 #include "PDFReader.h"
 
+#include "Barcode.h"
 #include "BitMatrixCursor.h"
 #include "BitMatrixIO.h"
 #include "BinaryBitmap.h"
 #include "BitArray.h"
 #include "DecoderResult.h"
+#include "DetectorResult.h"
 #include "Diagnostics.h"
 #include "Pattern.h"
 #include "PDFCodewordDecoder.h"
@@ -19,7 +21,6 @@
 #include "PDFDecoderResultExtra.h"
 #include "PDFDetector.h"
 #include "PDFScanningDecoder.h"
-#include "Result.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -66,7 +67,7 @@ static int GetMaxCodewordWidth(const std::array<Nullable<ResultPoint>, 8>& p)
 					std::max(GetMaxWidth(p[1], p[5]), GetMaxWidth(p[7], p[3]) * CodewordDecoder::MODULES_IN_CODEWORD / MODULES_IN_STOP_PATTERN));
 }
 
-static Results DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate, bool returnErrors)
+static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate, bool returnErrors)
 {
 	Detector::Result detectorResult = Detector::Detect(image, multiple, tryRotate);
 	if (detectorResult.points.empty())
@@ -81,23 +82,24 @@ static Results DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotate
 		return p;
 	};
 
-	Results results;
+	Barcodes res;
 	for (const auto& points : detectorResult.points) {
 		DecoderResult decoderResult =
 			ScanningDecoder::Decode(*detectorResult.bits, points[4], points[5], points[6], points[7],
 									GetMinCodewordWidth(points), GetMaxCodewordWidth(points));
 		if (decoderResult.isValid(returnErrors)) {
 			auto point = [&](int i) { return rotate(PointI(points[i].value())); };
-			Result result(std::move(decoderResult), {point(0), point(2), point(3), point(1)}, BarcodeFormat::PDF417);
+			Barcode barcode(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}},
+						  BarcodeFormat::PDF417);
 			if (auto extra = decoderResult.extra()) {
-				result.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
+				barcode.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
 			}
-			results.push_back(result);
+			res.emplace_back(barcode);
 			if (!multiple)
-				return results;
+				return res;
 		}
 	}
-	return results;
+	return res;
 }
 
 // new implementation (only for isPure use case atm.)
@@ -262,7 +264,7 @@ std::vector<int> ReadCodeWords(BitMatrixCursor<POINT> topCur, SymbolInfo info)
 	return codeWords;
 }
 
-static Result DecodePure(const BinaryBitmap& image_)
+static Barcode DecodePure(const BinaryBitmap& image_)
 {
 	auto pimage = image_.getBitMatrix();
 	if (!pimage)
@@ -301,10 +303,10 @@ static Result DecodePure(const BinaryBitmap& image_)
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", info.nRows, info.nCols);
 	auto res = DecodeCodewords(codeWords, NumECCodeWords(info.ecLevel));
 
-	return Result(std::move(res), {{left, top}, {right, top}, {right, bottom}, {left, bottom}}, BarcodeFormat::PDF417);
+	return Barcode(std::move(res), {{}, {{left, top}, {right, top}, {right, bottom}, {left, bottom}}}, BarcodeFormat::PDF417);
 }
 
-Result
+Barcode
 Reader::decode(const BinaryBitmap& image) const
 {
 	if (_opts.isPure()) {
@@ -318,7 +320,7 @@ Reader::decode(const BinaryBitmap& image) const
 	return FirstOrDefault(DoDecode(image, false, _opts.tryRotate(), _opts.returnErrors()));
 }
 
-Results Reader::decode(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const
+Barcodes Reader::decode(const BinaryBitmap& image, [[maybe_unused]] int maxSymbols) const
 {
 	return DoDecode(image, true, _opts.tryRotate(), _opts.returnErrors());
 }

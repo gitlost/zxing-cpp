@@ -52,26 +52,27 @@ internal class Dll
 	[DllImport(DllName)] public static extern void ZXing_ImageView_delete(IntPtr iv);
 
 	[DllImport(DllName)] public static extern IntPtr ZXing_ReadBarcodes(IntPtr iv, IntPtr opts);
-	[DllImport(DllName)] public static extern void ZXing_Barcode_delete(IntPtr result);
-	[DllImport(DllName)] public static extern void ZXing_Barcodes_delete(IntPtr results);
-	[DllImport(DllName)] public static extern int ZXing_Barcodes_size(IntPtr results);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcodes_move(IntPtr results, int i);
+	[DllImport(DllName)] public static extern void ZXing_Barcode_delete(IntPtr barcode);
+	[DllImport(DllName)] public static extern void ZXing_Barcodes_delete(IntPtr barcodes);
+	[DllImport(DllName)] public static extern int ZXing_Barcodes_size(IntPtr barcodes);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcodes_move(IntPtr barcodes, int i);
 
-	[DllImport(DllName)] public static extern bool ZXing_Barcode_isValid(IntPtr result);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_errorMsg(IntPtr result);
-	[DllImport(DllName)] public static extern BarcodeFormat ZXing_Barcode_format(IntPtr result);
-	[DllImport(DllName)] public static extern ContentType ZXing_Barcode_contentType(IntPtr result);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_bytes(IntPtr result, out int len);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_bytesECI(IntPtr result, out int len);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_text(IntPtr result);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_ecLevel(IntPtr result);
-	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_symbologyIdentifier(IntPtr result);
-	[DllImport(DllName)] public static extern Position ZXing_Barcode_position(IntPtr result);
-	[DllImport(DllName)] public static extern int ZXing_Barcode_orientation(IntPtr result);
-	[DllImport(DllName)] public static extern bool ZXing_Barcode_hasECI(IntPtr result);
-	[DllImport(DllName)] public static extern bool ZXing_Barcode_isInverted(IntPtr result);
-	[DllImport(DllName)] public static extern bool ZXing_Barcode_isMirrored(IntPtr result);
-	[DllImport(DllName)] public static extern int ZXing_Barcode_lineCount(IntPtr result);
+	[DllImport(DllName)] public static extern bool ZXing_Barcode_isValid(IntPtr barcode);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_errorMsg(IntPtr barcode);
+	[DllImport(DllName)] public static extern ErrorType ZXing_Barcode_errorType(IntPtr barcode);
+	[DllImport(DllName)] public static extern BarcodeFormat ZXing_Barcode_format(IntPtr barcode);
+	[DllImport(DllName)] public static extern ContentType ZXing_Barcode_contentType(IntPtr barcode);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_bytes(IntPtr barcode, out int len);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_bytesECI(IntPtr barcode, out int len);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_text(IntPtr barcode);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_ecLevel(IntPtr barcode);
+	[DllImport(DllName)] public static extern IntPtr ZXing_Barcode_symbologyIdentifier(IntPtr barcode);
+	[DllImport(DllName)] public static extern Position ZXing_Barcode_position(IntPtr barcode);
+	[DllImport(DllName)] public static extern int ZXing_Barcode_orientation(IntPtr barcode);
+	[DllImport(DllName)] public static extern bool ZXing_Barcode_hasECI(IntPtr barcode);
+	[DllImport(DllName)] public static extern bool ZXing_Barcode_isInverted(IntPtr barcode);
+	[DllImport(DllName)] public static extern bool ZXing_Barcode_isMirrored(IntPtr barcode);
+	[DllImport(DllName)] public static extern int ZXing_Barcode_lineCount(IntPtr barcode);
 
 	[DllImport(DllName)] public static extern void ZXing_free(IntPtr opts);
 	[DllImport(DllName)] public static extern IntPtr ZXing_LastErrorMsg();
@@ -158,15 +159,18 @@ public enum TextMode
 
 public enum ContentType { Text, Binary, Mixed, GS1, ISO15434, UnknownECI };
 
+public enum ErrorType { None, Format, Checksum, Unsupported };
+
 public enum ImageFormat {
 	None = 0,
 	Lum = 0x01000000,
+	LumA = 0x02000000,
 	RGB = 0x03000102,
 	BGR = 0x03020100,
-	RGBX = 0x04000102,
-	XRGB = 0x04010203,
-	BGRX = 0x04020100,
-	XBGR = 0x04030201,
+	RGBA = 0x04000102,
+	ARGB = 0x04010203,
+	BGRA = 0x04020100,
+	ABGR = 0x04030201,
 };
 
 public struct PointI
@@ -305,6 +309,7 @@ public class Barcode
 	public string ECLevel => MarshalAsString(ZXing_Barcode_ecLevel(_d));
 	public string SymbologyIdentifier => MarshalAsString(ZXing_Barcode_symbologyIdentifier(_d));
 	public string ErrorMsg => MarshalAsString(ZXing_Barcode_errorMsg(_d));
+	public ErrorType ErrorType => ZXing_Barcode_errorType(_d);
 	public Position Position => ZXing_Barcode_position(_d);
 	public int Orientation => ZXing_Barcode_orientation(_d);
 	public bool HasECI => ZXing_Barcode_hasECI(_d);

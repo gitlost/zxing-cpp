@@ -9,9 +9,10 @@
 #include "BinaryBitmap.h"
 #include "BitMatrix.h"
 #include "DecoderResult.h"
+#include "DetectorResult.h"
 #include "MCBitMatrixParser.h"
 #include "MCDecoder.h"
-#include "Result.h"
+#include "Barcode.h"
 
 namespace ZXing::MaxiCode {
 
@@ -45,8 +46,7 @@ static BitMatrix ExtractPureBits(const BitMatrix& image)
 	return result;
 }
 
-Result
-Reader::decode(const BinaryBitmap& image) const
+Barcode Reader::decode(const BinaryBitmap& image) const
 {
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
@@ -66,7 +66,7 @@ Reader::decode(const BinaryBitmap& image) const
 	if (!decRes.isValid())
 		return {};
 
-	return Result(std::move(decRes), {}, BarcodeFormat::MaxiCode);
+	return Barcode(std::move(decRes), DetectorResult{}, BarcodeFormat::MaxiCode);
 }
 
 } // namespace ZXing::MaxiCode

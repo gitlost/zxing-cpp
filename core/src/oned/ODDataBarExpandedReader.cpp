@@ -9,9 +9,10 @@
 
 #include "BarcodeFormat.h"
 #include "DecoderResult.h"
+#include "DetectorResult.h"
 #include "ODDataBarCommon.h"
 #include "ODDataBarExpandedBitDecoder.h"
-#include "Result.h"
+#include "Barcode.h"
 
 #include <cmath>
 #include <map>
@@ -330,8 +331,7 @@ struct DBERState : public RowReader::DecodingState
 	PairMap allPairs;
 };
 
-Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
-											std::unique_ptr<RowReader::DecodingState>& state) const
+Barcode DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view, std::unique_ptr<RowReader::DecodingState>& state) const
 {
 #if 0 // non-stacked version
 	auto pairs = ReadRowOfPairs<false>(view, rowNumber);
@@ -379,7 +379,7 @@ Result DataBarExpandedReader::decodePattern(int rowNumber, PatternView& view,
 	// Symbology identifier: ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
 	return {DecoderResult(Content(ByteArray(txt), {'e', '0', 0, AIFlag::GS1}))
 				.setLineCount(EstimateLineCount(pairs.front(), pairs.back())),
-			EstimatePosition(pairs.front(), pairs.back()), BarcodeFormat::DataBarExpanded};
+			{{}, EstimatePosition(pairs.front(), pairs.back())}, BarcodeFormat::DataBarExpanded};
 }
 
 } // namespace ZXing::OneD

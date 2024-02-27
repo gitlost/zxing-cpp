@@ -184,8 +184,8 @@ BarcodeReader::Read(SoftwareBitmap^ bitmap, int cropWidth, int cropHeight)
 			switch (bitmap->BitmapPixelFormat)
 			{
 			case BitmapPixelFormat::Gray8: fmt = ImageFormat::Lum; break;
-			case BitmapPixelFormat::Bgra8: fmt = ImageFormat::BGRX; break;
-			case BitmapPixelFormat::Rgba8: fmt = ImageFormat::RGBX; break;
+			case BitmapPixelFormat::Bgra8: fmt = ImageFormat::BGRA; break;
+			case BitmapPixelFormat::Rgba8: fmt = ImageFormat::RGBA; break;
 			default:
 				throw std::runtime_error("Unsupported BitmapPixelFormat");
 			}
@@ -193,9 +193,9 @@ BarcodeReader::Read(SoftwareBitmap^ bitmap, int cropWidth, int cropHeight)
 			auto img = ImageView(inBytes, bitmap->PixelWidth, bitmap->PixelHeight, fmt, inBuffer->GetPlaneDescription(0).Stride)
 						   .cropped(cropLeft, cropTop, cropWidth, cropHeight);
 
-			auto result = ReadBarcode(img, *m_opts);
-			if (result.isValid()) {
-				return ref new ReadResult(ToPlatformString(ZXing::ToString(result.format())), ToPlatformString(result.text()), ConvertNativeToRuntime(result.format()));
+			auto barcode = ReadBarcode(img, *m_opts);
+			if (barcode.isValid()) {
+				return ref new ReadResult(ToPlatformString(ZXing::ToString(barcode.format())), ToPlatformString(barcode.text()), ConvertNativeToRuntime(barcode.format()));
 			}
 		} else {
 			throw std::runtime_error("Failed to read bitmap's data");

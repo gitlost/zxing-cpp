@@ -5,9 +5,9 @@
 
 #include "oned/ODCode39Reader.h"
 
-#include "ReaderOptions.h"
+#include "Barcode.h"
 #include "Diagnostics.h"
-#include "Result.h"
+#include "ReaderOptions.h"
 
 #include "gtest/gtest.h"
 
@@ -15,7 +15,7 @@ using namespace ZXing;
 using namespace ZXing::OneD;
 
 // Helper to call decodePattern()
-static Result parse(PatternRow row, ReaderOptions opts = {})
+static Barcode parse(PatternRow row, ReaderOptions opts = {})
 {
 	Code39Reader reader(opts);
 

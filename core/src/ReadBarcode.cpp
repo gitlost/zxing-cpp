@@ -110,7 +110,7 @@ ImageView SetupLumImageView(ImageView iv, LumImage& lum, const ReaderOptions& op
 		// manually spell out the 3 most common pixel formats to get at least gcc to vectorize the code
 		if (iv.format() == ImageFormat::RGB && iv.pixStride() == 3) {
 			lum = ExtractLum(iv, [](const uint8_t* src) { return RGBToLum(src[0], src[1], src[2]); });
-		} else if (iv.format() == ImageFormat::RGBX && iv.pixStride() == 4) {
+		} else if (iv.format() == ImageFormat::RGBA && iv.pixStride() == 4) {
 			lum = ExtractLum(iv, [](const uint8_t* src) { return RGBToLum(src[0], src[1], src[2]); });
 		} else if (iv.format() == ImageFormat::BGR && iv.pixStride() == 3) {
 			lum = ExtractLum(iv, [](const uint8_t* src) { return RGBToLum(src[2], src[1], src[0]); });
@@ -138,12 +138,12 @@ std::unique_ptr<BinaryBitmap> CreateBitmap(ZXing::Binarizer binarizer, const Ima
 	return {}; // silence gcc warning
 }
 
-Result ReadBarcode(const ImageView& _iv, const ReaderOptions& opts)
+Barcode ReadBarcode(const ImageView& _iv, const ReaderOptions& opts)
 {
 	return FirstOrDefault(ReadBarcodes(_iv, ReaderOptions(opts).setMaxNumberOfSymbols(1)));
 }
 
-Results ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
+Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 {
 	if (sizeof(PatternType) < 4 && (_iv.width() > 0xffff || _iv.height() > 0xffff))
 		throw std::invalid_argument("Maximum image width/height is 65535");
@@ -169,7 +169,7 @@ Results ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 #endif
 	LumImagePyramid pyramid(iv, opts.downscaleThreshold() * opts.tryDownscale(), opts.downscaleFactor());
 
-	Results results;
+	Barcodes res;
 	int maxSymbols = opts.maxNumberOfSymbols() ? opts.maxNumberOfSymbols() : INT_MAX;
 	for (auto&& iv : pyramid.layers) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
@@ -185,20 +185,20 @@ Results ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 				for (auto& r : rs) {
 					if (iv.width() != _iv.width())
 						r.setPosition(Scale(r.position(), _iv.width() / iv.width()));
-					if (!Contains(results, r)) {
+					if (!Contains(res, r)) {
 						r.setReaderOptions(opts);
 						r.setIsInverted(bitmap->inverted());
-						results.push_back(std::move(r));
+						res.push_back(std::move(r));
 						--maxSymbols;
 					}
 				}
 				if (maxSymbols <= 0)
-					return results;
+					return res;
 			}
 		}
 	}
 
-	return results;
+	return res;
 }
 
 } // ZXing

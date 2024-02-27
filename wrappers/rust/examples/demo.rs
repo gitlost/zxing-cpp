@@ -3,7 +3,7 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-use zxing_cpp::*;
+use zxingcpp::*;
 
 fn main() -> anyhow::Result<()> {
 	let filename = std::env::args().nth(1).expect("no image file name provided");
@@ -23,7 +23,8 @@ fn main() -> anyhow::Result<()> {
 		.try_harder(!fast)
 		.try_invert(!fast)
 		.try_rotate(!fast)
-		.try_downscale(!fast);
+		.try_downscale(!fast)
+		.return_errors(true);
 
 	#[cfg(feature = "image")]
 	let barcodes = reader.read(&image)?;
@@ -40,7 +41,7 @@ fn main() -> anyhow::Result<()> {
 			println!("Content:    {}", barcode.content_type());
 			println!("Identifier: {}", barcode.symbology_identifier());
 			println!("EC Level:   {}", barcode.ec_level());
-			println!("Error:      {}", barcode.error_message());
+			println!("Error:      {}", barcode.error());
 			println!("Rotation:   {}", barcode.orientation());
 			println!("Position:   {}", barcode.position());
 			println!();

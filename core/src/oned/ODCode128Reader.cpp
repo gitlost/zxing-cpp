@@ -8,7 +8,7 @@
 
 #include "Diagnostics.h"
 #include "ODCode128Patterns.h"
-#include "Result.h"
+#include "Barcode.h"
 #include "ZXAlgorithms.h"
 
 #include <array>
@@ -175,7 +175,7 @@ static auto E2E_PATTERNS = [] {
 	return res;
 }();
 
-Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
+Barcode Code128Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<DecodingState>&) const
 {
 	int minCharCount = 4; // start + payload + checksum + stop
 	auto decodePattern = [](const PatternView& view, bool start = false) {
@@ -268,7 +268,7 @@ Result Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	bool readerInit = checksum == CODE_FNC_3 ? raw2txt.prevReaderInit() : raw2txt.readerInit(); // Allow for bogus CODE_FNC_3
 
 	int xStop = next.pixelsTillEnd();
-	return Result(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, raw2txt.symbologyIdentifier(), error,
+	return Barcode(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, raw2txt.symbologyIdentifier(), error,
 				  readerInit);
 }
 

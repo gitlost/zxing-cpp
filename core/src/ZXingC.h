@@ -14,12 +14,12 @@
 
 #include "ReaderOptions.h"
 #include "ImageView.h"
-#include "Result.h"
+#include "Barcode.h"
 
 typedef ZXing::ImageView ZXing_ImageView;
 typedef ZXing::ReaderOptions ZXing_ReaderOptions;
-typedef ZXing::Result ZXing_Barcode;
-typedef ZXing::Results ZXing_Barcodes;
+typedef ZXing::Barcode ZXing_Barcode;
+typedef ZXing::Barcodes ZXing_Barcodes;
 
 extern "C"
 {
@@ -39,12 +39,13 @@ typedef struct ZXing_Barcodes ZXing_Barcodes;
 typedef enum {
 	ZXing_ImageFormat_None = 0,
 	ZXing_ImageFormat_Lum = 0x01000000,
+	ZXing_ImageFormat_LumA = 0x02000000,
 	ZXing_ImageFormat_RGB = 0x03000102,
 	ZXing_ImageFormat_BGR = 0x03020100,
-	ZXing_ImageFormat_RGBX = 0x04000102,
-	ZXing_ImageFormat_XRGB = 0x04010203,
-	ZXing_ImageFormat_BGRX = 0x04020100,
-	ZXing_ImageFormat_XBGR = 0x04030201,
+	ZXing_ImageFormat_RGBA = 0x04000102,
+	ZXing_ImageFormat_ARGB = 0x04010203,
+	ZXing_ImageFormat_BGRA = 0x04020100,
+	ZXing_ImageFormat_ABGR = 0x04030201,
 } ZXing_ImageFormat;
 
 ZXing_ImageView* ZXing_ImageView_new(const uint8_t* data, int width, int height, ZXing_ImageFormat format, int rowStride,
@@ -159,7 +160,7 @@ int ZXing_ReaderOptions_getMinLineCount(const ZXing_ReaderOptions* opts);
 int ZXing_ReaderOptions_getMaxNumberOfSymbols(const ZXing_ReaderOptions* opts);
 
 /*
- * ZXing/Result.h
+ * ZXing/Barcode.h
  */
 
 typedef enum
@@ -171,6 +172,14 @@ typedef enum
 	ZXing_ContentType_ISO15434,
 	ZXing_ContentType_UnknownECI
 } ZXing_ContentType;
+
+typedef enum
+{
+	ZXing_ErrorType_None,
+	ZXing_ErrorType_Format,
+	ZXing_ErrorType_Checksum,
+	ZXing_ErrorType_Unsupported
+} ZXing_ErrorType;
 
 char* ZXing_ContentTypeToString(ZXing_ContentType type);
 
@@ -187,6 +196,7 @@ typedef struct ZXing_Position
 char* ZXing_PositionToString(ZXing_Position position);
 
 bool ZXing_Barcode_isValid(const ZXing_Barcode* barcode);
+ZXing_ErrorType ZXing_Barcode_errorType(const ZXing_Barcode* barcode);
 char* ZXing_Barcode_errorMsg(const ZXing_Barcode* barcode);
 ZXing_BarcodeFormat ZXing_Barcode_format(const ZXing_Barcode* barcode);
 ZXing_ContentType ZXing_Barcode_contentType(const ZXing_Barcode* barcode);

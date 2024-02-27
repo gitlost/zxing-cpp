@@ -16,6 +16,7 @@
 
 #include "DCReader.h"
 
+#include "Barcode.h"
 #include "BinaryBitmap.h"
 #include "BitMatrix.h"
 #include "DecoderResult.h"
@@ -24,7 +25,6 @@
 #include "DCDetector.h"
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
-#include "Result.h"
 
 namespace ZXing::DotCode {
 
@@ -34,7 +34,7 @@ Reader::Reader(const ReaderOptions& options)
 	_formatSpecified = options.hasFormat(BarcodeFormat::DotCode);
 }
 
-Result
+Barcode
 Reader::decode(const BinaryBitmap& image) const
 {
 	if (!_formatSpecified) {
@@ -53,7 +53,7 @@ Reader::decode(const BinaryBitmap& image) const
 		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
 		//printf("DecoderResult status %d\n", (int)decoderResult.errorCode());
 		if (decoderResult.isValid()) {
-			return Result(std::move(decoderResult), {}, BarcodeFormat::DotCode);
+			return Barcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::DotCode);
 		}
 	}
 	return {};

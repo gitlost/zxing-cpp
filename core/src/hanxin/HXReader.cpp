@@ -16,12 +16,12 @@
 
 #include "HXReader.h"
 
+#include "Barcode.h"
 #include "BinaryBitmap.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
-#include "Result.h"
 #include "HXDecoder.h"
 #include "HXDetector.h"
 
@@ -33,7 +33,7 @@ Reader::Reader(const ReaderOptions& options)
 	_formatSpecified = options.hasFormat(BarcodeFormat::HanXin);
 }
 
-Result
+Barcode
 Reader::decode(const BinaryBitmap& image) const
 {
 	if (!_formatSpecified) {
@@ -49,7 +49,7 @@ Reader::decode(const BinaryBitmap& image) const
 
 	//printf(" HXReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-		return Result(Decoder::Decode(detectorResult.bits(), _opts.characterSet()), {}, BarcodeFormat::HanXin);
+		return Barcode(Decoder::Decode(detectorResult.bits(), _opts.characterSet()), DetectorResult{}, BarcodeFormat::HanXin);
 	}
 	return {};
 }

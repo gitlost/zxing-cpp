@@ -19,6 +19,7 @@
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 #include "BitMatrix.h"
 #include <memory>
+extern "C" struct zint_symbol;
 #endif
 
 #include <list>
@@ -179,7 +180,12 @@ public:
 	void setContentDiagnostics();
 
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
+	void symbol(BitMatrix&& bits) { _symbol = std::make_shared<BitMatrix>(std::move(bits)); }
 	const BitMatrix& symbol() const { return *_symbol; }
+#endif
+#ifdef ZXING_USE_ZINT
+	void zint(std::unique_ptr<zint_symbol>&& z);
+	zint_symbol* zint() const { return _zint.get(); }
 #endif
 
 	bool operator==(const Result& o) const;
@@ -199,6 +205,9 @@ private:
 	bool _readerInit = false;
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
 	std::shared_ptr<BitMatrix> _symbol;
+#endif
+#ifdef ZXING_USE_ZINT
+	std::shared_ptr<zint_symbol> _zint;
 #endif
 	ResultMetadata _metadata;
 	std::list<std::string> _diagnostics;

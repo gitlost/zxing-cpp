@@ -12,6 +12,10 @@
 #include "Diagnostics.h"
 #include "ZXAlgorithms.h"
 
+#ifdef ZXING_USE_ZINT
+#include <zint.h>
+#endif
+
 #include <cmath>
 #include <list>
 #include <map>
@@ -166,6 +170,13 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 	return *this;
 }
 
+#ifdef ZXING_USE_ZINT
+void Result::zint(std::unique_ptr<zint_symbol>&& z)
+{
+	_zint = std::shared_ptr(std::move(z));
+}
+#endif
+
 const std::list<std::string>& Result::diagnostics() const
 {
 	return _diagnostics;
@@ -259,4 +270,4 @@ Barcodes MergeStructuredAppendSequences(const Barcodes& barcodes)
 	return res;
 }
 
-} // ZXing
+} // namespace ZXing

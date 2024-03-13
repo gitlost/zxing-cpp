@@ -14,6 +14,8 @@
 
 #ifdef ZXING_USE_ZINT
 #include <zint.h>
+#else
+struct zint_symbol {};
 #endif
 
 #include <cmath>
@@ -170,7 +172,7 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 	return *this;
 }
 
-#ifdef ZXING_USE_ZINT
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
 void Result::zint(std::unique_ptr<zint_symbol>&& z)
 {
 	_zint = std::shared_ptr(std::move(z));

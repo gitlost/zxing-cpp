@@ -7,6 +7,8 @@
 
 #include "WriteBarcode.h"
 
+#include <sstream>
+
 #ifdef ZXING_USE_ZINT
 #include <zint.h>
 
@@ -83,10 +85,35 @@ WriterOptions::~WriterOptions() = default;
 WriterOptions::WriterOptions(WriterOptions&&) = default;
 WriterOptions& WriterOptions::operator=(WriterOptions&&) = default;
 
+
+static std::string ToSVG(ImageView iv)
+{
+	if (!iv.data())
+		return {};
+
+	// see https://stackoverflow.com/questions/10789059/create-qr-code-in-vector-image/60638350#60638350
+
+	std::ostringstream res;
+
+	res << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		<< "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" viewBox=\"0 0 " << iv.width() << " " << iv.height()
+		<< "\" stroke=\"none\">\n"
+		<< "<path d=\"";
+
+	for (int y = 0; y < iv.height(); ++y)
+		for (int x = 0; x < iv.width(); ++x)
+			if (*iv.data(x, y) == 0)
+				res << "M" << x << "," << y << "h1v1h-1z";
+
+	res << "\"/>\n</svg>";
+
+	return res.str();
+}
+
 } // namespace ZXing
 
 #ifdef ZXING_USE_ZINT
-#include "BitMatrixIO.h"
+#include "BitMatrix.h"
 #include "ECI.h"
 #include "ReadBarcode.h"
 
@@ -192,6 +219,10 @@ zint_symbol* CreatorOptions::zint() const
 	return zint.get();
 }
 
+#define CHECK(ZINT_CALL) \
+	if (int err = (ZINT_CALL); err) \
+		throw std::invalid_argument(zint->errtxt);
+
 Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions& opts)
 {
 	auto zint = opts.zint();
@@ -202,10 +233,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
 		zint->eci = static_cast<int>(ECI::Binary);
 
-	int err = ZBarcode_Encode_and_Buffer(zint, (uint8_t*)data, size, 0);
-
-	if (err || *zint->errtxt)
-		printf("Error %d: %s\n", err, zint->errtxt);
+	CHECK(ZBarcode_Encode_and_Buffer(zint, (uint8_t*)data, size, 0));
 
 	printf("symbol size: %dx%d\n", zint->width, zint->rows);
 
@@ -243,53 +271,57 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 
 // Writer ========================================================================
 
-static void SetCommonWriterOptions(zint_symbol* zint, const WriterOptions& opts)
+struct SetCommonWriterOptions
 {
-	zint->show_hrt = opts.withHRT();
+	zint_symbol* zint;
 
-	zint->output_options &= ~OUT_BUFFER_INTERMEDIATE;
-	zint->output_options |= opts.withQuietZones() ? BARCODE_QUIET_ZONES: BARCODE_NO_QUIET_ZONES;
+	SetCommonWriterOptions(zint_symbol* zint, const WriterOptions& opts) : zint(zint)
+	{
+		zint->show_hrt = opts.withHRT();
 
-	if (opts.scale())
-		zint->scale = opts.scale();
-	else if (opts.sizeHint()) {
-		int size = std::max(zint->width, zint->rows);
-		zint->scale = std::max(1, int(float(opts.sizeHint()) / size)) / 2.f;
+		zint->output_options &= ~OUT_BUFFER_INTERMEDIATE;
+		zint->output_options |= opts.withQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
+
+		if (opts.scale())
+			zint->scale = opts.scale();
+		else if (opts.sizeHint()) {
+			int size = std::max(zint->width, zint->rows);
+			zint->scale = std::max(1, int(float(opts.sizeHint()) / size)) / 2.f;
+		}
 	}
-}
+
+	// reset the defaults such that consecutive write calls don't influence each other
+	~SetCommonWriterOptions() { zint->scale = 0.5f; }
+};
 
 std::string WriteBarcodeToSVG(const Barcode& barcode, const WriterOptions& opts)
 {
-	auto zs = barcode.zint();
+	auto zint = barcode.zint();
 
-	if (!zs)
+	if (!zint)
 		return ToSVG(barcode.symbol());
 
-	SetCommonWriterOptions(zs, opts);
+	auto resetOnExit = SetCommonWriterOptions(zint, opts);
 
-	zs->output_options |= BARCODE_MEMORY_FILE;// | EMBED_VECTOR_FONT;
-	strcpy(zs->outfile, "null.svg");
+	zint->output_options |= BARCODE_MEMORY_FILE;// | EMBED_VECTOR_FONT;
+	strcpy(zint->outfile, "null.svg");
 
-	int err = ZBarcode_Print(zs, opts.rotate());
-	if (err || *zs->errtxt)
-		printf("Error %d: %s\n", err, zs->errtxt);
+	CHECK(ZBarcode_Print(zint, opts.rotate()));
 
-	return std::string(reinterpret_cast<const char*>(zs->memfile), zs->memfile_size);
+	return std::string(reinterpret_cast<const char*>(zint->memfile), zint->memfile_size);
 }
 
 Image WriteBarcodeToImage(const Barcode& barcode, const WriterOptions& opts)
 {
-	auto zs = barcode.zint();
+	auto zint = barcode.zint();
 
-	SetCommonWriterOptions(zs, opts);
+	auto resetOnExit = SetCommonWriterOptions(zint, opts);
 
-	int err = ZBarcode_Buffer(zs, opts.rotate());
-	if (err || *zs->errtxt)
-		printf("Error %d: %s\n", err, zs->errtxt);
+	CHECK(ZBarcode_Buffer(zint, opts.rotate()));
 
-	printf("symbol size: %dx%d\n", zs->bitmap_width, zs->bitmap_height);
-	auto iv = Image(zs->bitmap_width, zs->bitmap_height);
-	auto* src = zs->bitmap;
+	printf("symbol size: %dx%d\n", zint->bitmap_width, zint->bitmap_height);
+	auto iv = Image(zint->bitmap_width, zint->bitmap_height);
+	auto* src = zint->bitmap;
 	auto* dst = const_cast<uint8_t*>(iv.data());
 	for(int y = 0; y < iv.height(); ++y)
 		for(int x = 0, w = iv.width(); x < w; ++x, src += 3)
@@ -303,7 +335,6 @@ Image WriteBarcodeToImage(const Barcode& barcode, const WriterOptions& opts)
 #else
 
 #include "BitMatrix.h"
-#include "BitMatrixIO.h"
 #include "MultiFormatWriter.h"
 #include "ReadBarcode.h"
 
@@ -361,7 +392,9 @@ std::string WriteBarcodeToSVG(const Barcode& barcode, [[maybe_unused]] const Wri
 
 Image WriteBarcodeToImage(const Barcode& barcode, [[maybe_unused]] const WriterOptions& opts)
 {
-	auto symbol = Inflate(barcode.symbol().copy(), opts.sizeHint(),
+	auto invSmbol = barcode._symbol->copy();
+	invSmbol.flipAll();
+	auto symbol = Inflate(std::move(invSmbol), opts.sizeHint(),
 						  IsLinearCode(barcode.format()) ? std::clamp(opts.sizeHint() / 2, 50, 300) : opts.sizeHint(),
 						  opts.withQuietZones() ? 10 : 0);
 	auto bitmap = ToMatrix<uint8_t>(symbol);
@@ -373,5 +406,31 @@ Image WriteBarcodeToImage(const Barcode& barcode, [[maybe_unused]] const WriterO
 } // namespace ZXing
 
 #endif
+
+namespace ZXing {
+
+std::string WriteBarcodeToUtf8(const Barcode& barcode, [[maybe_unused]] const WriterOptions& options)
+{
+	auto iv = barcode.symbol();
+	if (!iv.data())
+		return {};
+
+	constexpr auto map = std::array{" ", "▀", "▄", "█"};
+	std::ostringstream res;
+	bool inverted = false; // TODO: take from WriterOptions
+
+	for (int y = 0; y < iv.height(); y += 2) {
+		for (int x = 0; x < iv.width(); ++x) {
+			int tp = *iv.data(x, y) ^ inverted;
+			int bt = (iv.height() == 1 && tp) || (y + 1 < iv.height() && (*iv.data(x, y) ^ inverted));
+			res << map[tp | (bt << 1)];
+		}
+		res << '\n';
+	}
+
+	return res.str();
+}
+
+} // namespace ZXing
 
 #endif // ZXING_BUILD_EXPERIMENTAL_API

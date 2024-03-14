@@ -14,7 +14,7 @@ option (BUILD_C_API "Build the C-API" OFF)
 option (BUILD_EXPERIMENTAL_API "Build with experimental API" OFF)
 option (BUILD_SANITIZE "Build with sanitize" OFF)
 option (BUILD_DIAGNOSTICS "Build with diagnostics" OFF)
-option (ZXING_USE_ZINT "Use libzint for barcode creation/generation" OFF)
+option (ZXING_USE_BUNDLED_ZINT "Use the bundled libzint for barcode creation/generation" ON)
 set(BUILD_DEPENDENCIES "AUTO" CACHE STRING "Fetch from github or use locally installed (AUTO/GITHUB/LOCAL)")
 
 if (WIN32)

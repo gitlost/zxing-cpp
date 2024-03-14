@@ -12,6 +12,10 @@
 #include "Diagnostics.h"
 #include "ZXAlgorithms.h"
 
+#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#include "BitMatrix.h"
+#endif
+
 #ifdef ZXING_USE_ZINT
 #include <zint.h>
 #else
@@ -173,6 +177,17 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 }
 
 #ifdef ZXING_BUILD_EXPERIMENTAL_API
+void Result::symbol(BitMatrix&& bits)
+{
+	bits.flipAll();
+	_symbol = std::make_shared<BitMatrix>(std::move(bits));
+}
+
+ImageView Result::symbol() const
+{
+	return {_symbol->row(0).begin(), _symbol->width(), _symbol->height(), ImageFormat::Lum};
+}
+
 void Result::zint(std::unique_ptr<zint_symbol>&& z)
 {
 	_zint = std::shared_ptr(std::move(z));

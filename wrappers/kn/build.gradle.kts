@@ -79,20 +79,22 @@ kotlin {
 
 krossCompile {
     libraries {
+        val cmakeDir = project.layout.buildDirectory.dir("cmake").get().asFile.absolutePath
         val zxingCpp by creating {
             sourceDir = file("../../core").absolutePath
             outputPath = ""
             libraryArtifactNames = listOf("libZXing.a")
 
             cinterop {
+                val buildDir = "$cmakeDir/{libraryName}/{targetName}"
                 packageName = "zxingcpp.cinterop"
+                includeDirs.from(buildDir)
                 headers = listOf("$sourceDir/src/ZXingC.h")
             }
             cmake.apply {
-                val buildPath = project.layout.buildDirectory.dir("cmake").get().asFile.absolutePath +
-                        "/{projectName}/{targetName}"
+                val buildDir = "$cmakeDir/{projectName}/{targetName}"
                 configParams {
-                    buildDir = buildPath
+                    this.buildDir = buildDir
                 }
                 configParams += (ModifiablePlatformEntriesImpl().apply {
                     buildType = "Release"
@@ -105,16 +107,16 @@ krossCompile {
                     )
                 )).asCMakeParams
                 buildParams {
-                    buildDir = buildPath
+                    this.buildDir = buildDir
                     config = "Release"
                 }
                 buildParams += CustomCMakeParams(listOf("-j16"))
             }
 
-            androidNativeX64.konan()
-            androidNativeX86.konan()
-            androidNativeArm32.konan()
-            androidNativeArm64.konan()
+            androidNativeX64.ndk()
+            androidNativeX86.ndk()
+            androidNativeArm32.ndk()
+            androidNativeArm64.ndk()
 
             // TODO: Find a way to build linux targets with cxx20. Detail: https://github.com/zxing-cpp/zxing-cpp/pull/719#discussion_r1485701269
             linuxX64.konan {
@@ -139,18 +141,18 @@ krossCompile {
 //            mingwX64.konan()
 
             if (hostOs == "Mac OS X") {
-                iosX64.konan()
-                iosArm64.konan()
-                iosSimulatorArm64.konan()
-                macosX64.konan()
-                macosArm64.konan()
-                watchosX64.konan()
-                watchosArm32.konan()
-                watchosArm64.konan()
-                watchosSimulatorArm64.konan()
-                tvosX64.konan()
-                tvosArm64.konan()
-                tvosSimulatorArm64.konan()
+                iosX64.xcode()
+                iosArm64.xcode()
+                iosSimulatorArm64.xcode()
+                macosX64.xcode()
+                macosArm64.xcode()
+                watchosX64.xcode()
+                watchosArm32.xcode()
+                watchosArm64.xcode()
+                watchosSimulatorArm64.xcode()
+                tvosX64.xcode()
+                tvosArm64.xcode()
+                tvosSimulatorArm64.xcode()
             }
         }
     }

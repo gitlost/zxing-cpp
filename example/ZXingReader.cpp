@@ -13,7 +13,7 @@
 #include "Version.h"
 #include "pdf417/PDFDecoderResultExtra.h"
 
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 #include "WriteBarcode.h"
 #endif
 
@@ -62,7 +62,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -1            Print main details on one line per file/barcode (implies '-escape')\n"
 			  << "    -escape       Escape non-graphical characters in angle brackets\n"
 			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 			  << "    -symbol       Print the detected symbol (if available)\n"
 #endif
 			  << "    -pngout <file name>\n"
@@ -92,7 +92,7 @@ static void PrintUsage(const char* exePath)
 
 static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cli)
 {
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 	options.setTryDenoise(true);
 #endif
 
@@ -100,7 +100,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 		auto is = [&](const char* str) { return strncmp(argv[i], str, strlen(argv[i])) == 0; };
 		if (is("-fast")) {
 			options.setTryHarder(false);
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 			options.setTryDenoise(false);
 #endif
 		} else if (is("-norotate")) {
@@ -416,7 +416,7 @@ int main(int argc, char* argv[])
 			if (options.enableDiagnostics())
 				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
 #endif
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
 #endif

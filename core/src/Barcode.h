@@ -17,7 +17,7 @@
 #include "ResultMetadata.h"
 #include "StructuredAppend.h"
 
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 #include <memory>
 extern "C" struct zint_symbol;
 namespace ZXing {
@@ -183,7 +183,7 @@ public:
 	const std::list<std::string>& diagnostics() const;
 	void setContentDiagnostics();
 
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 	void symbol(BitMatrix&& bits);
 	ImageView symbol() const;
 	void zint(std::unique_ptr<zint_symbol>&& z);
@@ -205,7 +205,7 @@ private:
 	bool _isMirrored = false;
 	bool _isInverted = false;
 	bool _readerInit = false;
-#ifdef ZXING_BUILD_EXPERIMENTAL_API
+#ifdef ZXING_EXPERIMENTAL_API
 	std::shared_ptr<BitMatrix> _symbol;
 	std::shared_ptr<zint_symbol> _zint;
 #endif

@@ -7,7 +7,6 @@
 #include "Utf.h"
 
 #include "gtest/gtest.h"
-#include <vector>
 
 using namespace ZXing;
 

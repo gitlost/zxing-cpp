@@ -16,6 +16,7 @@
 #include "ReedSolomonDecoder.h"
 #include "ZXCType.h"
 #include "ZXTestSupport.h"
+#include "ZXAlgorithms.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -362,9 +363,24 @@ DecoderResult Decode(const BitArray& bits)
 	return DecoderResult(std::move(res)).setStructuredAppend(sai);
 }
 
+DecoderResult DecodeRune(const DetectorResult& detectorResult) {
+	Content res;
+	res.symbology = {'z', 'C', 0}; // Runes cannot have ECI
+
+	// Bizarrely, this is what it says to do in the spec
+	auto runeString = ToString(detectorResult.runeValue(), 3);
+	res.append(runeString);
+
+	return DecoderResult(std::move(res));
+}
+
 DecoderResult Decode(const DetectorResult& detectorResult)
 {
 	try {
+		if (detectorResult.nbLayers() == 0) {
+			// This is a rune - just return the rune value
+			return DecodeRune(detectorResult);
+		}
 		auto bits = CorrectBits(detectorResult, ExtractBits(detectorResult));
 
 		const int layers = detectorResult.nbLayers();

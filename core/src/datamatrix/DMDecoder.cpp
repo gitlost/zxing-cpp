@@ -325,12 +325,19 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 	Shift128 upperShift;
 
 	Diagnostics::put("  Decode:        ");
+
+	auto setError = [&error](Error&& e) {
+		// return only the first error but keep on decoding if possible
+		if (!error)
+			error = std::move(e);
+	};
+
 	// See ISO 16022:2006, 5.2.3 and Annex C, Table C.2
 	try {
 		while (!done && bits.available() >= 8) {
 			int oneByte = bits.readBits(8);
 			switch (oneByte) {
-			case 0: Diagnostics::put("ASCError(0)"); throw FormatError("invalid 0 code word");
+			case 0: Diagnostics::put("ASCError(0)"); setError(FormatError("invalid 0 code word")); break;
 			case 129: Diagnostics::put("PAD"); done = true; break; // Pad -> we are done, ignore the rest of the bits
 			case 230: DecodeC40OrTextSegment(bits, result, Mode::C40); break;
 			case 231: DecodeBase256Segment(bits, result); break;
@@ -352,7 +359,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 233: // Structured Append
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.6.1
 					Diagnostics::put("SAError");
-					throw FormatError("structured append tag must be first code word");
+					setError(FormatError("structured append tag must be first code word"));
 				}
 				ParseStructuredAppend(bits, sai);
 				firstFNC1Position = 5;
@@ -361,7 +368,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 234: // Reader Programming
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.2.4.9
 					Diagnostics::put("RPError");
-					throw FormatError("reader programming tag must be first code word");
+					setError(FormatError("reader programming tag must be first code word"));
 				}
 				readerInit = true;
 				break;
@@ -390,17 +397,18 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 					if (oneByte == 254 && bits.available() == 0)
 						break;
 					Diagnostics::fmt("ASCError(%d)", oneByte);
-					throw FormatError("invalid code word");
+					setError(FormatError("invalid code word"));
+					break;
 				}
 			}
 			firstCodeword = false;
 		}
 	} catch (Error e) {
 		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
-		error = std::move(e);
+		setError(std::move(e));
 	} catch (const std::exception& e) {
 		Diagnostics::fmt("FMTError(%s)", e.what());
-		error = FormatError(e.what());
+		setError(FormatError(e.what()));
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 

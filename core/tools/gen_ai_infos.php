@@ -1,6 +1,6 @@
 <?php
 /*
-* Copyright 2023 gitlost
+* Copyright 2023-2024 gitlost
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -55,12 +55,13 @@ foreach ($lines as $line) {
         }
         continue;
     }
-    if (!preg_match('/^([0-9]+(?:-[0-9]+)?) +([ *] )([NXYZ][0-9.][ NXYZ0-9.,a-z=|\[\]]*)(?:# (.+))?$/', $line, $matches)) {
+    if (!preg_match('/^([0-9]+(?:-[0-9]+)?) +([ *?]* )([NXYZ][0-9.][ NXYZ0-9.,a-z=|+\[\]]*)(?:# (.+))?$/',
+                    $line, $matches)) {
         print $line . PHP_EOL;
         exit("$basename:" . __LINE__ . " ERROR: Could not parse line $line_no" . PHP_EOL);
     }
     $ai = $matches[1];
-    $spec = preg_replace('/ +req=[0-9,n]*/', '', trim($matches[3])); // Strip mandatory association info
+    $spec = preg_replace('/ +req=[0-9,n+]*/', '', trim($matches[3])); // Strip mandatory association info
     $spec = preg_replace('/ +ex=[0-9,n]*/', '', $spec); // Strip invalid pairings info
     $spec = preg_replace('/ +dlpkey[=0-9,|]*/', '', $spec); // Strip Digital Link primary key info
 

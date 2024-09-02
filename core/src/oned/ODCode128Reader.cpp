@@ -254,13 +254,15 @@ Barcode Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniq
 		return {};
 	}
 
+	Diagnostics::fmt("\n  Codewords(%d):", rawCodes.size()); Diagnostics::dump(rawCodes, "\n");
+
 	Error error;
 	int checksum = rawCodes.front();
 	for (int i = 1; i < Size(rawCodes) - 1; ++i)
 		checksum += i * rawCodes[i];
 	// the second last code is the checksum (last one is the stop code):
 	checksum %= 103;
-	Diagnostics::fmt("CSum(%d)", checksum);
+	Diagnostics::fmt("  CSum(%d)", checksum);
 	if (checksum != rawCodes.back()) {
 		Diagnostics::fmt("CSumError(%d)", rawCodes.back());
 		error = ChecksumError();

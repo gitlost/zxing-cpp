@@ -77,7 +77,7 @@ TEST(MQRDecoderTest, MQRCodeM1)
 										  88, false);
 	const auto result = Decode(bitMatrix);
 	EXPECT_TRUE(result.isValid());
-	EXPECT_EQ(L"123", result.text());
+	EXPECT_EQ(result.content().text(TextMode::Plain), "123");
 }
 
 TEST(MQRDecoderTest, MQRCodeM1Error4Bits)
@@ -96,7 +96,7 @@ TEST(MQRDecoderTest, MQRCodeM1Error4Bits)
 										  88, false);
 	const auto result = Decode(bitMatrix);
 	EXPECT_EQ(Error::Checksum, result.error());
-	EXPECT_TRUE(result.text().empty());
+	EXPECT_EQ(result.content().text(TextMode::Plain), "6350");
 }
 
 TEST(MQRDecoderTest, MQRCodeM4)

@@ -43,6 +43,7 @@ public:
 	SymbologyIdentifier symbologyIdentifier() const { return _symbologyIdentifier; }
 	bool readerInit() const { return _readerInit; }
 	bool prevReaderInit() const { return _prevReaderInit; }
+	bool lastCodeSetC() const;
 };
 
 } // namespace ZXing::OneD

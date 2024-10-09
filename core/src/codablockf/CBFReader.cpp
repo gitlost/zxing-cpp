@@ -70,6 +70,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 	bool usePrevReaderInit = false;
 	bool readerInit = false;
 	AIFlag aiFlag = AIFlag::None;
+	int k1, k2;
 
 	std::vector<int> rawCodes;
 	int xStart = -1, xEnd = -1, lastRowNumber = -1;
@@ -132,6 +133,8 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			rows.push_back(rawCodes);
 		}
 		lastRowNumber = rowNumber;
+		k1 = rawCodes[Size(rawCodes) - 3];
+		k2 = rawCodes[Size(rawCodes) - 2];
 	}
 	br = PointI(xEnd, lastRowNumber);
 	bl = PointI(xStart, lastRowNumber);
@@ -176,6 +179,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)", Size(rows), Size(rows.front()));
 
+	bool lastCodeSetC;
 	std::string text;
 	for (int i = 0; i < Size(rows); i++) {
 		const std::vector<int>& row = rows[i];
@@ -192,6 +196,26 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			readerInit = usePrevReaderInit ? rowText.prevReaderInit() : rowText.readerInit();
 		}
 		text += rowText.text();
+		lastCodeSetC = rowText.lastCodeSetC();
+	}
+
+	if (!lastCodeSetC) {
+		k1 += k1 >= 64 ? -64 : k1 >= 26 ? 22 : 32;
+		k2 += k2 >= 64 ? -64 : k2 >= 26 ? 22 : 32;
+	}
+	Diagnostics::fmt("K1:%d K2:%d", k1, k2);
+
+	int check_k1 = 0, check_k2 = 0;
+	for (int i = 0; i < Size(text); i++) {
+		unsigned char ch = text[i];
+		check_k1 = (check_k1 + (i + 1) * ch) % 86;
+		check_k2 = (check_k2 + i * ch) % 86;
+	}
+	if (check_k1 != k1) {
+		Diagnostics::fmt("\n  Warning: K1 %d != calculated %d", k1, check_k1);
+	}
+	if (check_k2 != k2) {
+		Diagnostics::fmt("\n  Warning: K2 %d != calculated %d", k2, check_k2);
 	}
 
 	SymbologyIdentifier si{ 'O', aiFlag == AIFlag::GS1 ? '5' : '4', 0, aiFlag};

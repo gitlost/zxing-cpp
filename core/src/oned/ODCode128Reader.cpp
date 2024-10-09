@@ -154,6 +154,12 @@ std::string Code128Decoder::text() const
 	return txt.substr(0, lastTxtSize);
 }
 
+// For Codablock-F K1 & K2 decoding
+bool Code128Decoder::lastCodeSetC() const
+{
+	return codeSet == CODE_CODE_C;
+}
+
 // all 3 start patterns share the same 2-1-1 prefix
 constexpr auto START_PATTERN_PREFIX = FixedPattern<3, 4>{2, 1, 1};
 constexpr int CHAR_LEN = 6;

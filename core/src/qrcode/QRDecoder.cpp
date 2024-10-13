@@ -388,7 +388,9 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");
-	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset).setIsMirrored(formatInfo.isMirrored);
+	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset)
+		.setDataMask(formatInfo.mask)
+		.setIsMirrored(formatInfo.isMirrored);
 	if (error)
 		ret.setError(error);
 	return ret;

@@ -41,13 +41,15 @@ enum class BarcodeFormat
 	MicroQRCode     = (1 << 16), ///< Micro QR Code
 	RMQRCode        = (1 << 17), ///< Rectangular Micro QR Code
 	DXFilmEdge      = (1 << 18), ///< DX Film Edge Barcode
-	MicroPDF417     = (1 << 19), ///< MicroPDF417
-	HanXin          = (1 << 20), ///< HanXin
-	DotCode         = (1 << 21), ///< DotCode
-	CodablockF      = (1 << 22), ///< Codablock-F
-	Code16K         = (1 << 23), ///< Code 16K
+	DataBarLimited  = (1 << 19), ///< GS1 DataBar Limited
+	MicroPDF417     = (1 << 20), ///< MicroPDF417
+	HanXin          = (1 << 21), ///< HanXin
+	DotCode         = (1 << 22), ///< DotCode
+	CodablockF      = (1 << 23), ///< Codablock-F
+	Code16K         = (1 << 24), ///< Code 16K
 
-	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | DXFilmEdge | UPCA | UPCE,
+	LinearCodes = Codabar | Code39 | Code93 | Code128 | EAN8 | EAN13 | ITF | DataBar | DataBarExpanded | DataBarLimited
+				  | DXFilmEdge | UPCA | UPCE,
 	MatrixCodes = Aztec | DataMatrix | MaxiCode | PDF417 | QRCode | MicroQRCode | RMQRCode,
 	Any         = LinearCodes | MatrixCodes,
 

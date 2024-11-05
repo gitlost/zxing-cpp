@@ -260,6 +260,7 @@ static void GetMessage(const ByteArray& bytes, int start, int len, Content& resu
 			Diagnostics::put("3SHA");
 			break;
 		case NS:
+			Diagnostics::put("NS");
 			result.append(
 				ToString((bytes[i + 1] << 24) + (bytes[i + 2] << 18) + (bytes[i + 3] << 12) + (bytes[i + 4] << 6) + bytes[i + 5], 9));
 			i += 5;

@@ -1,5 +1,5 @@
 /*
-* Copyright 2021-2022 gitlost
+* Copyright 2021-2024 gitlost
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -75,6 +75,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -bits <BITSTREAM>    Bit dump\n"
 			  << "    -width <NUMBER>      Width of bit dump (if omitted 1st LF in bitstream)\n"
 			  << "    -textonly            Return bare text only\n"
+			  << "    -escape              Escape non-graphical characters in angle brackets\n"
 #ifdef ZX_DIAGNOSTICS
 			  << "    -diagnostics         Print diagnostics\n"
 #endif

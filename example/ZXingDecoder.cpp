@@ -306,6 +306,15 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>
 	return os;
 }
 
+std::string appendBinIfTextEmpty(const Barcode& barcode)
+{
+	std::string text = barcode.text(TextMode::Plain);
+	if (text.empty() && !barcode.bytes().empty()) {
+		TextDecoder::Append(text, barcode.bytes().data(), barcode.bytes().size(), CharacterSet::BINARY);
+	}
+	return text;
+}
+
 int main(int argc, char* argv[])
 {
 	ReaderOptions opts;
@@ -423,10 +432,7 @@ int main(int argc, char* argv[])
 
 	if (textOnly) {
 		if (ret == 0) {
-			std::string text = result.text(TextMode::Plain);
-			if (text.empty() && !result.bytes().empty()) {
-				TextDecoder::Append(text, result.bytes().data(), result.bytes().size(), CharacterSet::BINARY);
-			}
+			std::string text = appendBinIfTextEmpty(result);
 			std::cout << (angleEscape ? EscapeNonGraphical(text) : text);
 		}
 		return ret;
@@ -438,7 +444,7 @@ int main(int argc, char* argv[])
 	}
 #endif
 
-	std::string text = result.text(TextMode::Plain);
+	std::string text = appendBinIfTextEmpty(result);
 	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
 	std::cout << "Length:     " << text.size() << "\n";
 

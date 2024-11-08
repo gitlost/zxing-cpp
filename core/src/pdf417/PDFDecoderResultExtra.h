@@ -40,6 +40,8 @@ public:
 	}
 
 	// -1 if not set
+	int approxSymbolWidth = -1;
+
 	int segmentIndex() const {
 		return _segmentIndex;
 	}

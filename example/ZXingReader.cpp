@@ -9,6 +9,7 @@
 #endif
 #include "GTIN.h"
 #include "ReadBarcode.h"
+#include "TextDecoder.h"
 #include "Utf.h"
 #include "Version.h"
 #include "pdf417/PDFDecoderResultExtra.h"
@@ -235,6 +236,15 @@ void drawRect(const ImageView& image, const Position& pos, bool error)
 		drawLine(image, pos[i], pos[(i + 1) % 4], error);
 }
 
+std::string appendBinIfTextEmpty(const Barcode& barcode)
+{
+	std::string text = barcode.text(TextMode::Plain);
+	if (text.empty() && !barcode.bytes().empty()) {
+		TextDecoder::Append(text, barcode.bytes().data(), barcode.bytes().size(), CharacterSet::BINARY);
+	}
+	return text;
+}
+
 int main(int argc, char* argv[])
 {
 	ReaderOptions options;
@@ -316,7 +326,7 @@ int main(int argc, char* argv[])
 
 			if (cli.oneLine) {
 				std::cout << filePath << " " << ToString(barcode.format()) << " " << barcode.symbologyIdentifier()
-							<< " \"" << EscapeNonGraphical(barcode.text(TextMode::Plain)) << "\" " << ToString(barcode.error());
+							<< " \"" << EscapeNonGraphical(appendBinIfTextEmpty(barcode)) << "\" " << ToString(barcode.error());
 #ifdef ZX_DIAGNOSTICS
 				if (options.enableDiagnostics() && !barcode.diagnostics().empty()) {
 					std::cout << Diagnostics::print(&barcode.diagnostics(), true /*skipToDecode*/);
@@ -340,7 +350,7 @@ int main(int argc, char* argv[])
 				continue;
 			}
 
-			std::string text = barcode.text(TextMode::Plain);
+			std::string text = appendBinIfTextEmpty(barcode);
 			std::cout << "Text:       \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n"
 					  //<< "Bytes:      (" << Size(barcode.bytes()) << ") " << ToHex(barcode.bytes()) << "\n"
 					  << "Length:     " << text.size() << "\n"

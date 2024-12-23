@@ -949,13 +949,13 @@ static DetectorResults DetectNew(const BitMatrix& image, bool tryHarder, bool tr
 */
 static DetectorResult DetectPure(const BitMatrix& image)
 {
-	//printf("DetectPure\n");
+	//fprintf(stderr, "DetectPure\n");
 	int left, top, width, height;
 	if (!image.findBoundingBox(left, top, width, height, 8)) {
-		//printf("!image.findBoundingBox\n");
+		//fprintf(stderr, " !image.findBoundingBox\n");
 		return {};
 	}
-	//printf("left %d, top %d, width %d, height %d\n", left, top, width, height);
+	//fprintf(stderr, " left %d, top %d, width %d, height %d\n", left, top, width, height);
 
 	BitMatrixCursorI cur(image, {left, top}, {0, 1});
 	if (cur.countEdges(height - 1) != 0)
@@ -972,11 +972,11 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	auto modSizeY = float(height) / dimR;
 	auto modSize = (modSizeX + modSizeY) / 2;
 
-	//printf("dimT %d, dimR %d, modSizeX %g, modSizeY %g, modSize %g\n", dimT, dimR, modSizeX, modSizeY, modSize);
+	//fprintf(stderr, " dimT %d, dimR %d, modSizeX %g, modSizeY %g, modSize %g\n", dimT, dimR, modSizeX, modSizeY, modSize);
 	if (dimT % 2 != 0 || dimR % 2 != 0 || dimT < 10 || dimT > 144 || dimR < 8 || dimR > 144
 		|| std::abs(modSizeX - modSizeY) > 1
 		|| !image.isIn(PointF{left + modSizeX / 2 + (dimT - 1) * modSize, top + modSizeY / 2 + (dimR - 1) * modSize})) {
-		//printf("!image.isIn\n");
+		//fprintf(stderr, " !image.isIn\n");
 		return {};
 	}
 
@@ -990,6 +990,7 @@ static DetectorResult DetectPure(const BitMatrix& image)
 
 DetectorResults Detect(const BitMatrix& image, bool tryHarder, bool tryRotate, bool isPure)
 {
+	//fprintf(stderr, "Detect\n");
 #ifdef __cpp_impl_coroutine
 	// First try the very fast DetectPure() path. Also because DetectNew() generally fails with pure module size 1 symbols
 	// TODO: implement a tryRotate version of DetectPure, see #590.

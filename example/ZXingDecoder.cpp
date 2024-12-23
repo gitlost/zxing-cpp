@@ -193,17 +193,20 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				return false;
 			}
 			haveBits = true;
-			if (++i == argc) {
-				std::cerr << "No argument for -bits\n";
-				return false;
+			// Use stdin if no arg
+			std::string in;
+			if (i + 1 == argc) {
+				getline(std::cin, in);
+			} else {
+				in = argv[++i];
 			}
-			for (int j = 0, len = static_cast<int>(strlen(argv[i])); j < len; j++) {
-				if (argv[i][j] == '\n') {
+			for (int j = 0, len = static_cast<int>(in.size()); j < len; j++) {
+				if (in[j] == '\n') {
 					if (nlWidth == -1) {
 						nlWidth = static_cast<int>(bitstream.size());
 					}
-				} else if (argv[i][j] == '1' || argv[i][j] == '0') {
-					bitstream.push_back(argv[i][j]);
+				} else if (in[j] == '1' || in[j] == '0') {
+					bitstream.push_back(in[j]);
 				}
 			}
 
@@ -380,6 +383,7 @@ int main(int argc, char* argv[])
 	} else if (opts.formats() == BarcodeFormat::DataMatrix) {
 		DataMatrix::Reader reader(opts);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
+		//fprintf(stderr, "ivbits width %d, height %d\n", ivbits.width(), ivbits.height());
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
 
 	} else if (opts.formats() == BarcodeFormat::HanXin) {
@@ -414,6 +418,11 @@ int main(int argc, char* argv[])
 	} else if (opts.formats() == BarcodeFormat::MicroPDF417) {
 		MicroPdf417::Reader reader(opts);
 		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+
+	} else if (opts.formats() == BarcodeFormat::DXFilmEdge) {
+		OneD::Reader reader(opts);
+		auto ivbits = InflateXY(bits.copy(), bits.width() * 6, bits.height() * 6, 7, 0);
+		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
 
 	} else if (opts.formats().testFlags(BarcodeFormat::LinearCodes)) {
 		opts.setEanAddOnSymbol(EanAddOnSymbol::Read);

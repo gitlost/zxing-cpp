@@ -324,6 +324,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 	int firstFNC1Position = 1;
 	Shift128 upperShift;
 
+	//fprintf(stderr, "DMDecoder::Decode(bytes, isDMRE)\n");
 	Diagnostics::put("  Decode:        ");
 
 	auto setError = [&error](Error&& e) {
@@ -454,6 +455,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 
 static DecoderResult DoDecode(const BitMatrix& bits)
 {
+	//fprintf(stderr, "DMDecoder::DoDecode\n");
 	// Construct a parser and read version, error-correction level
 	const Version* version = VersionForDimensionsOf(bits);
 	if (version == nullptr)
@@ -465,6 +467,7 @@ static DecoderResult DoDecode(const BitMatrix& bits)
 	if (codewords.empty())
 		return FormatError("Invalid number of code words");
 
+	//fprintf(stderr, " codewords %d\n", Size(codewords));
 	bool fix259 = false; // see https://github.com/zxing-cpp/zxing-cpp/issues/259
 retry:
 	// Separate into data blocks
@@ -475,6 +478,7 @@ retry:
 	// Count total number of data bytes
 	ByteArray resultBytes(TransformReduce(dataBlocks, 0, [](const auto& db) { return db.numDataCodewords; }));
 
+	//fprintf(stderr, " resultBytes %d\n", Size(resultBytes));
 	// Error-correct and copy data blocks together into a stream of bytes
 	const int dataBlocksCount = Size(dataBlocks);
 	for (int j = 0; j < dataBlocksCount; j++) {
@@ -484,6 +488,7 @@ retry:
 				fix259 = true;
 				goto retry;
 			}
+			//fprintf(stderr, " checksum error\n");
 			return ChecksumError();
 		}
 
@@ -492,6 +497,7 @@ retry:
 			resultBytes[i * dataBlocksCount + j] = codewords[i];
 		}
 	}
+	//fprintf(stderr, " resultBytes after error-correction %d\n", Size(resultBytes));
 	Diagnostics::fmt("  ResultBytes:   (%d)", Size(resultBytes)); Diagnostics::dump(resultBytes, "\n");
 
 #ifdef PRINT_DEBUG
@@ -515,6 +521,7 @@ static BitMatrix FlippedL(const BitMatrix& bits)
 
 DecoderResult Decode(const BitMatrix& bits)
 {
+	//fprintf(stderr, "DMDecoder::Decode(bits)\n");
 	auto res = DoDecode(bits);
 	if (res.isValid())
 		return res;

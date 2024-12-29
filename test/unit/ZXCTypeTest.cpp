@@ -10,6 +10,7 @@
 
 #include <clocale>
 #include <cwctype>
+#include <iomanip>
 
 using namespace ZXing;
 using namespace testing;

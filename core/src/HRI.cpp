@@ -32,7 +32,7 @@ struct AiInfo
 	}
 };
 
-// https://github.com/gs1/gs1-syntax-dictionary WARNING: tag not set!
+// https://github.com/gs1/gs1-syntax-dictionary 2024-06-10
 static const AiInfo aiInfos[] = {
 //TWO_DIGIT_DATA_LENGTH
 	{ "00", 18 },

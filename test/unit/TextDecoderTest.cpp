@@ -5,7 +5,9 @@
 
 #include "CharacterSet.h"
 #include "TextDecoder.h"
+#ifndef ZXING_USE_ZINT
 #include "TextEncoder.h"
+#endif
 #include "Utf.h"
 
 #include "gtest/gtest.h"
@@ -203,8 +205,10 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "a\u03B2c\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6"); // Note 0x815F now -> backslash
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 	{
 		static const uint8_t data[] = { 'a', 0x83, 0xC0, 'c', 0x84, 0x47, 0xA5, 0xBF, 0x93, 0x5F,
@@ -222,8 +226,10 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		TextDecoder::Append(str, data, sizeof(data), cs, false /*sjisASCII*/);
 		EXPECT_EQ(str, "\u00A5\u03B2\u203E\u0416\uFF65\uFF7F\\\u70B9\u8317\u30C6");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -257,8 +263,10 @@ TEST(TextDecoderTest, AppendBig5)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "\u0001 \u3008@\u9310\u9F98\u007F");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -272,8 +280,10 @@ TEST(TextDecoderTest, AppendGB2312)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "a\u03B2c\u30FB\u2015\u00E9Z"); // Note previous used GBK values below, now uses GB 2312 values
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -287,8 +297,10 @@ TEST(TextDecoderTest, AppendGBK)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, std::string("a\u03B2c\u00B7\u2014\u00E9Z"));
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 	{
 		static const uint8_t data[] = { 'a', 0xB0, 0xA1 };
@@ -310,8 +322,10 @@ TEST(TextDecoderTest, AppendGB18030)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "a\u03B2c\u30FB\u00B7\u2014\u00E9Z");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -338,8 +352,10 @@ TEST(TextDecoderTest, AppendEUC_KR)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "a\u3131Z");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -353,8 +369,10 @@ TEST(TextDecoderTest, AppendUTF16BE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, "\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 	{
 		std::wstring str;
@@ -371,8 +389,10 @@ TEST(TextDecoderTest, AppendUTF16BE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, std::string("\U00010000"));
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 	{
 		std::wstring str;
@@ -393,8 +413,10 @@ TEST(TextDecoderTest, AppendUTF16LE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 
 	{
@@ -403,8 +425,10 @@ TEST(TextDecoderTest, AppendUTF16LE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, L"\U00010000");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -419,8 +443,10 @@ TEST(TextDecoderTest, AppendUTF32BE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 
 	{
@@ -429,8 +455,10 @@ TEST(TextDecoderTest, AppendUTF32BE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, L"\U00010000");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 
@@ -445,8 +473,10 @@ TEST(TextDecoderTest, AppendUTF32LE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, std::string("\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD"));
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 
 	{
@@ -455,8 +485,10 @@ TEST(TextDecoderTest, AppendUTF32LE)
 		TextDecoder::Append(str, data, sizeof(data), cs);
 		EXPECT_EQ(str, L"\U00010000");
 
+#ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(enc, std::string(reinterpret_cast<const char*>(data), sizeof(data)));
+#endif
 	}
 }
 

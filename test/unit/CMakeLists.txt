@@ -95,6 +95,10 @@ target_include_directories (UnitTest PRIVATE .)
 
 target_link_libraries (UnitTest ZXing::ZXing GTest::gtest_main GTest::gmock)
 
+if (ZXING_WRITERS MATCHES "NEW")
+    target_compile_options (UnitTest PRIVATE -DZXING_USE_ZINT)
+endif()
+
 #target_precompile_headers(UnitTest PRIVATE ${CMAKE_SOURCE_DIR}/core/src/ReadBarcode.h)
 
 add_test(NAME UnitTest COMMAND UnitTest)

@@ -531,11 +531,11 @@ if (ZXING_WRITERS_NEW)
     if (ZXING_USE_BUNDLED_ZINT)
         set (LIBZINT_FILES
             src/libzint/stubs.c
-            ../zint/backend/2of5.c
+            ../zint/backend/2of5inter.c
             ../zint/backend/aztec.c
             ../zint/backend/aztec.h
             ../zint/backend/big5.h
-            ../zint/backend/channel_precalcs.h
+            ../zint/backend/codabar.c
             ../zint/backend/code128.c
             ../zint/backend/code128.h
             ../zint/backend/code.c
@@ -568,7 +568,6 @@ if (ZXING_WRITERS_NEW)
             ../zint/backend/library.c
             ../zint/backend/maxicode.c
             ../zint/backend/maxicode.h
-            ../zint/backend/medical.c
             ../zint/backend/output.c
             ../zint/backend/output.h
             ../zint/backend/pdf417.c
@@ -596,9 +595,10 @@ if (ZXING_WRITERS_NEW)
         target_sources(ZXing PRIVATE ${LIBZINT_FILES})
         source_group (Sources\\libzint FILES ${LIBZINT_FILES})
         target_include_directories (ZXing PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../zint/backend>")
+        target_compile_options (ZXing PRIVATE -DZINT_NO_PNG)
     else()
         include(../zxing.cmake)
-        zxing_add_package(zint zint https://github.com/zint/zint.git 7a9fdd6cd00cd5bfd0082705d934c13ef84f25e1)
+        zxing_add_package(zint zint https://github.com/zint/zint.git HEAD)
         target_link_libraries (ZXing PRIVATE zint)
     endif()
 endif()

@@ -17,12 +17,7 @@ if (NOT hasParent)
     option (ZXING_EXPERIMENTAL_API "Build with experimental API" ON)
     option (ZXING_USE_BUNDLED_ZINT "Use the bundled libzint for barcode creation/generation" ON)
 
-    set(CORE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/core)
-    if(IS_SYMLINK ${CORE_PATH})
-        # This is needed because otherwise GCC resolves the symlink which causes paths to randomly
-        # be prefixed by /core or by /wrappers/python/core depending on include order.
-        set(CORE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
-    endif()
+	set(CORE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../core)
 
     if(EXISTS ${CORE_PATH})
         add_subdirectory(${CORE_PATH} ZXing EXCLUDE_FROM_ALL)

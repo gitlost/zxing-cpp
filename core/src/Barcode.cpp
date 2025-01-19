@@ -15,6 +15,7 @@
 
 #ifdef ZXING_USE_ZINT
 #include <zint.h>
+
 void zint_symbol_deleter::operator()(zint_symbol* p) const noexcept
 {
 	ZBarcode_Delete(p);

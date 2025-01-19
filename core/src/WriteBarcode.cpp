@@ -262,17 +262,8 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-#ifdef ZXING_READERS
-	auto buffer = std::vector<uint8_t>(zint->bitmap_width * zint->bitmap_height);
-	std::transform(zint->bitmap, zint->bitmap + zint->bitmap_width * zint->bitmap_height, buffer.data(),
-				   [](unsigned char v) { return (v == '0') * 0xff; });
-
-	auto res = ReadBarcode({buffer.data(), zint->bitmap_width, zint->bitmap_height, ImageFormat::Lum},
-						   ReaderOptions().setFormats(opts.format()).setIsPure(true).setBinarizer(Binarizer::BoolCast));
-#else
 	//TODO: replace by proper construction from encoded data from within zint
 	auto res = Barcode(std::string((const char*)data, size), 0, 0, 0, opts.format(), {});
-#endif
 
 	auto bits = BitMatrix(zint->bitmap_width, zint->bitmap_height);
 	std::transform(zint->bitmap, zint->bitmap + zint->bitmap_width * zint->bitmap_height, bits.row(0).begin(),

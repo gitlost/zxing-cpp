@@ -529,11 +529,73 @@ endif()
 
 if (ZXING_WRITERS_NEW)
     if (ZXING_USE_BUNDLED_ZINT)
-        aux_source_directory(src/libzint LIBZINT_FILES) # manually re-run cmake after adding a new file/symlink
+        set (LIBZINT_FILES
+            src/libzint/stubs.c
+            ../zint/backend/2of5.c
+            ../zint/backend/aztec.c
+            ../zint/backend/aztec.h
+            ../zint/backend/big5.h
+            ../zint/backend/channel_precalcs.h
+            ../zint/backend/code128.c
+            ../zint/backend/code128.h
+            ../zint/backend/code.c
+            ../zint/backend/common.c
+            ../zint/backend/common.h
+            ../zint/backend/dmatrix.c
+            ../zint/backend/dmatrix.h
+            ../zint/backend/dmatrix_trace.h
+            ../zint/backend/dxfilmedge.c
+            ../zint/backend/eci.c
+            ../zint/backend/eci.h
+            ../zint/backend/eci_sb.h
+            ../zint/backend/filemem.c
+            ../zint/backend/filemem.h
+            ../zint/backend/fonts/normal_woff2.h
+            ../zint/backend/fonts/upcean_woff2.h
+            ../zint/backend/gb18030.h
+            ../zint/backend/gb2312.h
+            ../zint/backend/gbk.h
+            ../zint/backend/general_field.c
+            ../zint/backend/general_field.h
+            ../zint/backend/gs1.c
+            ../zint/backend/gs1.h
+            ../zint/backend/gs1_lint.h
+            ../zint/backend/iso3166.h
+            ../zint/backend/iso4217.h
+            ../zint/backend/ksx1001.h
+            ../zint/backend/large.c
+            ../zint/backend/large.h
+            ../zint/backend/library.c
+            ../zint/backend/maxicode.c
+            ../zint/backend/maxicode.h
+            ../zint/backend/medical.c
+            ../zint/backend/output.c
+            ../zint/backend/output.h
+            ../zint/backend/pdf417.c
+            ../zint/backend/pdf417.h
+            ../zint/backend/pdf417_tabs.h
+            ../zint/backend/pdf417_trace.h
+            ../zint/backend/qr.c
+            ../zint/backend/qr.h
+            ../zint/backend/raster.c
+            ../zint/backend/raster_font.h
+            ../zint/backend/reedsol.c
+            ../zint/backend/reedsol.h
+            ../zint/backend/reedsol_logs.h
+            ../zint/backend/rss.c
+            ../zint/backend/rss.h
+            ../zint/backend/sjis.h
+            ../zint/backend/svg.c
+            ../zint/backend/upcean.c
+            ../zint/backend/vector.c
+            ../zint/backend/zfiletypes.h
+            ../zint/backend/zintconfig.h
+            ../zint/backend/zint.h
+        )
         set_source_files_properties(${LIBZINT_FILES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
         target_sources(ZXing PRIVATE ${LIBZINT_FILES})
         source_group (Sources\\libzint FILES ${LIBZINT_FILES})
-        target_include_directories (ZXing PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/libzint>")
+        target_include_directories (ZXing PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../zint/backend>")
     else()
         include(../zxing.cmake)
         zxing_add_package(zint zint https://github.com/zint/zint.git 7a9fdd6cd00cd5bfd0082705d934c13ef84f25e1)

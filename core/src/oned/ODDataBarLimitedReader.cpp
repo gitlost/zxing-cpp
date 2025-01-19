@@ -32,7 +32,6 @@ static Character ReadDataCharacter(const PatternView& view)
 	constexpr int G_SUM[] = {0, 183064, 820064, 1000776, 1491021, 1979845, 1996939};
 	constexpr int T_EVEN[] = {28, 728, 6454, 203, 2408, 1, 16632};
 	constexpr int ODD_SUM[] = {17, 13, 9, 15, 11, 19, 7};
-	constexpr int ODD_WIDEST[] = {6, 5, 3, 5, 4, 8, 1};
 
 	auto pattern = NormalizedPatternFromE2E<14>(view, 26);
 
@@ -56,13 +55,14 @@ static Character ReadDataCharacter(const PatternView& view)
 	if (group == -1)
 		return {};
 
-	int oddWidest = ODD_WIDEST[group];
-	int evnWidest = 9 - oddWidest;
 #ifndef __cpp_lib_span
 #pragma message("DataBarLimited not supported without std::span<> (c++20 feature)")
 	int vOdd = 0;
 	int vEvn = 0;
 #else
+	constexpr int ODD_WIDEST[] = {6, 5, 3, 5, 4, 8, 1};
+	int oddWidest = ODD_WIDEST[group];
+	int evnWidest = 9 - oddWidest;
 	int vOdd = GetValue(oddPattern, oddWidest, false);
 	int vEvn = GetValue(evnPattern, evnWidest, true);
 #endif

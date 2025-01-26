@@ -10,8 +10,8 @@ readme = "README.md"
 keywords = ["zxing", "barcode", "barcode_reader", "ffi"]
 categories = ["api-bindings", "computer-vision"]
 exclude = [
-    "core/**/*Writer*",
-    "core/**/*Encode*",
+    "../../core/**/*Writer*",
+    "../../core/**/*Encode*",
 ]
 
 [lib]

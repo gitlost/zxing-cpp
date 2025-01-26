@@ -21,7 +21,6 @@
 #ifdef ZXING_READERS
 //#define ZXING_CREATEBARCODE_READBARCODE // Do `ReadBarcode()` (if available) in `CreateBarcode()`
 #endif
-//#define ZXING_ZINT_CREATEBARCODE_BITS // Set bits (byte array) in zint `CreateBarcode()`
 //#define ZXING_ZINT_CREATEBARCODE_BITMAP // Create bits from OUT_BUFFER_INTERMEDIATE `zint->bitmap` ('1'/'0' for non-Ultracode)
 
 #else
@@ -261,19 +260,19 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	auto zint = opts.zint();
 
 	zint->input_mode = mode;
-#if defined(ZXING_CREATEBARCODE_READBARCODE) || (defined(ZXING_ZINT_CREATEBARCODE_BITS) && defined(ZXING_ZINT_CREATEBARCODE_BITMAP))
+#if defined(ZXING_CREATEBARCODE_READBARCODE) || defined(ZXING_ZINT_CREATEBARCODE_BITMAP)
 	// If using `zint->bitmap`, set as '1'/'0'
 	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES;
-#endif // ZXING_CREATEBARCODE_READBARCODE || (ZXING_ZINT_CREATEBARCODE_BITS && ZXING_ZINT_CREATEBARCODE_BITMAP)
+#endif // defined(ZXING_CREATEBARCODE_READBARCODE) || defined(ZXING_ZINT_CREATEBARCODE_BITMAP)
 
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
 		zint->eci = static_cast<int>(ECI::Binary);
 
-#if defined(ZXING_CREATEBARCODE_READBARCODE) || (defined(ZXING_ZINT_CREATEBARCODE_BITS) && defined(ZXING_ZINT_CREATEBARCODE_BITMAP))
+#if defined(ZXING_CREATEBARCODE_READBARCODE) || defined(ZXING_ZINT_CREATEBARCODE_BITMAP)
 	CHECK(ZBarcode_Encode_and_Buffer(zint, (uint8_t*)data, size, 0));
 #else
 	CHECK(ZBarcode_Encode(zint, (uint8_t*)data, size));
-#endif // ZXING_CREATEBARCODE_READBARCODE || (ZXING_ZINT_CREATEBARCODE_BITS && ZXING_ZINT_CREATEBARCODE_BITMAP)
+#endif // defined(ZXING_CREATEBARCODE_READBARCODE) || defined(ZXING_ZINT_CREATEBARCODE_BITMAP)
 
 #ifdef PRINT_DEBUG
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
@@ -292,7 +291,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 #endif // ZXING_CREATEBARCODE_READBARCODE
 
 	// If setting bits
-#ifdef ZXING_ZINT_CREATEBARCODE_BITS
 #ifdef ZXING_ZINT_CREATEBARCODE_BITMAP
 	// Use '1'/'0' `bitmap`; row heights, quiet zones & borders will be set (but not text as scale < 1)
 	auto bits = BitMatrix(zint->bitmap_width, zint->bitmap_height);
@@ -309,7 +307,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 				bits.setRegion(x, bitsy, 1, h);
 #endif // ZXING_ZINT_CREATEBARCODE_BITMAP
 	res.symbol(std::move(bits));
-#endif // ZXING_ZINT_CREATEBARCODE_BITS
 	res.zint(std::move(opts.d->zint));
 
 	return res;

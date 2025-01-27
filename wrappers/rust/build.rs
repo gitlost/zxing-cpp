@@ -3,7 +3,7 @@ use std::env;
 fn main() -> miette::Result<()> {
 	if cfg!(feature = "bundled") {
 		// Builds the project in the directory located in `core`, installing it into $OUT_DIR
-		let mut dst = cmake::Config::new("../../core")
+		let mut dst = cmake::Config::new("core")
 			.define("BUILD_SHARED_LIBS", "OFF")
 			.define("ZXING_READERS", "ON")
 			.define("ZXING_WRITERS", "NEW")

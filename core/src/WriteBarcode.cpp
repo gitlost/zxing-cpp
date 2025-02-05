@@ -252,7 +252,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	auto zint = opts.zint();
 
 	zint->input_mode = mode;
-	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES;
+	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES | COMPLIANT_HEIGHT;
 
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
 		zint->eci = static_cast<int>(ECI::Binary);

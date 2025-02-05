@@ -44,7 +44,7 @@ PatternView FindPattern(const PatternView& view)
 {
 	return FindLeftGuard<PATTERN.size()>(view, PATTERN.size(), [](const PatternView& view, int spaceInPixel) {
 		// perform a fast plausability test for 1:1:3:1:1 pattern
-		if (view[2] < 2 * std::max(view[0], view[4]) || view[2] < std::max(view[1], view[3]))
+		if (view[2] < 3 || view[2] < 2 * std::max(view[0], view[4]) || view[2] < std::max(view[1], view[3]))
 			return 0.;
 		return IsPattern<E2E>(view, PATTERN, spaceInPixel, 0.1); // the standard requires 4 (2 for rMQR), here we accept almost 0
 	});

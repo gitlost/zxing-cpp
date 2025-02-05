@@ -202,9 +202,11 @@ static int ParseECLevel(int symbology, std::string_view s)
 	if (s.back()=='%'){
 		switch (symbology) {
 		case BARCODE_QRCODE:
-		case BARCODE_MICROQR:
-		case BARCODE_RMQR:
 			return findClosestECLevel({20, 37, 55, 65}, res);
+		case BARCODE_MICROQR:
+			return findClosestECLevel({20, 37, 55}, res);
+		case BARCODE_RMQR:
+			return res <= 46 ? 2 : 4;
 		case BARCODE_AZTEC:
 			return findClosestECLevel({10, 23, 26, 50}, res);
 		case BARCODE_PDF417:
@@ -302,6 +304,7 @@ struct SetCommonWriterOptions
 
 		zint->output_options &= ~OUT_BUFFER_INTERMEDIATE;
 		zint->output_options |= opts.withQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
+		zint->output_options |= COMPLIANT_HEIGHT;
 
 		if (opts.scale())
 			zint->scale = opts.scale() / 2.f;
@@ -320,18 +323,16 @@ struct SetCommonWriterOptions
 #else // ZXING_USE_ZINT
 
 #include "MultiFormatWriter.h"
-#include "ReadBarcode.h"
 
 namespace ZXing {
 
 zint_symbol* CreatorOptions::zint() const { return nullptr; }
 
-static Barcode CreateBarcode(BitMatrix&& bits, const CreatorOptions& opts)
+static Barcode CreateBarcode(BitMatrix&& bits, std::string_view contents, const CreatorOptions& opts)
 {
 	auto img = ToMatrix<uint8_t>(bits);
 
-	auto res = ReadBarcode({img.data(), img.width(), img.height(), ImageFormat::Lum},
-						   ReaderOptions().setFormats(opts.format()).setIsPure(true).setBinarizer(Binarizer::BoolCast));
+	auto res = Barcode(std::string(contents), 0, 0, 0, opts.format(), {});
 	res.symbol(std::move(bits));
 	return res;
 }
@@ -343,7 +344,7 @@ Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& o
 		writer.setEccLevel(std::stoi(opts.ecLevel()));
 	writer.setEncoding(CharacterSet::UTF8); // write UTF8 (ECI value 26) for maximum compatibility
 
-	return CreateBarcode(writer.encode(std::string(contents), 0, IsLinearCode(opts.format()) ? 50 : 0), opts);
+	return CreateBarcode(writer.encode(std::string(contents), 0, IsLinearCode(opts.format()) ? 50 : 0), contents, opts);
 }
 
 #if __cplusplus > 201703L
@@ -364,7 +365,7 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 		writer.setEccLevel(std::stoi(opts.ecLevel()));
 	writer.setEncoding(CharacterSet::BINARY);
 
-	return CreateBarcode(writer.encode(bytes, 0, IsLinearCode(opts.format()) ? 50 : 0), opts);
+	return CreateBarcode(writer.encode(bytes, 0, IsLinearCode(opts.format()) ? 50 : 0), std::string_view(reinterpret_cast<const char*>(data), size), opts);
 }
 
 } // namespace ZXing
@@ -461,8 +462,8 @@ std::string WriteBarcodeToUtf8(const Barcode& barcode, [[maybe_unused]] const Wr
 
 	for (int y = 0; y < iv.height(); y += 2) {
 		for (int x = 0; x < iv.width(); ++x) {
-			int tp = bool(*iv.data(x, y)) ^ inverted;
-			int bt = (iv.height() == 1 && tp) || (y + 1 < iv.height() && (bool(*iv.data(x, y + 1)) ^ inverted));
+			int tp = !bool(*iv.data(x, y)) ^ inverted;
+			int bt = (iv.height() == 1 && tp) || (y + 1 < iv.height() && (!bool(*iv.data(x, y + 1)) ^ inverted));
 			res << map[tp | (bt << 1)];
 		}
 		res << '\n';

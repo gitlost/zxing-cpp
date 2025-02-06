@@ -73,8 +73,12 @@ Barcode MultiFormatReader::read(const BinaryBitmap& image) const
 	Barcode r;
 	for (const auto& reader : _readers) {
 		r = reader->decode(image);
-  		if (r.isValid())
+		if (r.isValid()) {
+#ifdef ZXING_EXPERIMENTAL_API
+			r.symbol(std::move(image.getBitMatrix()->copy()));
+#endif
 			return r;
+		}
 	}
 	return _opts.returnErrors() ? r : Barcode();
 }

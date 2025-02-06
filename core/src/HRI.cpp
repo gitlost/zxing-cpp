@@ -339,7 +339,7 @@ std::string GS1FromHRI(std::string_view hri)
 		rem.remove_prefix(fieldSize);
 	}
 
-	if (res.ends_with(GS))
+	if (res.back() == GS)
 		res.pop_back();
 
 	return res;

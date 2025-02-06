@@ -9,6 +9,9 @@
 #include "Barcode.h"
 #include "BarcodeFormat.h"
 #include "BinaryBitmap.h"
+#ifdef ZXING_EXPERIMENTAL_API
+#include "BitMatrix.h"
+#endif
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
 #include "ZXAlgorithms.h"

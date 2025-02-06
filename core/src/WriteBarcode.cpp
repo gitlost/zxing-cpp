@@ -136,6 +136,7 @@ static Image ToImage(BitMatrix bits, bool isLinearCode, const WriterOptions& opt
 
 #ifdef ZXING_USE_ZINT
 #include "ECI.h"
+#include "HRI.h"
 
 #include <charconv>
 #include <zint.h>
@@ -253,6 +254,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 
 	zint->input_mode = mode;
 	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES | COMPLIANT_HEIGHT;
+	zint->show_hrt = 1;
 
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
 		zint->eci = static_cast<int>(ECI::Binary);
@@ -263,8 +265,18 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-	//TODO: replace by proper construction from encoded data from within zint
-	auto res = Barcode(std::string((const char*)data, size), 0, 0, 0, opts.format(), {});
+	std::string text;
+
+	if (opts.format() == BarcodeFormat::EAN8 || opts.format() == BarcodeFormat::EAN13 || opts.format() == BarcodeFormat::UPCA || opts.format() == BarcodeFormat::UPCE)
+		text = std::string((const char *)zint->text); // Zero-filled with check digit
+	else if (opts.format() == BarcodeFormat::DataBarLimited)
+		text = "01" + std::string((const char *)(zint->text + 4)); // Replace "(01)" prefix with "01"
+	else if (opts.format() == BarcodeFormat::DataBarExpanded)
+		text = GS1FromHRI(std::string((const char *)data, size)); // Hack, assumes `data` uses Zint square brackets for AIs
+	else
+		text = std::string((const char *)data, size);
+
+	auto res = Barcode(text, 0, 0, 0, opts.format(), {});
 
 	auto bits = BitMatrix(zint->bitmap_width, zint->bitmap_height);
 	std::transform(zint->bitmap, zint->bitmap + zint->bitmap_width * zint->bitmap_height, bits.row(0).begin(),

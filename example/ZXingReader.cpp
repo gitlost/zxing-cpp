@@ -70,6 +70,8 @@ static void PrintUsage(const char* exePath)
 			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
 			  << "    -binarizer <BINARIZER>\n"
 			  << "                  Use specific binarizer (default LocalAverage)\n"
+			  << "    -mode <plain|eci|hri|escaped>\n"
+			  << "                  Text mode used to render the raw byte content into text\n"
 			  << "    -charset <CHARSET>\n"
 			  << "                  Default character set\n"
 #ifdef ZX_DIAGNOSTICS
@@ -162,6 +164,19 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 #else
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
+		} else if (is("-mode")) {
+			if (++i == argc)
+				return false;
+			else if (is("plain"))
+				options.setTextMode(TextMode::Plain);
+			else if (is("eci"))
+				options.setTextMode(TextMode::ECI);
+			else if (is("hri"))
+				options.setTextMode(TextMode::HRI);
+			else if (is("escaped"))
+				options.setTextMode(TextMode::Escaped);
+			else
+				return false;
 		} else if (is("-1")) {
 			cli.oneLine = true;
 		} else if (is("-escape")) {
@@ -260,6 +275,14 @@ int main(int argc, char* argv[])
 		return argc == 1 ? 0 : -1;
 	}
 
+	std::string mode = "";
+	if (options.textMode() == TextMode::ECI)
+		mode = "ECI";
+	else if (options.textMode() == TextMode::HRI)
+		mode = "HRI";
+	else if (options.textMode() == TextMode::Escaped)
+		mode = "ESC";
+
 	std::cout.setf(std::ios::boolalpha);
 
 	if (!cli.outPath.empty())
@@ -351,9 +374,13 @@ int main(int argc, char* argv[])
 			}
 
 			std::string text = appendBinIfTextEmpty(barcode);
-			std::cout << "Text:       \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n"
-					  //<< "Bytes:      (" << Size(barcode.bytes()) << ") " << ToHex(barcode.bytes()) << "\n"
-					  << "Length:     " << text.size() << "\n"
+			std::cout << "Text:       \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
+			if (options.textMode() != TextMode::Plain)
+				std::cout << "Text " << mode << ":   \"" << barcode.text() << "\"\n";
+			std::cout << "Bytes:      " << ToHex(barcode.bytes()) << "\n";
+			if (options.textMode() == TextMode::ECI)
+				std::cout << "Bytes ECI:  " << ToHex(barcode.bytesECI()) << "\n";
+			std::cout << "Length:     " << text.size() << "\n"
 					  << "Format:     " << ToString(barcode.format()) << "\n"
 					  << "Identifier: " << barcode.symbologyIdentifier() << "\n";
 

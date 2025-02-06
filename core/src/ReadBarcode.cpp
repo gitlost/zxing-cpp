@@ -10,6 +10,9 @@
 #endif
 
 #ifdef ZXING_READERS
+#ifdef ZXING_EXPERIMENTAL_API
+#include "BitMatrix.h"
+#endif
 #include "GlobalHistogramBinarizer.h"
 #include "HybridBinarizer.h"
 #include "MultiFormatReader.h"

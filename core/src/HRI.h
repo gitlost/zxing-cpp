@@ -11,7 +11,6 @@
 namespace ZXing {
 
 std::string HRIFromGS1(std::string_view gs1);
-std::string GS1FromHRI(std::string_view hri);
 std::string HRIFromISO15434(std::string_view str);
 
 } // namespace ZXing

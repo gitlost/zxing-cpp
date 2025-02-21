@@ -304,47 +304,6 @@ std::string HRIFromGS1(std::string_view gs1)
 	return res;
 }
 
-// Assumes `hri` uses Zint square brackets to delineate AIs, e.g. "[01]12345678901231[20]12" etc
-std::string GS1FromHRI(std::string_view hri)
-{
-	auto starts_with = [](std::string_view str, std::string_view pre) { return str.substr(1, pre.size()) == pre; }; // Allow for opening "["
-	constexpr char GS = 29; // GS character (29 / 0x1D)
-
-	std::string_view rem = hri;
-	std::string res;
-
-	while (rem.size()) {
-		const AiInfo* i = FindIf(aiInfos, [&](const AiInfo& i) { return starts_with(rem, i.aiPrefix); });
-		if (i == std::end(aiInfos))
-			return {};
-
-		int aiSize = i->aiSize();
-		if (Size(rem) < aiSize + 2) // Plus enclosing "[]"
-			return {};
-
-		res += rem.substr(1, aiSize); // Skip over opening "["
-		rem.remove_prefix(aiSize + 2); // Remove "[AI]"
-
-		int fieldSize = i->fieldSize();
-		if (i->isVariableLength()) {
-			auto openPos = rem.find("[");
-			fieldSize = std::min(openPos == std::string_view::npos ? Size(rem) : narrow_cast<int>(openPos), fieldSize);
-		}
-		if (fieldSize == 0 || Size(rem) < fieldSize)
-			return {};
-
-		res += rem.substr(0, fieldSize);
-		if (i->isVariableLength())
-            res.push_back(GS);
-		rem.remove_prefix(fieldSize);
-	}
-
-	if (res.back() == GS)
-		res.pop_back();
-
-	return res;
-}
-
 std::string HRIFromISO15434(std::string_view str)
 {
 	// Use available unicode symbols to simulate sub- and superscript letters as specified in

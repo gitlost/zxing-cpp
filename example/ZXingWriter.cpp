@@ -28,7 +28,8 @@ using namespace ZXing;
 static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath
-			  << " [-size <width/height>] [-eclevel <level>] [-noqz] [-hrt] <format> <text> <output>\n"
+			  << " [-scale <scale] [-size <width/height>] [-eclevel <level>] [-noqz] [-hrt] <format> <text> <output>\n"
+			  << "    -scale     Set X-dimension of generated image\n"
 			  << "    -size      Size of generated image\n"
 //			  << "    -margin    Margin around barcode\n"
 //			  << "    -encoding  Encoding used to encode input text\n"
@@ -66,6 +67,7 @@ static bool ParseSize(std::string str, int* width, int* height)
 struct CLI
 {
 	BarcodeFormat format;
+	int scale = 0;
 	int sizeHint = 0;
 	std::string input;
 	std::string outPath;
@@ -82,7 +84,11 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 	int nonOptArgCount = 0;
 	for (int i = 1; i < argc; ++i) {
 		auto is = [&](const char* str) { return strncmp(argv[i], str, strlen(argv[i])) == 0; };
-		if (is("-size")) {
+		if (is("-scale")) {
+			if (++i == argc)
+				return false;
+			cli.scale = std::stoi(argv[i]);
+		} else if (is("-size")) {
 			if (++i == argc)
 				return false;
 			cli.sizeHint = std::stoi(argv[i]);
@@ -166,7 +172,7 @@ int main(int argc, char* argv[])
 		auto cOpts = CreatorOptions(cli.format).ecLevel(cli.ecLevel);
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts) : CreateBarcodeFromText(cli.input, cOpts);
 
-		auto wOpts = WriterOptions().sizeHint(cli.sizeHint).withQuietZones(cli.withQZ).withHRT(cli.withHRT).rotate(0);
+		auto wOpts = WriterOptions().scale(cli.scale).sizeHint(cli.sizeHint).withQuietZones(cli.withQZ).withHRT(cli.withHRT).rotate(0);
 		auto bitmap = WriteBarcodeToImage(barcode, wOpts);
 
 		if (cli.verbose) {

@@ -136,7 +136,6 @@ static Image ToImage(BitMatrix bits, bool isLinearCode, const WriterOptions& opt
 
 #ifdef ZXING_USE_ZINT
 #include "ECI.h"
-#include "HRI.h"
 
 #include <charconv>
 #include <zint.h>
@@ -253,8 +252,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	auto zint = opts.zint();
 
 	zint->input_mode = mode;
-	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES | COMPLIANT_HEIGHT;
-	zint->show_hrt = 1;
+	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_QUIET_ZONES | COMPLIANT_HEIGHT | BARCODE_RAW_TEXT;
 
 	if (mode == DATA_MODE && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI))
 		zint->eci = static_cast<int>(ECI::Binary);
@@ -265,16 +263,17 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-	std::string text;
+	std::string text(std::string((const char *)zint->text, zint->text_length));
 
-	if (opts.format() == BarcodeFormat::EAN8 || opts.format() == BarcodeFormat::EAN13 || opts.format() == BarcodeFormat::UPCA || opts.format() == BarcodeFormat::UPCE)
-		text = std::string((const char *)zint->text); // Zero-filled with check digit
-	else if (opts.format() == BarcodeFormat::DataBarLimited)
-		text = "01" + std::string((const char *)(zint->text + 4)); // Replace "(01)" prefix with "01"
-	else if (opts.format() == BarcodeFormat::DataBarExpanded)
-		text = GS1FromHRI(std::string((const char *)data, size)); // Hack, assumes `data` uses Zint square brackets for AIs
-	else
-		text = std::string((const char *)data, size);
+	if (opts.format() == BarcodeFormat::EAN13 || opts.format() == BarcodeFormat::EAN8
+			|| opts.format() == BarcodeFormat::UPCA || opts.format() == BarcodeFormat::UPCE) {
+		if (auto n = text.find("+"); n != std::string::npos)
+			text.replace(n, 1, " ");
+	} else if (opts.format() == BarcodeFormat::DXFilmEdge) {
+		int dxcode = std::stoi(text.substr(0, 4));
+		std::string frame = text.size() > 4 ? "/" + text.substr(4) : "";
+		text = std::to_string(dxcode >> 4) + "-" + std::to_string(dxcode & 0xF) + frame;
+	}
 
 	auto res = Barcode(text, 0, 0, 0, opts.format(), {});
 
@@ -283,6 +282,11 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 				   [](unsigned char v) { return (v == '1') * BitMatrix::SET_V; });
 	res.symbol(std::move(bits));
 	res.zint(std::move(opts.d->zint));
+
+	// Reset zint for writing
+	zint->output_options &= ~(OUT_BUFFER_INTERMEDIATE | BARCODE_RAW_TEXT);
+	ZBarcode_Clear(zint);
+	CHECK(ZBarcode_Encode(zint, (uint8_t*)data, size));
 
 	return res;
 }
@@ -314,7 +318,7 @@ struct SetCommonWriterOptions
 	{
 		zint->show_hrt = opts.withHRT();
 
-		zint->output_options &= ~OUT_BUFFER_INTERMEDIATE;
+		zint->output_options &= ~(OUT_BUFFER_INTERMEDIATE | BARCODE_RAW_TEXT | BARCODE_QUIET_ZONES | BARCODE_NO_QUIET_ZONES);
 		zint->output_options |= opts.withQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
 		zint->output_options |= COMPLIANT_HEIGHT;
 

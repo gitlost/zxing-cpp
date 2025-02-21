@@ -263,17 +263,20 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-	std::string text(std::string((const char *)zint->text, zint->text_length));
-
-	if (opts.format() == BarcodeFormat::EAN13 || opts.format() == BarcodeFormat::EAN8
-			|| opts.format() == BarcodeFormat::UPCA || opts.format() == BarcodeFormat::UPCE) {
-		if (auto n = text.find("+"); n != std::string::npos)
-			text.replace(n, 1, " ");
-	} else if (opts.format() == BarcodeFormat::DXFilmEdge) {
-		int dxcode = std::stoi(text.substr(0, 4));
-		std::string frame = text.size() > 4 ? "/" + text.substr(4) : "";
-		text = std::to_string(dxcode >> 4) + "-" + std::to_string(dxcode & 0xF) + frame;
-	}
+	std::string text;
+	if (IsLinearCode(opts.format())) {
+		text = std::string((const char *)zint->text, zint->text_length);
+		if (opts.format() == BarcodeFormat::EAN13 || opts.format() == BarcodeFormat::EAN8
+				|| opts.format() == BarcodeFormat::UPCA || opts.format() == BarcodeFormat::UPCE) {
+			if (auto n = text.find("+"); n != std::string::npos)
+				text.replace(n, 1, " ");
+		} else if (opts.format() == BarcodeFormat::DXFilmEdge) {
+			int dxcode = std::stoi(text.substr(0, 4));
+			std::string frame = text.size() > 4 ? "/" + text.substr(4) : "";
+			text = std::to_string(dxcode >> 4) + "-" + std::to_string(dxcode & 0xF) + frame;
+		}
+	} else
+		text = std::string((const char *)data, size);
 
 	auto res = Barcode(text, 0, 0, 0, opts.format(), {});
 

@@ -10,6 +10,9 @@
 #include "BarcodeFormat.h"
 #include "ByteArray.h"
 #include "Content.h"
+#ifdef ZXING_EXPERIMENTAL_API
+#include "ECI.h"
+#endif
 #include "ReaderOptions.h"
 #include "Error.h"
 #include "ImageView.h"
@@ -66,6 +69,11 @@ public:
 	// linear symbology convenience constructor
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
 		   bool readerInit = false);
+
+#ifdef ZXING_EXPERIMENTAL_API
+	Result(Content&& content, BarcodeFormat format, Error error = {}, bool readerInit = false,
+		   std::string ecLevel = {}, Position position = {}, int versionNumber = 0, int dataMask = -1);
+#endif
 
 	Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
 
@@ -186,12 +194,18 @@ public:
 	 */
 	std::string version() const;
 
+	/**
+	 * @brief dataMask QRCode / MicroQRCode mask.
+	 */
+	int dataMask() const;
+
 	const std::list<std::string>& diagnostics() const;
 	void setContentDiagnostics();
 
 #ifdef ZXING_EXPERIMENTAL_API
 	void symbol(BitMatrix&& bits);
 	ImageView symbol() const;
+	const BitMatrix& bits() const;
 	void zint(unique_zint_symbol&& z);
 	zint_symbol* zint() const { return _zint.get(); }
 #endif
@@ -207,6 +221,7 @@ private:
 	BarcodeFormat _format = BarcodeFormat::None;
 	char _ecLevel[4] = {};
 	char _version[4] = {};
+	int _dataMask = -1;
 	int _lineCount = 0;
 	bool _isMirrored = false;
 	bool _isInverted = false;

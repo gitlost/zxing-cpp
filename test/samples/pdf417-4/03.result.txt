@@ -1,4 +1,4 @@
-symbologyIdentifier=]L2
+symbologyIdentifier=]L1
 sequenceSize=3
 sequenceIndex=-1
 sequenceId=001

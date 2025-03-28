@@ -4,6 +4,8 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
+#include "BitMatrix.h"
+#include "BitMatrixIO.h"
 #ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
 #endif
@@ -211,13 +213,6 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 	return !cli.filePaths.empty();
 }
 
-std::ostream& operator<<(std::ostream& os, const Position& points)
-{
-	for (const auto& p : points)
-		os << p.x << "," << p.y << " ";
-	return os;
-}
-
 std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
 	bool not_first = false;
 	for (const auto& e : ecis) {
@@ -374,50 +369,64 @@ int main(int argc, char* argv[])
 			}
 
 			std::string text = appendBinIfTextEmpty(barcode);
-			std::cout << "Text:       \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
+			std::cout << "Text:         \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
 			if (options.textMode() != TextMode::Plain)
-				std::cout << "Text " << mode << ":   \"" << barcode.text() << "\"\n";
-			std::cout << "Bytes:      " << ToHex(barcode.bytes()) << "\n";
+				std::cout << "Text " << mode << ":     \"" << barcode.text() << "\"\n";
+			std::cout << "Bytes:        " << ToHex(barcode.bytes()) << "\n";
 			if (options.textMode() == TextMode::ECI)
-				std::cout << "Bytes ECI:  " << ToHex(barcode.bytesECI()) << "\n";
-			std::cout << "Length:     " << text.size() << "\n"
-					  << "Format:     " << ToString(barcode.format()) << "\n"
-					  << "Identifier: " << barcode.symbologyIdentifier() << "\n";
+				std::cout << "Bytes ECI:    " << ToHex(barcode.bytesECI()) << "\n";
+			std::cout << "Length:       " << text.size() << "\n"
+					  << "Format:       " << ToString(barcode.format()) << "\n"
+					  << "Identifier:   " << barcode.symbologyIdentifier() << "\n"
+					  << "Content Type: " << ToString(barcode.contentType()) << "\n";
 
 			if (barcode.contentType() == ContentType::GS1 || barcode.contentType() == ContentType::ISO15434)
-				std::cout << "HRI:        \"" << barcode.text(TextMode::HRI) << "\"\n";
+				std::cout << "HRI:          \"" << barcode.text(TextMode::HRI) << "\"\n";
 
 			if (Size(barcode.ECIs()))
-				std::cout << "ECIs:       (" << Size(barcode.ECIs()) << ") " << barcode.ECIs() << "\n";
+				std::cout << "ECIs:         (" << Size(barcode.ECIs()) << ") " << barcode.ECIs() << "\n";
 
-			std::cout << "Position:   " << barcode.position() << "\n";
+			std::cout << "Position:     " << ToString(barcode.position()) << "\n";
 			if (barcode.orientation())
-				std::cout << "Rotation:   " << barcode.orientation() << " deg\n";
+				std::cout << "Rotation:     " << barcode.orientation() << " deg\n";
 			if (barcode.isMirrored())
-				std::cout << "IsMirrored: " << barcode.isMirrored() << "\n";
+				std::cout << "IsMirrored:   " << barcode.isMirrored() << "\n";
 			if (barcode.isInverted())
-				std::cout << "IsInverted: " << barcode.isInverted() << "\n";
+				std::cout << "IsInverted:   " << barcode.isInverted() << "\n";
 
 			auto printOptional = [](const char* key, const std::string& v) {
 				if (!v.empty())
 					std::cout << key << v << "\n";
 			};
 
-			printOptional("EC Level:   ", barcode.ecLevel());
-			printOptional("Version:    ", barcode.version());
-			printOptional("Error:      ", ToString(barcode.error()));
+			printOptional("EC Level:     ", barcode.ecLevel());
+			std::string azType;
+#ifdef ZXING_EXPERIMENTAL_API
+			if (barcode.format() == BarcodeFormat::Aztec) {
+				if (int version = std::stoi(barcode.version()), height = barcode.bits().height();
+						(version == 1 && height % 15 == 0) || (version == 2 && height % 19 == 0)
+						 || (version == 3 && height % 23 == 0) || (version == 4 && height % 27 == 0))
+					azType = " (Compact)";
+				else
+					azType = " (Full)";
+			}
+#endif
+			printOptional("Version:      ", barcode.version() + azType);
+			if (barcode.dataMask() != -1)
+				std::cout << "Data Mask:    " << std::to_string(barcode.dataMask()) << "\n";
+			printOptional("Error:        ", ToString(barcode.error()));
 
 			if (barcode.lineCount())
-				std::cout << "Lines:      " << barcode.lineCount() << "\n";
+				std::cout << "Lines:        " << barcode.lineCount() << "\n";
 
 			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
 					.testFlag(barcode.format())) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
-				printOptional("Add-On:     ", GTIN::EanAddOn(barcode));
-				printOptional("Price:      ", GTIN::Price(GTIN::EanAddOn(barcode)));
-				printOptional("Issue #:    ", GTIN::IssueNr(GTIN::EanAddOn(barcode)));
+				printOptional("Country:      ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
+				printOptional("Add-On:       ", GTIN::EanAddOn(barcode));
+				printOptional("Price:        ", GTIN::Price(GTIN::EanAddOn(barcode)));
+				printOptional("Issue #:      ", GTIN::IssueNr(GTIN::EanAddOn(barcode)));
 			} else if (barcode.format() == BarcodeFormat::ITF && Size(barcode.bytes()) == 14) {
-				printOptional("Country:    ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
+				printOptional("Country:      ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
 			}
 
 			if (barcode.isPartOfSequence()) {

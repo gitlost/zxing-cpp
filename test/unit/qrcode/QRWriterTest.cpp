@@ -5,7 +5,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "BitMatrixIO.h"
+#if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
+#include "WriteBarcode.h"
+#else
 #include "MultiFormatWriter.h"
+#endif
 #include "qrcode/QRWriter.h"
 #include "qrcode/QRErrorCorrectionLevel.h"
 
@@ -168,8 +172,56 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		int bqrEcc = 1;
 		int aQRBorder = 1;
 		// Shortened version of "samples/qrcode-2/29.png"
+		// "MEBKM:TITLE:hypeモバイル;URL:http\://live.fdgm.jp/u/event/hype/hype_top.html;;"
 		std::string QRText("MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		BarcodeFormat format = BarcodeFormat::QRCode;
+#if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
+		auto cOpts = CreatorOptions(format).margin(aQRBorder).withQuietZones(false).ecLevel(std::to_string(bqrEcc)).eci(ECI::UTF8);
+		auto barcode = CreateBarcodeFromText(QRText, cOpts);
+		BitMatrix bitmatrix(barcode.bits().copy());
+		auto actual = ToString(bitmatrix, 'X', ' ', true);
+		EXPECT_EQ(actual, // Different encodation than non-Zint
+"                                                                              \n"
+"  X X X X X X X   X   X   X X X X   X X X           X   X X   X X X X X X X   \n"
+"  X           X     X X X X X     X   X       X   X       X   X           X   \n"
+"  X   X X X   X   X X X           X       X       X X X X     X   X X X   X   \n"
+"  X   X X X   X   X X X   X   X X     X X   X X   X     X     X   X X X   X   \n"
+"  X   X X X   X   X     X X   X   X       X X       X X       X   X X X   X   \n"
+"  X           X       X X   X   X X   X X X X   X X   X X     X           X   \n"
+"  X X X X X X X   X   X   X   X   X   X   X   X   X   X   X   X X X X X X X   \n"
+"                      X   X     X X             X X X X                       \n"
+"  X X X X     X   X   X X X X   X   X         X X   X   X X X     X X X   X   \n"
+"  X     X X           X   X X X X   X X X X X   X   X   X X X X X   X X       \n"
+"  X X     X X X       X X X X     X     X     X     X         X   X   X X     \n"
+"        X   X   X     X           X X X X X X     X     X X                   \n"
+"  X X     X   X           X   X X   X         X X X         X X X X       X   \n"
+"  X   X X X X     X     X X   X   X     X X X   X   X X X     X X X X     X   \n"
+"  X   X     X X X X X   X   X   X X X X     X   X     X X X     X   X X X     \n"
+"    X X   X       X X   X     X   X X X   X                   X       X   X   \n"
+"    X X X X   X X X X     X   X X   X   X X X         X X       X   X   X     \n"
+"  X   X   X       X   X       X   X X   X     X   X     X   X X       X       \n"
+"  X X X       X             X X X           X X X X X   X X   X     X X X X   \n"
+"            X   X X X X X   X X       X X   X X X X X   X X X X X   X X X     \n"
+"    X   X     X X     X     X X   X X X     X   X   X     X       X     X X   \n"
+"  X   X   X X   X X               X X X X                 X X X   X           \n"
+"              X   X   X       X   X   X       X   X X     X   X   X X     X   \n"
+"  X     X X X   X   X X X X X X X         X X X   X X X           X X X X X   \n"
+"  X X X     X X       X X       X     X X         X   X X X X X     X     X   \n"
+"    X X     X   X   X X X   X   X X X     X X         X X X   X   X X   X X   \n"
+"    X         X X X   X   X   X       X X X X   X   X X   X     X X   X X     \n"
+"  X   X X   X   X         X X     X X     X         X X X     X X X X X   X   \n"
+"        X     X   X X   X           X X X X   X     X     X X X X X     X     \n"
+"                  X X     X X     X X     X X X   X X   X X       X       X   \n"
+"  X X X X X X X     X X X X       X     X X X X X X   X   X   X   X X     X   \n"
+"  X           X     X X   X       X X X     X     X X   X X       X X X X X   \n"
+"  X   X X X   X     X   X X X   X X     X   X X X     X   X X X X X   X   X   \n"
+"  X   X X X   X   X X     X X X     X X         X X X   X   X X   X   X X X   \n"
+"  X   X X X   X   X     X X X   X X   X X X   X X X     X X       X X   X     \n"
+"  X           X   X X X             X     X X     X   X X X X     X   X X X   \n"
+"  X X X X X X X   X       X   X       X X   X X X X     X X   X X X X   X X   \n"
+"                                                                              \n"
+		);
+#else
 		auto writer = MultiFormatWriter(format).setMargin(aQRBorder).setEccLevel(bqrEcc);
 		writer.setEncoding(CharacterSet::UTF8);
 		BitMatrix bitmatrix = writer.encode(QRText, 0, 0);
@@ -215,5 +267,6 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 "  X X X X X X X   X X X   X   X X   X         X     X X X               X X   \n"
 "                                                                              \n"
 		);
+#endif
 	}
 }

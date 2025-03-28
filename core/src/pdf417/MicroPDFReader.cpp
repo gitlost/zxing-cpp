@@ -370,8 +370,8 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			tr = PointI(xEnd, rowNumber);
 		}
 	}
-	br = PointI(xEnd, lastRowNumber);
-	bl = PointI(xStart, lastRowNumber);
+	bl = PointI(xStart, lastRowNumber + 1); // Hack
+	br = PointI(xEnd, lastRowNumber + 1);
 
 #if 0
 	printf("nCols %d, nRows %d, codeWords (%d):", nCols, nRows, Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { printf(" %d", codeWords[i]); } printf("\n");

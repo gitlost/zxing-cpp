@@ -46,12 +46,33 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 	}
 }
 
+#ifdef ZXING_EXPERIMENTAL_API
+Result::Result(Content&& content, BarcodeFormat format, Error error, bool readerInit,
+			   std::string ecLevel, Position position, int versionNumber, int dataMask)
+	: _content(std::move(content)),
+	  _error(error),
+	  _position(position),
+	  _format(format),
+	  _dataMask(dataMask),
+	  _readerInit(readerInit)
+{
+	if (!ecLevel.empty())
+		snprintf(_ecLevel, 4, "%s", ecLevel.data());
+	if (versionNumber)
+		snprintf(_version, 4, "%d", versionNumber);
+	if (Diagnostics::enabled()) {
+		Diagnostics::moveTo(_diagnostics);
+	}
+}
+#endif
+
 Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format)
 	: _content(std::move(decodeResult).content()),
 	  _error(std::move(decodeResult).error()),
 	  _position(std::move(detectorResult).position()),
 	  _sai(decodeResult.structuredAppend()),
 	  _format(format),
+	  _dataMask(decodeResult.dataMask()),
 	  _lineCount(decodeResult.lineCount()),
 	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit())
@@ -133,12 +154,6 @@ bool Result::hasECI() const
 	return _content.hasECI;
 }
 
-int Result::orientation() const
-{
-	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
-	return narrow_cast<int>(std::lround(_position.orientation() * 180 / std_numbers_pi_v));
-}
-
 std::vector<std::pair<int,int>> Result::ECIs() const
 {
 	std::vector<std::pair<int,int>> ret;
@@ -149,9 +164,15 @@ std::vector<std::pair<int,int>> Result::ECIs() const
 	return ret;
 }
 
+int Result::orientation() const
+{
+	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
+	return narrow_cast<int>(std::lround(_position.orientation() * 180 / std_numbers_pi_v));
+}
+
 std::string Result::symbologyIdentifier() const
 {
-	return _content.symbology.toString();
+	return _content.symbology.toString(hasECI());
 }
 
 int Result::sequenceSize() const
@@ -174,6 +195,11 @@ std::string Result::version() const
 	return _version;
 }
 
+int Result::dataMask() const
+{
+	return _dataMask;
+}
+
 Result& Result::setReaderOptions(const ReaderOptions& opts)
 {
 	if (opts.characterSet() != CharacterSet::Unknown)
@@ -185,13 +211,17 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 #ifdef ZXING_EXPERIMENTAL_API
 void Result::symbol(BitMatrix&& bits)
 {
-	bits.flipAll();
 	_symbol = std::make_shared<BitMatrix>(std::move(bits));
 }
 
 ImageView Result::symbol() const
 {
 	return {_symbol->row(0).begin(), _symbol->width(), _symbol->height(), ImageFormat::Lum};
+}
+
+const BitMatrix& Result::bits() const
+{
+	return *_symbol;
 }
 
 void Result::zint(unique_zint_symbol&& z)

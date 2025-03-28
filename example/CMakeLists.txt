@@ -51,7 +51,7 @@ if (ZXING_READERS)
     endif()
 endif()
 
-if (ZXING_EXAMPLE_DECODER)
+if (ZXING_EXAMPLE_DECODER AND ZXING_READERS)
     add_executable (ZXingDecoder ZXingDecoder.cpp)
 
     target_link_libraries (ZXingDecoder ZXing::ZXing)

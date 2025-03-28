@@ -1599,13 +1599,19 @@ static int qr_prep_data(struct zint_symbol *symbol, struct zint_seg segs[], cons
     int i;
     /* If ZINT_FULL_MULTIBYTE use Kanji mode in DATA_MODE or for non-Shift JIS in UNICODE_MODE */
     const int full_multibyte = (symbol->option_3 & 0xFF) == ZINT_FULL_MULTIBYTE;
+    /* GS1 raw text dealt with by `ZBarcode_Encode_Segs()` */
+    const int raw_text = (symbol->input_mode & 0x07) != GS1_MODE && (symbol->output_options & BARCODE_RAW_TEXT);
+
+    if (raw_text && rt_init_segs(symbol, seg_count)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` only fails with OOM */
+    }
 
     if ((symbol->input_mode & 0x07) == DATA_MODE) {
-        sjis_cpy_segs(segs, seg_count, ddata, full_multibyte);
+        warn_number = sjis_cpy_segs(symbol, segs, seg_count, ddata, full_multibyte);
     } else {
         unsigned int *dd = ddata;
         for (i = 0; i < seg_count; i++) {
-            int done = 0;
+            int done = 0, eci = segs[i].eci;
             if (segs[i].eci != 20 || seg_count > 1) { /* Unless ECI 20 (Shift JIS) or have multiple segments */
                 /* Try other encodings (ECI 0 defaults to ISO/IEC 8859-1) */
                 int error_number = sjis_utf8_to_eci(segs[i].eci, segs[i].source, &segs[i].length, dd, full_multibyte);
@@ -1625,6 +1631,10 @@ static int qr_prep_data(struct zint_symbol *symbol, struct zint_seg segs[], cons
                     warn_number = errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 760,
                                             "Converted to Shift JIS but no ECI specified");
                 }
+                eci = 20;
+            }
+            if (raw_text && rt_cpy_seg_ddata(symbol, i, &segs[i], eci, dd)) {
+                return ZINT_ERROR_MEMORY; /* `rt_cpy_seg_ddata()` only fails with OOM */
             }
             dd += segs[i].length;
         }
@@ -1850,6 +1860,11 @@ INTERNAL int qrcode(struct zint_symbol *symbol, struct zint_seg segs[], const in
     }
 
     bitmask = qr_apply_bitmask(grid, size, ecc_level, user_mask, fast_encode, debug_print);
+
+    /* Feedback options */
+    symbol->option_1 = ecc_level + 1;
+    symbol->option_2 = version;
+    symbol->option_3 = (symbol->option_3 & 0xFF) | ((bitmask + 1) << 8);
 
     qr_add_format_info(grid, size, ecc_level, bitmask);
 
@@ -2169,15 +2184,17 @@ INTERNAL int microqr(struct zint_symbol *symbol, unsigned char source[], int len
     unsigned int ddata[40];
     char mode[40];
     int alpha_used = 0, byte_or_kanji_used = 0;
+    int eci = 0;
     int version_valid[4];
     int binary_count[4];
     int ecc_level, version;
     int bitmask, format, format_full;
     int size_squared;
+    unsigned char *grid;
     struct zint_seg segs[1];
     const int seg_count = 1;
+    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
     const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
-    unsigned char *grid;
 
     if (length > 35) {
         return errtxtf(ZINT_ERROR_TOO_LONG, symbol, 562, "Input length %d too long (maximum 35)", length);
@@ -2219,6 +2236,7 @@ INTERNAL int microqr(struct zint_symbol *symbol, unsigned char source[], int len
             if (error_number != 0) {
                 return error_number;
             }
+            eci = 20;
         }
     }
 
@@ -2257,6 +2275,10 @@ INTERNAL int microqr(struct zint_symbol *symbol, unsigned char source[], int len
     segs[0].source = source;
     segs[0].length = length;
     segs[0].eci = 0;
+
+    if (raw_text && (rt_init_segs(symbol, seg_count) || rt_cpy_seg_ddata(symbol, 0, &segs[0], eci, ddata))) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` & `rt_cpy_seg_ddata()` only fail with OOM */
+    }
 
     /* Determine length of binary data */
     for (i = 0; i < 4; i++) {
@@ -2339,6 +2361,11 @@ INTERNAL int microqr(struct zint_symbol *symbol, unsigned char source[], int len
     microqr_populate_grid(grid, size, full_stream, bp);
     bitmask = microqr_apply_bitmask(grid, size, user_mask, debug_print);
 
+    /* Feedback options */
+    symbol->option_1 = ecc_level + 1;
+    symbol->option_2 = version + 1;
+    symbol->option_3 = (symbol->option_3 & 0xFF) | ((bitmask + 1) << 8);
+
     /* Add format data */
     format = version ? (version - 1) * 2 + ecc_level + 1 : 0;
 
@@ -2382,6 +2409,7 @@ INTERNAL int upnqr(struct zint_symbol *symbol, unsigned char source[], int lengt
     struct zint_seg segs[1];
     const int seg_count = 1;
     const int fast_encode = symbol->input_mode & FAST_MODE;
+    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
     const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
     unsigned char *datastream;
     unsigned char *fullstream;
@@ -2425,6 +2453,10 @@ INTERNAL int upnqr(struct zint_symbol *symbol, unsigned char source[], int lengt
     segs[0].length = length;
     segs[0].eci = 4;
 
+    if (raw_text && (rt_init_segs(symbol, seg_count) || rt_cpy_seg_ddata(symbol, 0, &segs[0], 0 /*eci*/, ddata))) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` & `rt_cpy_seg_ddata()` only fail with OOM */
+    }
+
     est_binlen = qr_calc_binlen_segs(15, mode, ddata, segs, seg_count, NULL /*p_structapp*/, 1 /*mode_preset*/,
                     0 /*gs1*/, debug_print);
 
@@ -2462,6 +2494,11 @@ INTERNAL int upnqr(struct zint_symbol *symbol, unsigned char source[], int lengt
     qr_add_version_info(grid, size, version);
 
     bitmask = qr_apply_bitmask(grid, size, ecc_level, user_mask, fast_encode, debug_print);
+
+    /* Feedback options */
+    symbol->option_1 = ecc_level + 1;
+    symbol->option_2 = version;
+    symbol->option_3 = (symbol->option_3 & 0xFF) | ((bitmask + 1) << 8);
 
     qr_add_format_info(grid, size, ecc_level, bitmask);
 
@@ -2725,6 +2762,10 @@ INTERNAL int rmqr(struct zint_symbol *symbol, struct zint_seg segs[], const int 
                             symbol->option_2, rmqr_version_names[symbol->option_2 - 1], qr_ecc_level_names[ecc_level],
                             (est_binlen + 7) / 8, target_codewords);
     }
+
+    /* Feedback options */
+    symbol->option_1 = ecc_level + 1;
+    symbol->option_2 = version + 1;
 
     if (debug_print) {
         printf("Minimum codewords: %d\n", (est_binlen + 7) / 8);

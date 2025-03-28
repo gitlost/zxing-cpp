@@ -106,7 +106,7 @@ static int az_bin_append_posn(const int arg, const int length, char *binary, con
 
 /* Determine encoding modes and encode */
 static int aztec_text_process(const unsigned char source[], int src_len, int bp, char binary_string[], const int gs1,
-            const int eci, char *p_current_mode, int *data_length, const int debug_print) {
+            const int gs1_bp, const int eci, char *p_current_mode, int *data_length, const int debug_print) {
 
     int i, j;
     const char initial_mode = p_current_mode ? *p_current_mode : 'U';
@@ -401,7 +401,7 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
         printf("%.*s\n", reduced_length, reduced_encode_mode);
     }
 
-    if (bp == 0 && gs1) {
+    if (bp == gs1_bp && gs1) {
         bp = bin_append_posn(0, 5, binary_string, bp); /* P/S */
         bp = bin_append_posn(0, 5, binary_string, bp); /* FLG(n) */
         bp = bin_append_posn(0, 3, binary_string, bp); /* FLG(0) */
@@ -686,22 +686,30 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
 }
 
 /* Call `aztec_text_process()` for each segment */
-static int aztec_text_process_segs(struct zint_seg segs[], const int seg_count, int bp, char binary_string[],
-            const int gs1, int *data_length, const int debug_print) {
+static int aztec_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs[], const int seg_count, int bp,
+            char binary_string[], const int gs1, const int gs1_bp, int *data_length, const int debug_print) {
     int i;
-
     char current_mode = 'U';
+    /* GS1 raw text dealt with by `ZBarcode_Encode_Segs()` */
+    const int raw_text = (symbol->input_mode & 0x07) != GS1_MODE && (symbol->output_options & BARCODE_RAW_TEXT);
+
+    if (raw_text && rt_init_segs(symbol, seg_count)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` only fails with OOM */
+    }
 
     for (i = 0; i < seg_count; i++) {
-        if (!aztec_text_process(segs[i].source, segs[i].length, bp, binary_string, gs1, segs[i].eci, &current_mode,
-                &bp, debug_print)) {
-            return 0;
+        if (!aztec_text_process(segs[i].source, segs[i].length, bp, binary_string, gs1, gs1_bp, segs[i].eci,
+                &current_mode, &bp, debug_print)) {
+            return ZINT_ERROR_TOO_LONG; /* `aztec_text_process()` only fails with too long */
+        }
+        if (raw_text && rt_cpy_seg(symbol, i, &segs[i])) {
+            return ZINT_ERROR_MEMORY; /* `rt_cpy_seg()` only fails with OOM */
         }
     }
 
     *data_length = bp;
 
-    return 1;
+    return 0;
 }
 
 /* Prevent data from obscuring reference grid */
@@ -865,10 +873,11 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     char adjusted_string[AZTEC_MAX_CAPACITY];
     short AztecMap[AZTEC_MAP_SIZE];
     unsigned char desc_data[4], desc_ecc[6];
-    int error_number = 0;
+    int error_number;
     int compact, data_length, data_maxsize, codeword_size, adjusted_length;
     int remainder, padbits, adjustment_size;
     int bp = 0;
+    int gs1_bp = 0;
     const int gs1 = (symbol->input_mode & 0x07) == GS1_MODE;
     const int reader_init = symbol->output_options & READER_INIT;
     const int compact_loop_start = reader_init ? 1 : 4; /* Compact 2-4 excluded from Reader Initialisation */
@@ -877,6 +886,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     rs_uint_t rs_uint;
     unsigned int *data_part;
     unsigned int *ecc_part;
+    float ecc_ratio;
 
     if (gs1 && reader_init) {
         return errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 501, "Cannot use Reader Initialisation in GS1 mode");
@@ -922,14 +932,20 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
                     symbol->structapp.count, symbol->structapp.index, symbol->structapp.id, sa_src);
         }
 
-        (void) aztec_text_process(sa_src, sa_len, bp, binary_string, 0 /*gs1*/, 0 /*eci*/, NULL /*p_current_mode*/,
-                                    &bp, debug_print);
+        (void) aztec_text_process(sa_src, sa_len, bp, binary_string, 0 /*gs1*/, 0 /*gs1_bp*/, 0 /*eci*/,
+                                    NULL /*p_current_mode*/, &bp, debug_print);
         /* Will be in U/L due to uppercase A-Z index/count indicators at end */
+        gs1_bp = bp; /* Initial FNC1 (FLG0) position */
     }
 
-    if (!aztec_text_process_segs(segs, seg_count, bp, binary_string, gs1, &data_length, debug_print)) {
-        return errtxt(ZINT_ERROR_TOO_LONG, symbol, 502,
-                        "Input too long, requires too many codewords (maximum " AZ_BIN_CAP_CWDS_S ")");
+    if ((error_number = aztec_text_process_segs(symbol, segs, seg_count, bp, binary_string, gs1, gs1_bp, &data_length,
+                                                debug_print))) {
+        assert(error_number == ZINT_ERROR_TOO_LONG || error_number == ZINT_ERROR_MEMORY);
+        if (error_number == ZINT_ERROR_TOO_LONG) {
+            return errtxt(error_number, symbol, 502,
+                            "Input too long, requires too many codewords (maximum " AZ_BIN_CAP_CWDS_S ")");
+        }
+        return error_number;
     }
     assert(data_length > 0); /* Suppress clang-tidy warning: clang-analyzer-core.UndefinedBinaryOperatorResult */
 
@@ -939,7 +955,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             return ZINT_ERROR_INVALID_OPTION;
         }
         error_number = errtxt_adj(ZINT_WARN_INVALID_OPTION, symbol, "%1$s%2$s", ", ignoring");
-        symbol->option_1 = -1;
+        symbol->option_1 = -1; /* Feedback options */
     }
 
     data_maxsize = 0; /* Keep compiler happy! */
@@ -1016,6 +1032,8 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
         /* This loop will only repeat on the rare occasions when the rule about not having all 1s or all 0s
         means that the binary string has had to be lengthened beyond the maximum number of bits that can
         be encoded in a symbol of the selected size */
+
+        symbol->option_2 = compact ? layers : layers + 4; /* Feedback options */
 
     } else { /* The size of the symbol has been specified by the user */
         if ((symbol->option_2 < 0) || (symbol->option_2 > 36)) {
@@ -1101,16 +1119,30 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     } else {
         ecc_blocks = AztecSizes[layers - 1] - data_blocks;
     }
-    if (ecc_blocks < data_blocks / 20) {
-        error_number = ZEXT errtxtf(ZINT_WARN_NONCOMPLIANT, symbol, 708,
-                                    "Number of ECC codewords %1$d less than %2$d (5%% of data codewords %3$d)",
-                                    ecc_blocks, data_blocks / 20, data_blocks);
+    if (ecc_blocks == 3) {
+        ecc_ratio = 0.0f;
+        error_number = ZEXT errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 706, "Number of ECC codewords 3 at minimum");
+        symbol->option_1 = -1; /* Feedback options: indicate minimum 3 with -1 */
+    } else {
+        ecc_ratio = (float) (ecc_blocks - 3) / (data_blocks + ecc_blocks);
+        if (ecc_ratio < 0.05f) {
+            error_number = ZEXT errtxtf(ZINT_WARN_NONCOMPLIANT, symbol, 708,
+                                        "Number of ECC codewords %1$d less than 5%% + 3 of data codewords %2$d",
+                                        ecc_blocks, data_blocks);
+            symbol->option_1 = 0; /* Feedback options: indicate < 5% + 3 with 0 */
+        } else {
+            /* Feedback options: 0.165 = (.1 + .23) / 2 etc */
+            symbol->option_1 = ecc_ratio < 0.165f ? 1 : ecc_ratio < 0.295f ? 2 : ecc_ratio < 0.43f ? 3 : 4;
+        }
+        /* Feedback percentage in top byte */
+        symbol->option_1 |= ((int) (ecc_ratio * 100.0f)) << 8;
     }
 
     if (debug_print) {
         printf("Generating a %s symbol with %d layers\n", compact ? "compact" : "full-size", layers);
         printf("Requires %d codewords of %d-bits\n", data_blocks + ecc_blocks, codeword_size);
-        printf("    (%d data words, %d ecc words)\n", data_blocks, ecc_blocks);
+        printf("    (%d data words, %d ecc words, %.1f%%, output option_1 %d, option_2 %d)\n",
+                data_blocks, ecc_blocks, ecc_ratio * 100, symbol->option_1, symbol->option_2);
     }
 
     data_part = (unsigned int *) z_alloca(sizeof(unsigned int) * data_blocks);
@@ -1283,8 +1315,9 @@ INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int leng
     char binary_string[28];
     unsigned char data_codewords[3], ecc_codewords[6];
     int bp = 0;
-    const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
     rs_t rs;
+    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
+    const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
 
     input_value = 0;
     if (length > 3) {
@@ -1345,6 +1378,10 @@ INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int leng
     symbol->height = 11;
     symbol->rows = 11;
     symbol->width = 11;
+
+    if (raw_text && rt_printf_256(symbol, "%03d", input_value)) {
+        return ZINT_ERROR_MEMORY; /* `rt_printf_256()` only fails with OOM */
+    }
 
     return 0;
 }

@@ -294,7 +294,7 @@ static int errtxtf_num_arg(const char *fmt, int *p_arg) {
     return ret;
 }
 
-/* Helper for `errtxtf()` to parse length precision, returning `fmt` advance increment */
+/* Helper for `errtxtf()` to parse length precision for "%s", returning `fmt` advance increment */
 static int errtxtf_slen(const char *fmt, const int arg, int *p_arg_cnt, int *p_len) {
     int ret = 0;
     int len = -1;
@@ -342,11 +342,21 @@ static int errtxtf_dpad(const char *fmt) {
     return 0;
 }
 
+/* Helper for `errtxtf()` to parse conversion precision for "%f"/"%g", returning `fmt` advance increment */
+static int errtxtf_fprec(const char *fmt) {
+    /* Allow one digit only */
+    if (fmt[0] == '.' && z_isdigit(fmt[1]) && (fmt[2] == 'f' || fmt[2] == 'g')) {
+        return 2;
+    }
+    return 0;
+}
+
 /* Set `symbol->errtxt` to "err_id: msg" with restricted subset of `printf()` formatting, returning `error_number`.
    If `err_id` is -1, the "err_id: " prefix is omitted. Only the following specifiers are supported: "c", "d", "f",
    "g" and "s", with no modifiers apart from "<n>$" numbering for l10n ("<n>" 1-9), in which case all specifiers must
-   be numbered, "%s" with length precisions: "%.*s", "%<n+1>$.*<n>$s", "%.<p>s" and "%<n>$.<p>s", and "%d" with
-   zero-padded minimum field lengths: "%0<m>d" or %<n>$0<m>d" ("<m>" 1-99) */
+   be numbered, "%s" with length precisions: "%.*s", "%<n+1>$.*<n>$s", "%.<p>s" and "%<n>$.<p>s", "%d" with
+   zero-padded minimum field lengths: "%0<m>d" or %<n>$0<m>d" ("<m>" 1-99), and "%f"/"%g" with single-digit precision:
+   "%.<m>f" or "%<n>$.<m>f" */
 INTERNAL int errtxtf(const int error_number, struct zint_symbol *symbol, const int err_id, const char *fmt, ...) {
     const int max_len = ARRAY_SIZE(symbol->errtxt) - 1;
     int p = errtxt_id_str(symbol->errtxt, err_id);
@@ -361,6 +371,7 @@ INTERNAL int errtxtf(const int error_number, struct zint_symbol *symbol, const i
     int slens[9] = {0}; /* "%s" length precisions */
     int have_slens[9] = {0}; /* Bools for if "%s" has length precision */
     char dpads[9][3] = {{0}}; /* 2-digit minimum field length */
+    char fprecs[9] = {0}; /* 1-digit conversion precision */
     char dfgs[9][100] = {{0}}; /* "%d", "%f" and "%g", allowing for padding up to 99 */
     int cs[9] = {0}; /* "%c" */
 
@@ -393,6 +404,11 @@ INTERNAL int errtxtf(const int error_number, struct zint_symbol *symbol, const i
                 }
                 have_unnum_arg = 1;
                 idxs[i] = i;
+            }
+            if ((inc = errtxtf_fprec(f))) {
+                assert(inc == 2);
+                fprecs[idxs[i]] = f[1]; /* TODO: keep `fprecs` separate else last mentioned trumps */
+                f += inc;
             }
             if ((inc = errtxtf_slen(f, arg, &arg_cnt, &len))) {
                 if (len == -1) {
@@ -431,16 +447,22 @@ INTERNAL int errtxtf(const int error_number, struct zint_symbol *symbol, const i
         } else if (specs[i] == 'd') {
             if (dpads[i][0]) {
                 char dpad_fmt[30]; /* Make 30 to suppress gcc 14 "-Wformat-overflow=" false positive */
-                sprintf(dpad_fmt, "%%0%sd", dpads[i]); /* TODO: keep `dpads` separate else last mentioned trumps */
+                sprintf(dpad_fmt, "%%0%sd", dpads[i]);
                 sprintf(dfgs[i], dpad_fmt, va_arg(ap, int));
             } else {
                 sprintf(dfgs[i], "%d", va_arg(ap, int));
             }
         } else if (specs[i] == 'f' || specs[i] == 'g') {
-            sprintf(dfgs[i], specs[i] == 'f' ? "%f" : "%g", va_arg(ap, double));
+            if (fprecs[i]) {
+                char fprec_fmt[5];
+                sprintf(fprec_fmt, "%%.%c%c", fprecs[i], specs[i]);
+                sprintf(dfgs[i], fprec_fmt, va_arg(ap, double));
+            } else {
+                sprintf(dfgs[i], specs[i] == 'f' ? "%f" : "%g", va_arg(ap, double));
+            }
         } else if (specs[i] == 's') {
             if (have_slens[i] && slens[i] == -1) {
-                slens[i] = va_arg(ap, int); /* TODO: keep `slens` separate else last mentioned trumps */
+                slens[i] = va_arg(ap, int);
             }
             ss[i] = va_arg(ap, char *);
         }
@@ -721,18 +743,16 @@ INTERNAL int utf8_to_unicode(struct zint_symbol *symbol, const unsigned char sou
 }
 
 /* Treats source as ISO/IEC 8859-1 and copies into `symbol->text`, converting to UTF-8. Control chars (incl. DEL) and
-   non-ISO/IEC 8859-1 (0x80-9F) are replaced with spaces, unless BARCODE_RAW_TEXT set in `output_options`.
-   Returns warning if truncated, else 0 */
+   non-ISO/IEC 8859-1 (0x80-9F) are replaced with spaces. Returns warning if truncated, else 0 */
 INTERNAL int hrt_cpy_iso8859_1(struct zint_symbol *symbol, const unsigned char source[], const int length) {
     int i, j;
     int warn_number = 0;
-    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
 
     for (i = 0, j = 0; i < length && j < ARRAY_SIZE(symbol->text); i++) {
         if (z_isascii(source[i])) {
-            symbol->text[j++] = !raw_text && z_iscntrl(source[i]) ? ' ' : source[i];
+            symbol->text[j++] = z_iscntrl(source[i]) ? ' ' : source[i];
         } else if (source[i] < 0xC0) {
-            if (!raw_text && source[i] < 0xA0) { /* 0x80-0x9F not valid ISO/IEC 8859-1 */
+            if (source[i] < 0xA0) { /* 0x80-0x9F not valid ISO/IEC 8859-1 */
                 symbol->text[j++] = ' ';
             } else {
                 if (j + 2 >= ARRAY_SIZE(symbol->text)) {
@@ -768,9 +788,32 @@ INTERNAL int hrt_cpy_iso8859_1(struct zint_symbol *symbol, const unsigned char s
 INTERNAL void hrt_cpy_nochk(struct zint_symbol *symbol, const unsigned char source[], const int length) {
     assert(length < ARRAY_SIZE(symbol->text));
 
-    memcpy(symbol->text, source, length);
+    memcpy(symbol->text, source, (size_t) length);
     symbol->text_length = length;
     symbol->text[length] = '\0';
+}
+
+/* No-check as-is copy of ASCII into `symbol->text`, appending `separator` (if ASCII - use `\xFF` for none) and then
+   `cat`, assuming total length fits */
+INTERNAL void hrt_cpy_cat_nochk(struct zint_symbol *symbol, const unsigned char source[], const int length,
+                const char separator, const unsigned char cat[], const int cat_length) {
+    unsigned char *t = symbol->text;
+    const int total_length = (length > 0 ? length : 0) + z_isascii(separator) + (cat_length > 0 ? cat_length : 0);
+
+    assert(total_length < ARRAY_SIZE(symbol->text));
+
+    if (length > 0) {
+        memcpy(t, source, (size_t) length);
+        t += length;
+    }
+    if (z_isascii(separator)) {
+        *t++ = (unsigned char) separator;
+    }
+    if (cat_length > 0) {
+        memcpy(t, cat, (size_t) cat_length);
+    }
+    symbol->text_length = total_length;
+    symbol->text[total_length] = '\0';
 }
 
 /* Copy a single ASCII character into `symbol->text` (i.e. replaces content) */
@@ -784,7 +827,7 @@ INTERNAL void hrt_cpy_chr(struct zint_symbol *symbol, const char ch) {
 INTERNAL void hrt_cat_nochk(struct zint_symbol *symbol, const unsigned char source[], const int length) {
     assert(symbol->text_length + length < ARRAY_SIZE(symbol->text));
 
-    memcpy(symbol->text + symbol->text_length, source, length);
+    memcpy(symbol->text + symbol->text_length, source, (size_t) length);
     symbol->text_length += length;
     symbol->text[symbol->text_length] = '\0';
 }
@@ -837,6 +880,149 @@ INTERNAL void hrt_conv_gs1_brackets_nochk(struct zint_symbol *symbol, const unsi
     symbol->text[length] = '\0';
 }
 
+/* Initialize `raw_segs` for `seg_count` segments. On error sets `errtxt`, returning BARCODE_ERROR_MEMORY */
+INTERNAL int rt_init_segs(struct zint_symbol *symbol, const int seg_count) {
+    int i;
+
+    if (symbol->raw_segs) {
+        rt_free_segs(symbol);
+    }
+    if (!(symbol->raw_segs = (struct zint_seg *) calloc((size_t) seg_count, sizeof(struct zint_seg)))) {
+        return errtxt(ZINT_ERROR_MEMORY, symbol, 243, "Insufficient memory for raw segs buffer");
+    }
+    for (i = 0; i < seg_count; i++) {
+        symbol->raw_segs[i].source = NULL;
+    }
+    symbol->raw_seg_count = seg_count;
+
+    return 0;
+}
+
+/* Free `raw_segs` along with any `source` buffers */
+INTERNAL void rt_free_segs(struct zint_symbol *symbol) {
+    if (symbol->raw_segs) {
+        int i;
+        assert(symbol->raw_seg_count);
+        for (i = 0; i < symbol->raw_seg_count; i++) {
+            if (symbol->raw_segs[i].source) {
+                free(symbol->raw_segs[i].source);
+            }
+        }
+        free(symbol->raw_segs);
+        symbol->raw_segs = NULL;
+    }
+    symbol->raw_seg_count = 0;
+}
+
+/* Helper to initialize `raw_segs[seg_idx]` to receive text of `length` */
+static int rt_init_seg_source(struct zint_symbol *symbol, const int seg_idx, const int length) {
+    assert(symbol->raw_segs);
+    assert(seg_idx >= 0 && seg_idx < symbol->raw_seg_count);
+    assert(!symbol->raw_segs[seg_idx].source);
+    assert(length > 0);
+
+    if (!(symbol->raw_segs[seg_idx].source = (unsigned char *) malloc((size_t) length))) {
+        return errtxt(ZINT_ERROR_MEMORY, symbol, 245, "Insufficient memory for raw text source buffer");
+    }
+    return 0;
+}
+
+/* Copy `seg` to raw seg `seg_idx`. If `seg->eci` not set, raw seg eci set to 3. On error sets `errtxt`, returning
+   BARCODE_ERROR_MEMORY */
+INTERNAL int rt_cpy_seg(struct zint_symbol *symbol, const int seg_idx, const struct zint_seg *seg) {
+    if (rt_init_seg_source(symbol, seg_idx, seg->length)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_seg_source()` only fails with OOM */
+    }
+    memcpy(symbol->raw_segs[seg_idx].source, seg->source, (size_t) seg->length);
+    symbol->raw_segs[seg_idx].length = seg->length;
+    symbol->raw_segs[seg_idx].eci = seg->eci ? seg->eci : 3;
+    return 0;
+}
+
+/* Copy `seg` to raw seg `seg_idx` using `ddata` converted to chars as source. If `eci` set, used instead of
+  `seg->eci`, and if neither set, sets raw seg eci to 3. On error sets `errtxt`, returning BARCODE_ERROR_MEMORY */
+INTERNAL int rt_cpy_seg_ddata(struct zint_symbol *symbol, const int seg_idx, const struct zint_seg *seg,
+                const int eci, const unsigned int *ddata) {
+    unsigned char *s;
+    int i;
+
+    if (rt_init_seg_source(symbol, seg_idx, seg->length * 2)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_seg_source()` only fails with OOM */
+    }
+    for (i = 0, s = symbol->raw_segs[seg_idx].source; i < seg->length; i++) {
+        if (ddata[i] & 0xFF00) {
+            *s++ = (unsigned char) ((ddata[i] >> 8) & 0xFF);
+        }
+        *s++ = (unsigned char) (ddata[i] & 0xFF);
+    }
+    symbol->raw_segs[seg_idx].length = (int) (s - symbol->raw_segs[seg_idx].source);
+    symbol->raw_segs[seg_idx].eci = eci ? eci : seg->eci ? seg->eci : 3;
+    return 0;
+}
+
+/* Copy `source` to raw seg 0 buffer, setting raw seg ECI to 3. On error sets `errtxt`, returning
+   BARCODE_ERROR_MEMORY */
+INTERNAL int rt_cpy(struct zint_symbol *symbol, const unsigned char source[], const int length) {
+    if (rt_init_segs(symbol, 1 /*seg_count*/) || rt_init_seg_source(symbol, 0 /*seg_idx*/, length)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` & `rt_init_seg_source()` only fail with OOM */
+    }
+    memcpy(symbol->raw_segs[0].source, source, (size_t) length);
+    symbol->raw_segs[0].length = length;
+    symbol->raw_segs[0].eci = 3;
+    return 0;
+}
+
+/* Copy `source` to raw seg 0 buffer, appending `separator` (if ASCII - use `\xFF` for none) and then `cat`, and
+   setting raw seg ECI to 3.  On error sets `errtxt`, returning BARCODE_ERROR_MEMORY */
+INTERNAL int rt_cpy_cat(struct zint_symbol *symbol, const unsigned char source[], const int length,
+                const char separator, const unsigned char cat[], const int cat_length) {
+    unsigned char *s;
+    const int total_length = (length > 0 ? length : 0) + z_isascii(separator) + (cat_length > 0 ? cat_length : 0);
+
+    if (rt_init_segs(symbol, 1 /*seg_count*/) || rt_init_seg_source(symbol, 0 /*seg_idx*/, total_length)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` & `rt_init_seg_source()` only fail with OOM */
+    }
+    s = symbol->raw_segs[0].source;
+    if (length > 0) {
+        memcpy(s, source, (size_t) length);
+        s += length;
+    }
+    if (z_isascii(separator)) {
+        *s++ = (unsigned char) separator;
+    }
+    if (cat_length > 0) {
+        memcpy(s, cat, (size_t) cat_length);
+    }
+    symbol->raw_segs[0].length = total_length;
+    symbol->raw_segs[0].eci = 3;
+    return 0;
+}
+
+/* `sprintf()` into raw seg 0 buffer, assuming formatted data less than 256 bytes. Sets raw seg ECI to 3. On error
+   sets `errtxt`, returning BARCODE_ERROR_MEMORY */
+INTERNAL int rt_printf_256(struct zint_symbol *symbol, const char *fmt, ...) {
+    va_list ap;
+    int size;
+
+    if (rt_init_segs(symbol, 1 /*seg_count*/) || rt_init_seg_source(symbol, 0 /*seg_idx*/, 256)) {
+        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` & `rt_init_seg_source()` only fail with OOM */
+    }
+
+    va_start(ap, fmt);
+
+    size = vsprintf((char *) symbol->raw_segs[0].source, fmt, ap);
+
+    assert(size >= 0);
+    assert(size < 256);
+
+    symbol->raw_segs[0].length = size;
+    symbol->raw_segs[0].eci = 3;
+
+    va_end(ap);
+
+    return 0;
+}
+
 /* Sets symbol height, returning a warning if not within minimum and/or maximum if given.
    `default_height` does not include height of fixed-height rows (i.e. separators/composite data) */
 INTERNAL int set_height(struct zint_symbol *symbol, const float min_row_height, const float default_height,
@@ -847,6 +1033,7 @@ INTERNAL int set_height(struct zint_symbol *symbol, const float min_row_height, 
     float row_height;
     int i;
     const int rows = symbol->rows ? symbol->rows : 1; /* Sometimes called before expand() */
+    const float epsilon = 0.00000095367431640625f; /* Allow some leeway in non-compliance checks */
 
     for (i = 0; i < rows; i++) {
         if (symbol->row_height[i]) {
@@ -872,10 +1059,10 @@ INTERNAL int set_height(struct zint_symbol *symbol, const float min_row_height, 
             row_height = 0.5f;
         }
         if (min_row_height) {
-            if (stripf(row_height) < stripf(min_row_height)) {
+            if (stripf(row_height + epsilon) < stripf(min_row_height)) {
                 error_number = ZINT_WARN_NONCOMPLIANT;
                 if (!no_errtxt) {
-                    errtxt(0, symbol, 247, "Height not compliant with standards");
+                    errtxt(0, symbol, 247, "Height not compliant with standards (too small)");
                 }
             }
         }
@@ -884,10 +1071,10 @@ INTERNAL int set_height(struct zint_symbol *symbol, const float min_row_height, 
         symbol->height = stripf(fixed_height); /* Ignore any given height */
     }
     if (max_height) {
-        if (stripf(symbol->height) > stripf(max_height)) {
+        if (stripf(symbol->height) > stripf(max_height + epsilon)) {
             error_number = ZINT_WARN_NONCOMPLIANT;
             if (!no_errtxt) {
-                errtxt(0, symbol, 248, "Height not compliant with standards");
+                ZEXT errtxtf(0, symbol, 248, "Height not compliant with standards (maximum %.4g)", max_height);
             }
         }
     }

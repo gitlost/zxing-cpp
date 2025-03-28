@@ -22,7 +22,7 @@ namespace ZXing::MaxiCode {
 * around it. This is a specialized method that works exceptionally fast in this special
 * case.
 */
-static BitMatrix ExtractPureBits(const BitMatrix& image)
+static BitMatrix ExtractPureBits(const BitMatrix& image, Position &position)
 {
 	int left, top, width, height;
 	if (!image.findBoundingBox(left, top, width, height, BitMatrixParser::MATRIX_WIDTH)) {
@@ -42,7 +42,9 @@ static BitMatrix ExtractPureBits(const BitMatrix& image)
 		}
 	}
 
-	//TODO: need to return position info
+	//TODO: need to check position info
+	position = Position(PointI{left, top}, PointI{left + width - 1, top}, PointI{left + width - 1, top + height - 1}, PointI{left, top + height - 1});
+
 	return result;
 }
 
@@ -55,7 +57,8 @@ Barcode Reader::decode(const BinaryBitmap& image) const
 	}
 
 	//TODO: this only works with effectively 'pure' barcodes. Needs proper detector.
-	BitMatrix bits = ExtractPureBits(*binImg);
+	Position position;
+	BitMatrix bits = ExtractPureBits(*binImg, position);
 	if (bits.empty()) {
 		//printf("fail bits.empty\n");
 		return {};
@@ -66,7 +69,9 @@ Barcode Reader::decode(const BinaryBitmap& image) const
 	if (!decRes.isValid())
 		return {};
 
-	return Barcode(std::move(decRes), DetectorResult{}, BarcodeFormat::MaxiCode);
+	auto res = Barcode(std::move(decRes), DetectorResult{}, BarcodeFormat::MaxiCode);
+	res.setPosition(position);
+	return res;
 }
 
 } // namespace ZXing::MaxiCode

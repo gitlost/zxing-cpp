@@ -8,6 +8,7 @@
 #include "ByteArray.h"
 #include "CharacterSet.h"
 #include "Diagnostics.h"
+#include "ECI.h"
 #include "ReaderOptions.h"
 
 #include <string>
@@ -29,7 +30,8 @@ struct SymbologyIdentifier
 
 	std::string toString(bool hasECI = false) const
 	{
-		return code > '0' ? ']' + std::string(1, code) + static_cast<char>(modifier + eciModifierOffset * hasECI) : std::string();
+		int modVal = (modifier >= 'A' ? modifier - 'A' + 10 : modifier - '0') + eciModifierOffset * hasECI;
+		return code > '0' ? ']' + std::string(1, code) + static_cast<char>((modVal >= 10 ? 'A' - 10 : '0') + modVal) : std::string();
 	}
 };
 
@@ -58,7 +60,8 @@ public:
 	std::list<std::string>* p_diagnostics = nullptr;
 
 	Content();
-	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
+	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown,
+			ECI eci = ECI::Unknown);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);

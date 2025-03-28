@@ -499,6 +499,9 @@ PYBIND11_MODULE(zxingcpp, m)
 		py::arg("with_hrt") = false,
 		py::arg("with_quiet_zones") = true
 	);
+#ifdef ZXING_USE_ZINT
+	m.attr("use_zint") = true;
+#endif
 #endif
 
 	m.attr("Bitmap") = m.attr("Image"); // alias to deprecated name for the Image class

@@ -223,9 +223,9 @@ static ECI ParseECIValue(BitArrayView& bits, const int flg)
 /**
 * See ISO/IEC 24778:2008 Section 8
 */
-static StructuredAppendInfo ParseStructuredAppend(ByteArray& bytes)
+static StructuredAppendInfo ParseStructuredAppend(Content& res)
 {
-	std::string text(bytes.begin(), bytes.end());
+	std::string text(res.bytes.begin(), res.bytes.end());
 	StructuredAppendInfo sai;
 	std::string::size_type i = 0;
 
@@ -254,8 +254,7 @@ static StructuredAppendInfo ParseStructuredAppend(ByteArray& bytes)
 
 	Diagnostics::fmt("SAI(%d,%d,%s)", sai.index, sai.count, sai.id.c_str());
 
-	text.erase(0, i + 2); // Remove
-	bytes = ByteArray(text);
+	res.erase(0, i + 2); // Remove
 
 	return sai;
 }
@@ -315,7 +314,7 @@ static void DecodeContent(const BitArray& bits, Content& res, bool &haveFNC1)
 			}
 		}
 	}
-	Diagnostics::put("EOD");
+	Diagnostics::fmt("EOD(%d)", Size(remBits));
 }
 
 ZXING_EXPORT_TEST_ONLY
@@ -328,6 +327,7 @@ DecoderResult Decode(const BitArray& bits)
 	try {
 		DecodeContent(bits, res, haveFNC1);
 	} catch (const std::exception&) { // see BitArrayView::readBits
+		fprintf(stderr, "FormatError\n");
 		return FormatError();
 	}
 
@@ -338,20 +338,20 @@ DecoderResult Decode(const BitArray& bits)
 	bool haveStructuredAppend = Size(bits) > 20 && ToInt(bits, 0, 5) == 29 // latch to MIXED (from UPPER)
 								&& ToInt(bits, 5, 5) == 29;                // latch back to UPPER (from MIXED)
 
-	StructuredAppendInfo sai = haveStructuredAppend ? ParseStructuredAppend(res.bytes) : StructuredAppendInfo();
+	StructuredAppendInfo sai = haveStructuredAppend ? ParseStructuredAppend(res) : StructuredAppendInfo();
 
 	if (haveFNC1) {
 		if (res.bytes[0] == 29) {
 			res.symbology.modifier = '1'; // GS1
 			res.symbology.aiFlag = AIFlag::GS1;
 			res.erase(0, 1); // Remove FNC1
-		} else if (res.bytes.size() > 2 && std::isupper(res.bytes[0]) && res.bytes[1] == 29) {
+		} else if (res.bytes.size() > 2 && zx_isupper(res.bytes[0]) && res.bytes[1] == 29) {
 			// FNC1 following single uppercase letter (the AIM Application Indicator)
 			res.symbology.modifier = '2'; // AIM
 			res.symbology.aiFlag = AIFlag::AIM;
 			res.erase(1, 1); // Remove FNC1,
 							 // The AIM Application Indicator character "A"-"Z" is left in the stream (ISO/IEC 24778:2008 16.2)
-		} else if (res.bytes.size() > 3 && std::isdigit(res.bytes[0]) && std::isdigit(res.bytes[1]) && res.bytes[2] == 29) {
+		} else if (res.bytes.size() > 3 && zx_isdigit(res.bytes[0]) && zx_isdigit(res.bytes[1]) && res.bytes[2] == 29) {
 			// FNC1 following 2 digits (the AIM Application Indicator)
 			res.symbology.modifier = '2'; // AIM
 			res.symbology.aiFlag = AIFlag::AIM;
@@ -384,19 +384,24 @@ DecoderResult Decode(const DetectorResult& detectorResult)
 			// This is a rune - just return the rune value
 			return DecodeRune(detectorResult);
 		}
-		auto bits = CorrectBits(detectorResult, ExtractBits(detectorResult));
+		auto rawBits = ExtractBits(detectorResult);
+		auto bits = CorrectBits(detectorResult, rawBits);
 
 		const int layers = detectorResult.nbLayers();
 		const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
-		const int numCodewords = Size(bits) / codewordSize;
+		const int numCodewords = Size(rawBits) / codewordSize;
 		const int numDataCodewords = detectorResult.nbDatablocks();
+		const int numECCodewords = numCodewords - numDataCodewords;
 
 		Diagnostics::fmt("  Dimensions:  %dx%d\n", detectorResult.bits().height(), detectorResult.bits().width());
 		Diagnostics::fmt("  Layers:      %d (%s)\n", layers, detectorResult.isCompact() ? "Compact" : "Full");
-		Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numCodewords - numDataCodewords);
+		Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numECCodewords);
 		Diagnostics::put("  Decode:      ");
 
-		return Decode(bits);
+		auto result = Decode(bits);
+		if (result.isValid())
+			result.setEcLevel(std::to_string((numECCodewords - 3) * 100 / numCodewords) + "%");
+		return result;
 	} catch (Error e) {
 		return e;
 	}

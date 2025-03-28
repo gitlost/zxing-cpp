@@ -57,7 +57,7 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_WRITERS MATCHES "ON|OLD|BOTH")
+if (ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
 target_sources (UnitTest PRIVATE
     aztec/AZEncoderTest.cpp
     datamatrix/DMHighLevelEncodeTest.cpp
@@ -77,7 +77,7 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_READERS AND ZXING_WRITERS MATCHES "ON|OLD|BOTH")
+if (ZXING_READERS AND ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
 target_sources (UnitTest PRIVATE
     ContentTest.cpp
     ReedSolomonTest.cpp
@@ -91,12 +91,21 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
+if (ZXING_WRITERS MATCHES "ON|NEW|BOTH")
+target_sources (UnitTest PRIVATE
+    WriteBarcodeTest.cpp
+)
+endif()
+
 target_include_directories (UnitTest PRIVATE .)
 
 target_link_libraries (UnitTest ZXing::ZXing GTest::gtest_main GTest::gmock)
 
-if (ZXING_WRITERS MATCHES "NEW")
-    target_compile_options (UnitTest PRIVATE -DZXING_USE_ZINT)
+if (ZXING_READERS)
+    target_compile_options (UnitTest PRIVATE -DZXING_READERS)
+endif()
+if (ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
+    target_compile_options (UnitTest PRIVATE -DZXING_WRITERS)
 endif()
 
 #target_precompile_headers(UnitTest PRIVATE ${CMAKE_SOURCE_DIR}/core/src/ReadBarcode.h)

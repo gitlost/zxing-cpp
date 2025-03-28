@@ -31,7 +31,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 
 /*
- * Version: 2.14.0.9 (dev) (see "zintconfig.h")
+ * Version: 2.15.0.9 (dev) (see "zintconfig.h")
  *
  * For documentation, see "../docs/manual.txt" or "../docs/manual.html" or online at
  * https://zint.org.uk/manual/
@@ -94,6 +94,13 @@ extern "C" {
         char id[32];        /* Optional ID to distinguish sequence, ASCII, NUL-terminated unless max 32 long */
     };
 
+    /* Segment for use with `raw_segs` and API `ZBarcode_Encode_Segs()` */
+    struct zint_seg {
+        unsigned char *source; /* Data to encode, or (`raw_segs`) data encoded */
+        int length;         /* Length of `source`. If 0 or negative, `source` must be NUL-terminated */
+        int eci;            /* Extended Channel Interpretation */
+    };
+
     /* Main symbol structure */
     struct zint_symbol {
         int symbology;      /* Symbol to use (see BARCODE_XXX below) */
@@ -123,7 +130,7 @@ extern "C" {
         int warn_level;     /* Affects error/warning value returned by Zint API (see WARN_XXX below) */
         int debug;          /* Debugging flags */
         unsigned char text[256]; /* Human Readable Text (HRT) (if any), UTF-8, NUL-terminated (output only) */
-        int text_length;    /* Length of text in bytes, useful if BARCODE_RAW_TEXT when may have NULs (output only) */
+        int text_length;    /* Length of text in bytes (output only) */
         int rows;           /* Number of rows used by the symbol (output only) */
         int width;          /* Width of the generated symbol (output only) */
         unsigned char encoded_data[200][144]; /* Encoded data (output only). Allows for rows of 1152 modules */
@@ -136,13 +143,8 @@ extern "C" {
         struct zint_vector *vector; /* Pointer to vector header (vector output only) */
         unsigned char *memfile; /* Pointer to in-memory file buffer if BARCODE_MEMORY_FILE (output only) */
         int memfile_size;   /* Length of in-memory file buffer (output only) */
-    };
-
-    /* Segment for use with `ZBarcode_Encode_Segs()` below */
-    struct zint_seg {
-        unsigned char *source; /* Data to encode */
-        int length;         /* Length of `source`. If 0, `source` must be NUL-terminated */
-        int eci;            /* Extended Channel Interpretation */
+        struct zint_seg *raw_segs; /* Pointer to array of raw segs if BARCODE_RAW_TEXT (output only) */
+        int raw_seg_count;  /* Number of `raw_segs` (output only) */
     };
 
 /* Symbologies (`symbol->symbology`) */
@@ -299,9 +301,7 @@ extern "C" {
 #define EANUPC_GUARD_WHITESPACE 0x04000 /* Add quiet zone indicators ("<"/">") to HRT whitespace (EAN/UPC) */
 #define EMBED_VECTOR_FONT       0x08000 /* Embed font in vector output - currently only for SVG output */
 #define BARCODE_MEMORY_FILE     0x10000 /* Write output to in-memory buffer `memfile` instead of to `outfile` */
-#define BARCODE_RAW_TEXT        0x20000 /* Set HRT with no decoration (GS1 data will not have parentheses but GS
-                                           separators as needed), complete with any control chars and check chars, and
-                                           for all linear symbologies, including those that normally don't set it */
+#define BARCODE_RAW_TEXT        0x20000 /* Write data encoded to raw segment buffers `raw_segs` */
 
 /* Input data types (`symbol->input_mode`) */
 #define DATA_MODE               0       /* Binary */
@@ -329,7 +329,6 @@ extern "C" {
 #define ULTRA_COMPRESSION       128     /* Enable Ultracode compression (experimental) */
 
 /* Warning and error conditions (API return values) */
-#define ZINT_WARN_HRT_RAW_TEXT      -1  /* Human Readable Text outputted with BARCODE_RAW_TEXT */
 #define ZINT_WARN_HRT_TRUNCATED     1   /* Human Readable Text was truncated (max 199 bytes) */
 #define ZINT_WARN_INVALID_OPTION    2   /* Invalid option given but overridden by Zint */
 #define ZINT_WARN_USES_ECI          3   /* Automatic ECI inserted by Zint */
@@ -346,7 +345,6 @@ extern "C" {
 #define ZINT_ERROR_USES_ECI         13  /* Error counterpart of warning if WARN_FAIL_ALL set (see below) */
 #define ZINT_ERROR_NONCOMPLIANT     14  /* Error counterpart of warning if WARN_FAIL_ALL set */
 #define ZINT_ERROR_HRT_TRUNCATED    15  /* Error counterpart of warning if WARN_FAIL_ALL set */
-#define ZINT_ERROR_HRT_RAW_TEXT     16  /* Error counterpart of warning if WARN_FAIL_ALL set */
 
 /* Warning level (`symbol->warn_level`) */
 #define WARN_DEFAULT            0  /* Default behaviour */
@@ -405,7 +403,7 @@ extern "C" {
     ZINT_EXTERN void ZBarcode_Delete(struct zint_symbol *symbol);
 
 
-    /* Encode a barcode. If `length` is 0, `source` must be NUL-terminated */
+    /* Encode a barcode. If `length` is 0 or negative, `source` must be NUL-terminated */
     ZINT_EXTERN int ZBarcode_Encode(struct zint_symbol *symbol, const unsigned char *source, int length);
 
     /* Encode a barcode with multiple ECI segments */
@@ -486,6 +484,18 @@ extern "C" {
        non-zero `x_dim_mm_or_dpmm`. Return value bound to dpmm max not X-dimension max. Returns 0 on error */
     ZINT_EXTERN float ZBarcode_XdimDp_From_Scale(int symbol_id, float scale, float x_dim_mm_or_dpmm,
                         const char *filetype);
+
+
+    /* Convert UTF-8 `source` of length `length` to `eci`-encoded `dest`, setting `p_dest_length` to length of `dest`
+       on output. If `length` is 0 or negative, `source` must be NUL-terminated. Returns 0 on success, else
+       ZINT_ERROR_INVALID_OPTION or ZINT_ERROR_INVALID_DATA. Compatible with libzueci `zueci_utf8_to_eci()` */
+    ZINT_EXTERN int ZBarcode_UTF8_To_ECI(int eci, const unsigned char *source, int length, unsigned char dest[],
+                        int *p_dest_length);
+
+    /* Calculate sufficient length needed to convert UTF-8 `source` of length `length` from UTF-8 to `eci`, and place
+       in `p_dest_length`. If `length` is 0 or negative, `source` must be NUL-terminated. Returns 0 on success, else
+       ZINT_ERROR_INVALID_OPTION or ZINT_ERROR_INVALID_DATA. Compatible with libzueci `zueci_dest_len_eci()` */
+    ZINT_EXTERN int ZBarcode_Dest_Len_ECI(int eci, const unsigned char *source, int length, int *p_dest_length);
 
 
     /* Whether Zint built without PNG support */

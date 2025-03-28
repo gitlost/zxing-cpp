@@ -56,8 +56,14 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 Content::Content() {}
 
-Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet)
-	: bytes(std::move(bytes)), symbology(si), defaultCharset(_defaultCharSet) {}
+Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet, ECI eci)
+	: bytes(std::move(bytes)), symbology(si), defaultCharset(_defaultCharSet)
+{
+	if (eci != ECI::Unknown) {
+		encodings.push_back({eci, 0, true});
+		hasECI = true;
+	}
+}
 
 void Content::switchEncoding(CharacterSet cs)
 {
@@ -81,7 +87,7 @@ void Content::erase(int pos, int n)
 	bytes.erase(bytes.begin() + pos, bytes.begin() + pos + n);
 	for (auto& e : encodings)
 		if (e.pos > pos)
-			pos -= n;
+			e.pos -= n;
 }
 
 void Content::insert(int pos, const std::string& str)
@@ -89,7 +95,7 @@ void Content::insert(int pos, const std::string& str)
 	bytes.insert(bytes.begin() + pos, str.begin(), str.end());
 	for (auto& e : encodings)
 		if (e.pos > pos)
-			pos += Size(str);
+			e.pos += Size(str);
 }
 
 bool Content::canProcess() const
@@ -102,7 +108,7 @@ std::string Content::render(bool withECI) const
 	if (empty() || !canProcess())
 		return {};
 
-#ifdef ZXING_READERS
+#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
 	std::string res;
 	if (withECI)
 		res = symbology.toString(true);
@@ -157,7 +163,7 @@ std::string Content::render(bool withECI) const
 
 	return res;
 #else
-	//TODO: replace by proper construction from encoded data from within zint
+	(void)withECI;
 	return std::string(bytes.asString());
 #endif
 }
@@ -169,7 +175,7 @@ std::string Content::text(TextMode mode) const
 	case TextMode::ECI: return render(true);
 	case TextMode::HRI:
 		switch (type()) {
-#ifdef ZXING_READERS
+#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
 		case ContentType::GS1: {
 			auto plain = render(false);
 			auto hri = HRIFromGS1(plain);
@@ -216,7 +222,7 @@ ByteArray Content::bytesECI() const
 
 CharacterSet Content::guessEncoding() const
 {
-#ifdef ZXING_READERS
+#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
 	// assemble all blocks with unknown encoding
 	ByteArray input;
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
@@ -235,7 +241,7 @@ CharacterSet Content::guessEncoding() const
 
 ContentType Content::type() const
 {
-#ifdef ZXING_READERS
+#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
 	if (empty())
 		return ContentType::Text;
 
@@ -267,7 +273,6 @@ ContentType Content::type() const
 
 	return ContentType::Mixed;
 #else
-	//TODO: replace by proper construction from encoded data from within zint
 	return ContentType::Text;
 #endif
 }

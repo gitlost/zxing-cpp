@@ -70,10 +70,11 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 	bool usePrevReaderInit = false;
 	bool readerInit = false;
 	AIFlag aiFlag = AIFlag::None;
-	int k1, k2;
+	int k1 = 0, k2 = 0;
 
 	std::vector<int> rawCodes;
 	int xStart = -1, xEnd = -1, lastRowNumber = -1;
+	int topBoundarySize = 1, bottomBoundarySize = 1; // TODO: calc properly
 	for (int rowNumber = 0; rowNumber < image.height(); rowNumber++) {
 		PatternRow bars;
 		if (!image.getPatternRow(rowNumber, 0 /*rotate*/, bars)) {
@@ -116,14 +117,15 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			checksum += i * rawCodes[i];
 		checksum %= 103;
 		if (checksum != rawCodes.back()) {
-			//printf("error checksum %d != %d (rawCodes.back)\n", checksum, rawCodes.back());
+			//fprintf(stderr, "error checksum %d != %d (rawCodes.back)\n", checksum, rawCodes.back());
 			continue;
 		}
 
 		if (rows.empty()) {
 			usePrevReaderInit = checksum == CODE_FNC_3;
-			tl = PointI(xStart, rowNumber);
-			tr = PointI(xEnd, rowNumber);
+			// TODO: calc top boundary size
+			tl = PointI(xStart, rowNumber - topBoundarySize);
+			tr = PointI(xEnd, rowNumber - topBoundarySize);
 			rows.push_back(rawCodes);
 
 		} else if (rows.back() != rawCodes) {
@@ -136,14 +138,15 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 		k1 = rawCodes[Size(rawCodes) - 3];
 		k2 = rawCodes[Size(rawCodes) - 2];
 	}
-	br = PointI(xEnd, lastRowNumber);
-	bl = PointI(xStart, lastRowNumber);
+	// TODO: calc bottom boundary size
+	bl = PointI(xStart, lastRowNumber + bottomBoundarySize);
+	br = PointI(xEnd, lastRowNumber + bottomBoundarySize);
 
 #if 0
 	for (int i = 0; i < Size(rows); i++) {
-		printf("row %d:", i);
-		for (int j = 0; j < Size(rows[i]); j++) printf(" %d,", rows[i][j]);
-		printf("\n");
+		fprintf(stderr, "row %d:", i);
+		for (int j = 0; j < Size(rows[i]); j++) fprintf(stderr, " %d,", rows[i][j]);
+		fprintf(stderr, "\n");
 	}
 #endif
 
@@ -231,7 +234,7 @@ static Barcode DecodePure(const BinaryBitmap& image)
 	Barcode res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		printf("ERROR: %s\n", ToString(res.error()).c_str());
+		fprintf(stderr, "ERROR: %s\n", ToString(res.error()).c_str());
 		return {};
 	}
 

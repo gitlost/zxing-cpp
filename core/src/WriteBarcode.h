@@ -8,6 +8,7 @@
 #ifdef ZXING_EXPERIMENTAL_API
 
 #include "Barcode.h"
+#include "ECI.h"
 #include "ImageView.h"
 
 #include <memory>
@@ -43,6 +44,19 @@ public:
 	ZX_PROPERTY(bool, readerInit)
 	ZX_PROPERTY(bool, forceSquareDataMatrix)
 	ZX_PROPERTY(std::string, ecLevel)
+	ZX_PROPERTY(bool, withQuietZones)
+#ifdef ZXING_USE_ZINT
+	ZX_PROPERTY(bool, stacked)
+	ZX_PROPERTY(int, margin)
+	ZX_PROPERTY(CharacterSet, encoding)
+	ZX_PROPERTY(int, rotate)
+	ZX_PROPERTY(ECI, eci)
+	ZX_PROPERTY(int, vers)
+	ZX_PROPERTY(int, mask)
+	ZX_PROPERTY(float, height)
+	ZX_PROPERTY(bool, gs1)
+	ZX_PROPERTY(bool, debug)
+#endif
 
 #undef ZX_PROPERTY
 };

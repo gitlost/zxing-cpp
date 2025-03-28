@@ -55,11 +55,16 @@ static bool CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 /**
 * See specification GBT 18284-2000
 */
-static void DecodeHanziSegment(BitSource& bits, int count, Content& result)
+static void DecodeHanziSegment(BitSource& bits, int count, Content& result, CharacterSet &currentCharset)
 {
 	Diagnostics::fmt("HAN(%d)", count);
-	// Each character will require 2 bytes, decode as GB2312
-	result.switchEncoding(CharacterSet::GB2312);
+	// Decode as GB2312 by default
+	CharacterSet cs = result.optionsCharset != CharacterSet::Unknown ? result.optionsCharset : CharacterSet::GB2312;
+	if (cs != currentCharset) {
+		currentCharset = cs;
+		result.switchEncoding(cs);
+	}
+	// Each character will require 2 bytes
 	result.reserve(2 * count);
 
 	while (count > 0) {
@@ -79,12 +84,16 @@ static void DecodeHanziSegment(BitSource& bits, int count, Content& result)
 	}
 }
 
-static void DecodeKanjiSegment(BitSource& bits, int count, Content& result)
+static void DecodeKanjiSegment(BitSource& bits, int count, Content& result, CharacterSet& currentCharset)
 {
 	Diagnostics::fmt("KAN(%d)", count);
+	// Decode as Shift_JIS by defaul
+	CharacterSet cs = result.optionsCharset != CharacterSet::Unknown ? result.optionsCharset : CharacterSet::Shift_JIS;
+	if (cs != currentCharset) {
+		currentCharset = cs;
+		result.switchEncoding(cs);
+	}
 	// Each character will require 2 bytes. Read the characters as 2-byte pairs
-	// and decode as Shift_JIS afterwards
-	result.switchEncoding(CharacterSet::Shift_JIS);
 	result.reserve(2 * count);
 
 	while (count > 0) {
@@ -104,10 +113,14 @@ static void DecodeKanjiSegment(BitSource& bits, int count, Content& result)
 	}
 }
 
-static void DecodeByteSegment(BitSource& bits, int count, Content& result)
+static void DecodeByteSegment(BitSource& bits, int count, Content& result, CharacterSet& currentCharset)
 {
 	Diagnostics::fmt("BYTE(%d)", count);
-	result.switchEncoding(CharacterSet::Unknown);
+	CharacterSet cs = result.optionsCharset;
+	if (cs != currentCharset) {
+		currentCharset = cs;
+		result.switchEncoding(cs);
+	}
 	result.reserve(count);
 
 	for (int i = 0; i < count; i++)
@@ -132,7 +145,7 @@ static char ToAlphaNumericChar(int value)
 	return ALPHANUMERIC_CHARS[value];
 }
 
-static void DecodeAlphanumericSegment(BitSource& bits, int count, Content& result)
+static void DecodeAlphanumericSegment(BitSource& bits, int count, Content& result, CharacterSet& currentCharset)
 {
 	Diagnostics::fmt("ANUM(%d)", count);
 	// Read two characters at a time
@@ -163,14 +176,22 @@ static void DecodeAlphanumericSegment(BitSource& bits, int count, Content& resul
 		}
 	}
 
-	result.switchEncoding(CharacterSet::ISO8859_1);
+	CharacterSet cs = CharacterSet::ISO8859_1;
+	if (currentCharset == CharacterSet::Unknown) {
+		currentCharset = cs;
+		result.switchEncoding(cs);
+	}
 	result += buffer;
 }
 
-static void DecodeNumericSegment(BitSource& bits, int count, Content& result)
+static void DecodeNumericSegment(BitSource& bits, int count, Content& result, CharacterSet& currentCharset)
 {
 	Diagnostics::fmt("NUM(%d)", count);
-	result.switchEncoding(CharacterSet::ISO8859_1);
+	CharacterSet cs = CharacterSet::ISO8859_1;
+	if (currentCharset == CharacterSet::Unknown) {
+		currentCharset = cs;
+		result.switchEncoding(cs);
+	}
 	result.reserve(count);
 
 	while (count) {
@@ -241,6 +262,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 	BitSource bits(bytes);
 	Content result;
 	result.optionsCharset = optionsCharset;
+	CharacterSet currentCharset = result.optionsCharset;
 	Error error;
 	result.symbology = {'Q', version.isModel1() ? '0' : '1', 1};
 	StructuredAppendInfo structuredAppend;
@@ -296,8 +318,12 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 			case CodecMode::ECI:
 				if (version.isModel1())
 					throw FormatError("QRCode Model 1 does not support ECI");
-				// Count doesn't apply to ECI
-				result.switchEncoding(ParseECIValue(bits));
+				{
+					// Count doesn't apply to ECI
+					ECI eci = ParseECIValue(bits);
+					result.switchEncoding(eci);
+					currentCharset = ToCharacterSet(eci);
+				}
 				break;
 			case CodecMode::HANZI: {
 				// First handle Hanzi mode which does not start with character count
@@ -305,7 +331,7 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				if (int subset = bits.readBits(4); subset != 1) // GB2312_SUBSET is the only supported one right now
 					throw FormatError("Unsupported HANZI subset");
 				int count = bits.readBits(CharacterCountBits(mode, version));
-				DecodeHanziSegment(bits, count, result);
+				DecodeHanziSegment(bits, count, result, currentCharset);
 				break;
 			}
 			default: {
@@ -313,10 +339,10 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				// How many characters will follow, encoded in this mode?
 				int count = bits.readBits(CharacterCountBits(mode, version));
 				switch (mode) {
-				case CodecMode::NUMERIC:      DecodeNumericSegment(bits, count, result); break;
-				case CodecMode::ALPHANUMERIC: DecodeAlphanumericSegment(bits, count, result); break;
-				case CodecMode::BYTE:         DecodeByteSegment(bits, count, result); break;
-				case CodecMode::KANJI:        DecodeKanjiSegment(bits, count, result); break;
+				case CodecMode::NUMERIC:      DecodeNumericSegment(bits, count, result, currentCharset); break;
+				case CodecMode::ALPHANUMERIC: DecodeAlphanumericSegment(bits, count, result, currentCharset); break;
+				case CodecMode::BYTE:         DecodeByteSegment(bits, count, result, currentCharset); break;
+				case CodecMode::KANJI:        DecodeKanjiSegment(bits, count, result, currentCharset); break;
 				default:                      throw FormatError("Invalid CodecMode");
 				}
 				break;
@@ -354,7 +380,6 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	const Version& version = *pversion;
 
 	Diagnostics::fmt("  Dimensions: %dx%d (HxW) (Version %s%d)\n", bits.height(), bits.width(), version.isMicro() ? "M" : "", version.versionNumber());
-	Diagnostics::fmt("  Mask:       %d\n", formatInfo.dataMask);
 
 	// Read codewords
 	ByteArray codewords = ReadCodewords(bits, version, formatInfo);
@@ -389,7 +414,7 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");
 	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset)
-		.setDataMask(formatInfo.mask)
+		.setDataMask(formatInfo.dataMask)
 		.setIsMirrored(formatInfo.isMirrored);
 	if (error)
 		ret.setError(error);

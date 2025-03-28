@@ -40,12 +40,17 @@ elseif (ZXING_WRITERS MATCHES "BOTH")
     set (ZXING_WRITERS_OLD ON)
 endif()
 
+if (NOT ZXING_EXPERIMENTAL_API AND NOT ZXING_WRITERS_OLD)
+    message(SEND_ERROR "If ZXING_EXPERIMENTAL_API not set, ZXING_WRITERS must be ON or OLD or BOTH")
+endif()
+
 if (BUILD_SHARED_LIBS)
     set (CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 set (ZXING_PUBLIC_FLAGS
     $<$<BOOL:${ZXING_EXPERIMENTAL_API}>:-DZXING_EXPERIMENTAL_API>
+    $<$<BOOL:${ZXING_WRITERS_NEW}>:-DZXING_USE_ZINT>
 )
 if (WINRT)
     set (ZXING_PUBLIC_FLAGS ${ZXING_PUBLIC_FLAGS}
@@ -59,7 +64,6 @@ if (MSVC)
 endif()
 
 set (ZXING_PRIVATE_FLAGS
-    $<$<BOOL:${ZXING_WRITERS_NEW}>:-DZXING_USE_ZINT>
     $<$<BOOL:${ZXING_UNIT_TESTS}>:-DZXING_BUILD_FOR_TEST>
 )
 if (MSVC)
@@ -137,7 +141,7 @@ set (COMMON_FILES
     $<$<BOOL:${ZXING_C_API}>:src/ZXingC.h>
     $<$<BOOL:${ZXING_C_API}>:src/ZXingC.cpp>
 )
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (COMMON_FILES ${COMMON_FILES}
         src/BitArray.h
         src/BitArray.cpp
@@ -146,6 +150,10 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD)
         src/GenericGF.cpp
         src/GenericGFPoly.h
         src/GenericGFPoly.cpp
+        src/HRI.h
+        src/HRI.cpp
+        src/ResultMetadata.h
+        src/ResultMetadata.cpp
         src/TextUtfEncoding.h # [[deprecated]]
         src/TextUtfEncoding.cpp # [[deprecated]]
         src/Scope.h
@@ -169,8 +177,6 @@ if (ZXING_READERS)
         src/GridSampler.h
         src/GridSampler.cpp
         src/LogMatrix.h
-        src/HRI.h
-        src/HRI.cpp
         src/HybridBinarizer.h
         src/HybridBinarizer.cpp
         src/MultiFormatReader.h
@@ -183,17 +189,19 @@ if (ZXING_READERS)
         src/ReedSolomonDecoder.cpp
         src/RegressionLine.h
         src/Result.h # [[deprecated]]
-        src/ResultMetadata.h
-        src/ResultMetadata.cpp
         src/ResultPoint.h
         src/ResultPoint.cpp
         src/StructuredAppend.h
-        src/TextDecoder.h
-        src/TextDecoder.cpp
         src/ThresholdBinarizer.h
         src/TritMatrix.h # QRCode
         src/WhiteRectDetector.h
         src/WhiteRectDetector.cpp
+    )
+endif()
+if (ZXING_READERS OR ZXING_WRITERS_NEW)
+    set (COMMON_FILES ${COMMON_FILES}
+        src/TextDecoder.h
+        src/TextDecoder.cpp
     )
 endif()
 
@@ -202,13 +210,17 @@ if (ZXING_WRITERS)
     )
 endif()
 
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (COMMON_FILES ${COMMON_FILES}
         src/ByteMatrix.h
         src/ReedSolomonEncoder.h
         src/ReedSolomonEncoder.cpp
         src/TextEncoder.h
         src/TextEncoder.cpp
+    )
+endif()
+if (ZXING_WRITERS_OLD)
+    set (COMMON_FILES ${COMMON_FILES}
         src/MultiFormatWriter.h
         src/MultiFormatWriter.cpp
     )
@@ -246,12 +258,16 @@ if (ZXING_READERS)
         src/ResultMetadata.h
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/BitMatrix.h
-        src/BitMatrixIO.h
         src/Range.h
         src/Matrix.h
+    )
+endif()
+if (ZXING_WRITERS_OLD)
+    set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
+        src/BitMatrixIO.h
         src/MultiFormatWriter.h
     )
 endif()
@@ -268,7 +284,7 @@ if (ZXING_READERS)
         src/aztec/AZReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (AZTEC_FILES ${AZTEC_FILES}
         src/aztec/AZEncodingState.h
         src/aztec/AZEncoder.h
@@ -303,7 +319,7 @@ if (ZXING_READERS)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (DATAMATRIX_FILES
         src/datamatrix/DMBitLayout.h
         src/datamatrix/DMBitLayout.cpp
@@ -323,7 +339,7 @@ if (ZXING_READERS)
         src/datamatrix/DMReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (DATAMATRIX_FILES ${DATAMATRIX_FILES}
         src/datamatrix/DMECEncoder.h
         src/datamatrix/DMECEncoder.cpp
@@ -391,7 +407,7 @@ if (ZXING_READERS)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (ONED_FILES
         src/oned/ODUPCEANCommon.h
         src/oned/ODUPCEANCommon.cpp
@@ -430,7 +446,7 @@ if (ZXING_READERS)
         src/oned/ODRowReader.h
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (ONED_FILES ${ONED_FILES}
         src/oned/ODCodabarWriter.h
         src/oned/ODCodabarWriter.cpp
@@ -456,7 +472,7 @@ if (ZXING_WRITERS_OLD)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (PDF417_FILES
         src/pdf417/ZXBigInteger.h
         src/pdf417/ZXBigInteger.cpp
@@ -495,7 +511,7 @@ if (ZXING_READERS)
         src/pdf417/ZXNullable.h
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (PDF417_FILES ${PDF417_FILES}
         src/pdf417/PDFCompaction.h
         src/pdf417/PDFEncoder.h
@@ -508,7 +524,7 @@ if (ZXING_WRITERS_OLD)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (QRCODE_FILES
         src/qrcode/QRCodecMode.h
         src/qrcode/QRCodecMode.cpp
@@ -536,7 +552,7 @@ if (ZXING_READERS)
         src/qrcode/QRReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (QRCODE_FILES ${QRCODE_FILES}
         src/qrcode/QREncoder.h
         src/qrcode/QREncoder.cpp
@@ -594,7 +610,7 @@ target_compile_features(ZXing PUBLIC cxx_std_17)
 
 target_link_libraries (ZXing PRIVATE Threads::Threads)
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (LIBZUECI_FILES
         src/libzueci/zueci.c
         src/libzueci/zueci.h

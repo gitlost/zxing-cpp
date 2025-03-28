@@ -99,6 +99,7 @@ static ECI ParseECIValue(const ByteArray& codewords, int& position)
 	}
 	int firstByte = codewords[++position];
 	if (firstByte < 40) {
+		Diagnostics::fmt("ECI(%d,1)", firstByte);
 		return ECI(firstByte);
 	}
 	if (position + 2 >= length) {
@@ -107,7 +108,9 @@ static ECI ParseECIValue(const ByteArray& codewords, int& position)
 	}
 	int secondByte = codewords[++position];
 	int thirdByte = codewords[++position];
-	return ECI((firstByte - 40) * 12769 + secondByte * 113 + thirdByte + 40);
+	int eci = (firstByte - 40) * 12769 + secondByte * 113 + thirdByte + 40;
+	Diagnostics::fmt("ECI(%d,3)", eci);
+	return ECI(eci);
 }
 
 static void ParseStructuredAppend(ByteArray& codewords, StructuredAppendInfo& sai)
@@ -179,13 +182,16 @@ static void ProcessBinaryArray(std::vector<uint16_t>& binary, uint64_t& b103, in
 				int eci;
 				if (cnt == 1) {
 					eci = binary[i + 1];
+					Diagnostics::fmt("BinECI(%d,1)", eci);
 				// Assuming big-endian byte order
 				} else if (cnt == 2) {
 					eci = (binary[i + 1] << 8) | binary[i + 2];
+					Diagnostics::fmt("BinECI(%d,2)", eci);
 				} else {
 					eci = (binary[i + 1] << 16) | (binary[i + 2] << 8) | binary[i + 3];
+					Diagnostics::fmt("BinECI(%d,3)", eci);
 				}
-					result.switchEncoding(ECI(eci));
+				result.switchEncoding(ECI(eci));
 			}
 			i += cnt;
 		}
@@ -521,7 +527,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset)
 	} else {
 		modifier = '0';
 	}
-	result.symbology = {'J', modifier, 3 /*eciModifierOffset*/};
+	result.symbology = {'J', modifier, 3 /*eciModifierOffset*/, gs1 ? AIFlag::GS1 : aim ? AIFlag::AIM : AIFlag::None};
 
 	return DecoderResult(std::move(result))
 			.setStructuredAppend(sai)
@@ -553,9 +559,9 @@ CorrectErrors(const GField& field, ByteArray& codewordBytes, int numDataCodeword
 }
 
 static void
-Unmask(ByteArray& codewords)
+Unmask(ByteArray& codewords, int& mask)
 {
-	int mask = codewords[0];
+	mask = codewords[0];
 
 	if (mask) {
 		int weight = 0;
@@ -607,11 +613,12 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 		}
 	}
 
-	Unmask(resultBytes);
+	int mask;
+	Unmask(resultBytes, mask);
 
 	Diagnostics::fmt("  Unmasked:   (%d)", resultBytes.size()); Diagnostics::dump(resultBytes, "\n");
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset).setDataMask(mask);
 }
 
 } // namespace ZXing::DotCode

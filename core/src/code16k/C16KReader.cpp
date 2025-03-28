@@ -69,10 +69,10 @@ public:
 bool C16KDecoder::decode(int code)
 {
 	// Unshift back to another code set if we were shifted
-	//printf("code %d, codeSet %d, shift_from %d, shift %d\n", code, codeSet, shift_from, shift);
+	//fprintf(stderr, "code %d, codeSet %d, shift_from %d, shift %d\n", code, codeSet, shift_from, shift);
 	if (shift_from) {
 		if (shift-- == 0) {
-			//printf("Shift change\n");
+			//fprintf(stderr, "Shift change\n");
 			codeSet = shift_from;
 			shift_from = 0;
 		}
@@ -341,18 +341,23 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 
 	std::vector<int> rawCodes;
 	int xStart = -1, xEnd = -1, lastRowNumber = -1;
+	int topBoundarySize = 1, bottomBoundarySize = 1; // TODO: calc properly
 	for (int rowNumber = 0; rowNumber < image.height(); rowNumber++) {
-		//printf("rowNumber %d\n", rowNumber);
+		//fprintf(stderr, "rowNumber %d, xStart %d, xEnd %d\n", rowNumber, xStart, xEnd);
 		PatternRow bars;
 		if (!image.getPatternRow(rowNumber, 0 /*rotate*/, bars)) {
 			continue;
 		}
 		PatternView view(bars);
-		//printf("initial view:"); for (int i = 0; i < view.size(); i++) { printf(" %d", view[i]); } printf("\n");
+		//fprintf(stderr, "initial view:"); for (int i = 0; i < view.size(); i++) { fprintf(stderr, " %d", view[i]); } fprintf(stderr, "\n");
 
 		PatternView next = view.subView(0, START_STOP_CHAR_LEN);
 		if (!DetectRowStartCode(next, Size(rows))) {
-			//printf("!DetectRowStartCode %d\n", rowNumber);
+			if (Size(rows) > 1 && DetectRowStartCode(next, Size(rows) - 1)) {
+				lastRowNumber = rowNumber;
+			} else {
+				//fprintf(stderr, "!DetectRowStartCode %d\n", rowNumber);
+			}
 			continue;
 		}
 		xStart = next.pixelsInFront();
@@ -379,7 +384,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			}
 			int code = DecodeDigit(next);
 			if (code == -1) {
-				printf("code -1\n");
+				fprintf(stderr, "code -1\n");
 				next = next.subView(0, START_STOP_CHAR_LEN);
 				if (!DetectRowStopCode(next, Size(rows))) {
 					if (Size(rawCodes) == 5) {
@@ -399,22 +404,24 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 		}
 
 		if (rows.empty()) {
-			tl = PointI(xStart, rowNumber);
-			tr = PointI(xEnd, rowNumber);
+			// TODO: calc top boundary size
+			tl = PointI(xStart, rowNumber - topBoundarySize);
+			tr = PointI(xEnd, rowNumber - topBoundarySize);
 			rows.push_back(rawCodes);
 		} else {
 			rows.push_back(rawCodes);
 		}
 		lastRowNumber = rowNumber;
 	}
-	br = PointI(xEnd, lastRowNumber);
-	bl = PointI(xStart, lastRowNumber);
+	// TODO: calc bottom boundary size
+	bl = PointI(xStart, lastRowNumber + bottomBoundarySize);
+	br = PointI(xEnd, lastRowNumber + bottomBoundarySize);
 
 #if 0
 	for (int i = 0; i < Size(rows); i++) {
-		printf("row %d:", i);
-		for (int j = 0; j < Size(rows[i]); j++) printf(" %d,", rows[i][j]);
-		printf("\n");
+		fprintf(stderr, "row %d:", i);
+		for (int j = 0; j < Size(rows[i]); j++) fprintf(stderr, " %d,", rows[i][j]);
+		fprintf(stderr, "\n");
 	}
 #endif
 
@@ -426,7 +433,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 
 	int mode = rows[0][0] % 7;
 	int numberRows = (rows[0][0] - mode) / 7 + 2;
-	//printf("mode %d, numberRows %d\n", mode, numberRows);
+	//fprintf(stderr, "mode %d, numberRows %d\n", mode, numberRows);
 	if (numberRows != Size(rows)) {
 		return Barcode(DecoderResult(FormatError("number of rows mismatch")), DetectorResult{}, BarcodeFormat::Code16K);
 	}
@@ -453,7 +460,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 	Diagnostics::fmt("Mode(%d,%d,%d,%d)", mode, codeSet, impliedShiftB, (int)aiFlag);
 
 	C16KDecoder decoder(codeSet, impliedShiftB);
-	//printf("codeSet %d, shift %d, shift_from %d\n", decoder.codeSet, decoder.shift, decoder.shift_from);
+	//fprintf(stderr, "codeSet %d, shift %d, shift_from %d\n", decoder.codeSet, decoder.shift, decoder.shift_from);
 
 	std::string text;
 	int rowStart = 1;
@@ -510,7 +517,7 @@ static Barcode DecodePure(const BinaryBitmap& image)
 	Barcode res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		printf("ERROR: %s\n", ToString(res.error()).c_str());
+		fprintf(stderr, "ERROR: %s\n", ToString(res.error()).c_str());
 		return {};
 	}
 

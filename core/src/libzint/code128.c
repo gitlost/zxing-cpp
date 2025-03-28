@@ -122,9 +122,9 @@ static const char c128_start_latch_seq[3][C128_STATES][4] = {
 };
 static const char c128_start_latch_len[3][C128_STATES] = { /* Lengths of above */
     /*        A0          B0            A1                 B1                C0      C1 (not used) */
-    {   0,    1,         1,             3,                 3,                 1         }, /* Normal */
-    {   0,    2,         2,             4,                 4,                 2         }, /* GS1_MODE */
-    {   0,    2,         2,             4,                 4,                 3         }, /* READER_INIT */
+    {   0,    1,         1,             3,                 3,                 1,     64 }, /* Normal */
+    {   0,    2,         2,             4,                 4,                 2,     64 }, /* GS1_MODE */
+    {   0,    2,         2,             4,                 4,                 3,     64 }, /* READER_INIT */
 };
 
 /* Output cost (length) for Code Sets A/B */
@@ -255,6 +255,7 @@ static int c128_set_values(const unsigned char source[], const int length, const
         if (cset != prior_cset) {
             int j;
             if (prior_cset == 0) {
+                assert(cset != C128_C1);
                 for (j = 0; j < c128_start_latch_len[start_idx][cset]; j++) {
                     values[glyph_count++] = c128_start_latch_seq[start_idx][cset][j];
                 }
@@ -380,6 +381,7 @@ INTERNAL int code128(struct zint_symbol *symbol, unsigned char source[], int len
     unsigned char *src = source;
     const int ab_only = symbol->symbology == BARCODE_CODE128AB;
     const int start_idx = (symbol->output_options & READER_INIT) ? 2 : 0;
+    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
 
     if (length > C128_MAX) {
         /* This only blocks ridiculously long input - the actual length of the
@@ -490,7 +492,11 @@ INTERNAL int code128(struct zint_symbol *symbol, unsigned char source[], int len
         }
         length = j;
     }
-    error_number = hrt_cpy_iso8859_1(symbol, src, length);
+    error_number = hrt_cpy_iso8859_1(symbol, src, length); /* Returns warning only */
+
+    if (raw_text && rt_cpy(symbol, src, length)) {
+        return ZINT_ERROR_MEMORY; /* `rt_cpy()` only fails with OOM */
+    }
 
     return error_number;
 }
@@ -633,14 +639,14 @@ INTERNAL int gs1_128_cc(struct zint_symbol *symbol, unsigned char source[], int 
     }
 
     /* Note won't overflow `text` buffer due to symbol character maximum restricted to C128_SYMBOL_MAX */
-    if (raw_text) {
-        hrt_cpy_nochk(symbol, reduced, reduced_length);
+    if (symbol->input_mode & GS1PARENS_MODE) {
+        hrt_cpy_nochk(symbol, source, length);
     } else {
-        if (symbol->input_mode & GS1PARENS_MODE) {
-            hrt_cpy_nochk(symbol, source, length);
-        } else {
-            hrt_conv_gs1_brackets_nochk(symbol, source, length);
-        }
+        hrt_conv_gs1_brackets_nochk(symbol, source, length);
+    }
+
+    if (raw_text && rt_cpy(symbol, reduced, reduced_length)) {
+        return ZINT_ERROR_MEMORY; /* `rt_cpy()` only fails with OOM */
     }
 
     return error_number;

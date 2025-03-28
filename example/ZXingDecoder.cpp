@@ -26,6 +26,7 @@
 #include "TextDecoder.h"
 #include "ThresholdBinarizer.h"
 #include "Utf.h"
+#include "ZXCType.h"
 #include "aztec/AZReader.h"
 #include "codablockf/CBFReader.h"
 #include "code16k/C16KReader.h"
@@ -166,7 +167,8 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 	int nlWidth = -1;
 
 	for (int i = 1; i < argc; ++i) {
-		if (strcmp(argv[i], "-format") == 0) {
+		auto is = [&](const char* str) { return strlen(argv[i]) > 1 && strncmp(argv[i], str, strlen(argv[i])) == 0; };
+		if (is("-format")) {
 			if (haveFormat) {
 				std::cerr << "Single -format only\n";
 				return false;
@@ -187,7 +189,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				return false;
 			}
 
-		} else if (strcmp(argv[i], "-bits") == 0) {
+		} else if (is("-bits")) {
 			if (haveBits) {
 				std::cerr << "Single -bits only\n";
 				return false;
@@ -210,7 +212,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				}
 			}
 
-		} else if (strcmp(argv[i], "-width") == 0) {
+		} else if (is("-width")) {
 			if (haveWidth) {
 				std::cerr << "Single -width only\n";
 				return false;
@@ -225,7 +227,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				return false;
 			}
 
-		} else if (strcmp(argv[i], "-opts") == 0) {
+		} else if (is("-opts")) {
 			if (++i == argc) {
 				std::cerr << "No argument for -opts\n";
 				return false;
@@ -248,7 +250,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				}
 			}
 
-		} else if (strcmp(argv[i], "-charset") == 0) {
+		} else if (is("-charset")) {
 			if (haveCharSet) {
 				std::cerr << "Single -charset only\n";
 				return false;
@@ -258,20 +260,27 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				std::cerr << "No argument for -charset\n";
 				return false;
 			}
-			if (CharacterSetFromString(argv[i]) == CharacterSet::Unknown) {
+			CharacterSet cs;
+			std::string argvi(argv[i]);
+			if (std::find_if_not(argvi.begin(), argvi.end(), zx_isdigit) == argvi.end()) { // Allow numeric ECI
+				cs = ToCharacterSet(ECI(std::stoi((argvi))));
+			} else {
+				cs = CharacterSetFromString(argvi);
+			}
+			if (cs == CharacterSet::Unknown) {
 				std::cerr << "Unknown character set '" << argv[i] << "'\n";
 				return false;
 			}
-			opts.setCharacterSet(argv[i]);
-		} else if (strcmp(argv[i], "-textonly") == 0) {
+			opts.setCharacterSet(cs);
+		} else if (is("-textonly")) {
 			textOnly = true;
-		} else if (strcmp(argv[i], "-diagnostics") == 0) {
+		} else if (is("-diagnostics")) {
 #ifdef ZX_DIAGNOSTICS
 			opts.setEnableDiagnostics(true);
 #else
 			std::cerr << "Warning: ignoring '-diagnostics' option, BUILD_DIAGNOSTICS not enabled\n";
 #endif
-		} else if (strcmp(argv[i], "-escape") == 0) {
+		} else if (is("-escape")) {
 			angleEscape = true;
 		} else {
 			std::cerr << "Unknown option '" << argv[i] << "'\n";
@@ -455,6 +464,7 @@ int main(int argc, char* argv[])
 
 	std::string text = appendBinIfTextEmpty(result);
 	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
+	std::cout << "Bytes:      " << ToHex(result.bytes()) << "\n";
 	std::cout << "Length:     " << text.size() << "\n";
 
 	if (Size(result.ECIs()))

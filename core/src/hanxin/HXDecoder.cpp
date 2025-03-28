@@ -383,7 +383,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel).setDataMask(mask).setVersionNumber(version);
 }
 
 } // namespace ZXing::HanXin

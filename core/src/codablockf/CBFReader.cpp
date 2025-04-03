@@ -84,6 +84,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 
 		PatternView next = view.subView(0, CHAR_LEN);
 		if (!DetectStartCode(next)) {
+			//fprintf(stderr, "rowNumber:%d !DetectStartCode\n", rowNumber);
 			continue;
 		}
 		xStart = next.pixelsInFront();
@@ -109,6 +110,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			rawCodes.push_back(narrow_cast<uint8_t>(code));
 		}
 		if (Size(rawCodes) < 7) { // subset selector + row indicator + min 4 data chars + check char
+			//fprintf(stderr, "rowNumber:%d Size(rawCodes) %d < 7 \n", rowNumber, Size(rawCodes));
 			continue;
 		}
 
@@ -117,7 +119,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 			checksum += i * rawCodes[i];
 		checksum %= 103;
 		if (checksum != rawCodes.back()) {
-			//fprintf(stderr, "error checksum %d != %d (rawCodes.back)\n", checksum, rawCodes.back());
+			//fprintf(stderr, "rowNumber:%d checksum %d != %d (rawCodes.back)\n", rowNumber, checksum, rawCodes.back());
 			continue;
 		}
 

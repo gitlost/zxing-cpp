@@ -603,7 +603,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 		ByteArray& codewordBytes = dataBlock.codewords;
 		const int numDataCodewords = dataBlock.numDataCodewords;
 		if (!CorrectErrors(field, codewordBytes, numDataCodewords)) {
-			//printf(" checksum fail\n");
+			//fprintf(stderr, " checksum fail\n");
 			return {};
 		}
 

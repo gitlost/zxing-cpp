@@ -226,6 +226,10 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 				std::cerr << "Invalid argument for -width (digits only)\n";
 				return false;
 			}
+			if (width == 0) {
+				std::cerr << "Invalid argument for -width (zero)\n";
+				return false;
+			}
 
 		} else if (is("-opts")) {
 			if (++i == argc) {

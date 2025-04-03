@@ -371,7 +371,7 @@ int main(int argc, char* argv[])
 			std::string text = appendBinIfTextEmpty(barcode);
 			std::cout << "Text:         \"" << (cli.angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
 			if (options.textMode() != TextMode::Plain)
-				std::cout << "Text " << mode << ":     \"" << barcode.text() << "\"\n";
+				std::cout << "Text " << mode << ":     \"" << EscapeNonGraphical(barcode.text()) << "\"\n";
 			std::cout << "Bytes:        " << ToHex(barcode.bytes()) << "\n";
 			if (options.textMode() == TextMode::ECI)
 				std::cout << "Bytes ECI:    " << ToHex(barcode.bytesECI()) << "\n";

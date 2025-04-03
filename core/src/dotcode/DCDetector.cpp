@@ -43,8 +43,8 @@ namespace ZXing::DotCode {
 #if 0
 static void print_row(const PatternRow& row, const char *prefix = NULL) {
 	if (prefix && *prefix) fputs(prefix, stdout);
-	for (int i = 0; i < Size(row); i++) printf(" %d:%d,", i, row[i]);
-	printf("\n");
+	for (int i = 0; i < Size(row); i++) fprintf(stderr, " %d:%d,", i, row[i]);
+	fprintf(stderr, "\n");
 }
 #endif
 
@@ -58,14 +58,17 @@ static DetectorResult DetectPure(const BitMatrix& image)
 {
 	int left, top, width, height;
 	if (!image.findBoundingBox(left, top, width, height, 8)) {
-		//printf("FAIL !findBoundingBox\n");
+		//fprintf(stderr, " FAIL !findBoundingBox\n");
 		left = top = 0;
 		width = image.width();
 		height = image.height();
 	}
 
 	PointI center(left + width / 2, top + height / 2);
-	//printf("  findBoundingBox left %d, top %d, width %d, height %d, image.height %d, width %d, center.x %d, center.y %d\n", left, top, width, height, image.height(), image.width(), center.x, center.y);
+	#if 0
+	fprintf(stderr, "  findBoundingBox left %d, top %d, width %d, height %d, image.height %d, width %d, center.x %d, center.y %d\n",
+			left, top, width, height, image.height(), image.width(), center.x, center.y);
+	#endif
 
 	const int yHeight = height < image.height() ? height + 1 : image.height();
 
@@ -77,7 +80,7 @@ static DetectorResult DetectPure(const BitMatrix& image)
 		if (left) {
 			row[0] -= left;
 		}
-		//printf("  row %d: ", y); print_row(row, "");
+		//fprintf(stderr, "  row %d: ", y); print_row(row, "");
 		if (Size(row) != 1) {
 			if (prev_y == -1) {
 				prev_y = y;
@@ -97,11 +100,11 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	}
 	#if 0
 	if ((hMin & 1) && (vMin & 1)) {
-		printf("FAIL both hMin %d and vMin %d odd\n", hMin, vMin);
+		fprintf(stderr, "FAIL both hMin %d and vMin %d odd\n", hMin, vMin);
 		return {};
 	}
 	if (std::abs(hMin - vMin) != 1) {
-		printf("FAIL hMin %d and vMin %d not within one of each other\n", hMin, vMin);
+		fprintf(stderr, "FAIL hMin %d and vMin %d not within one of each other\n", hMin, vMin);
 		return {};
 	}
 	#endif
@@ -109,7 +112,7 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	const int modSize = hMin < vMin ? hMin : vMin;
 	const int bitsWidth = (width + modSize - 1) / modSize;
 	const int bitsHeight = (height + modSize - 1) / modSize;
-	//printf("  hMin %d, vMin %d, bitsWidth %d, bitsHeight %d, modSize %d\n", hMin, vMin, bitsWidth, bitsHeight, modSize);
+	//fprintf(stderr, "  hMin %d, vMin %d, bitsWidth %d, bitsHeight %d, modSize %d\n", hMin, vMin, bitsWidth, bitsHeight, modSize);
 	if (bitsWidth < 5 || bitsHeight < 5) {
 		return {};
 	}
@@ -120,14 +123,14 @@ static DetectorResult DetectPure(const BitMatrix& image)
 	BitMatrix bits(bitsWidth, bitsHeight);
 	for (int y = top, by = 0; y < image.height() && by < bitsHeight; y += modSize, by++) {
 		for (int x = left, bx = 0; x < image.width() && bx < bitsWidth; x += modSize, bx++) {
-			//printf("   %d", image.get(x, y));
+			//fprintf(stderr, "   %d", image.get(x, y));
 			if (image.get(x, y)) {
 				bits.set(bx, by);
 			}
 		}
-		//printf("\n");
+		//fprintf(stderr, "\n");
 	}
-	//printf("\n");
+	//fprintf(stderr, "\n");
 	#endif
 
 	const int right  = left + width - 1;

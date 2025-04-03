@@ -170,7 +170,7 @@ static void addCodeword(struct State& state, bool val, ByteArray& result, std::v
 		state.pattern |= 1;
 	}
 	if (++state.pattern_i == 9) {
-		//printf(" %X", state.pattern);
+		//fprintf(stderr, " %X", state.pattern);
 		int codeword = lookupPattern(state.pattern);
 		if (codeword == -1) {
 			if (state.pattern != 0x1ff) { // Padding
@@ -247,6 +247,10 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 				addCodeword(state, image.get(x, y), result, erasureLocs);
 			}
 			if (erasureLocs.size() > erasureEarlyCutoff && erasureLocs.size() * 2 > result.size()) {
+				#if 0
+				fprintf(stderr, " BitMatrixParser::ReadCodewords: fail, erasureLocs.size() %d, erasureEarlyCutoff %d, result.size() %d\n",
+						(int) erasureLocs.size(), erasureEarlyCutoff, (int) result.size());
+				#endif
 				return {};
 			}
 		}
@@ -263,6 +267,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 		// TODO: fix erasureLocs
 	}
 	if (erasureLocs.size() > 1 && erasureLocs.size() * 14 > result.size()) { // ~7%
+		//fprintf(stderr, " BitMatrixParser::ReadCodewords: fail, erasureLocs.size() %d, result.size() %d\n", (int) erasureLocs.size(), (int) result.size());
 		return {};
 	}
 

@@ -143,7 +143,8 @@ static std::string ConstructText(Pair leftPair, Pair rightPair)
 	auto txt = ToString(Value(leftPair, rightPair), 13);
 	char chkDigit = GTIN::ComputeCheckDigit(txt);
 	Diagnostics::fmt("CheckDigit(%c)", chkDigit);
-	return txt + chkDigit;
+	// see ISO/IEC 24724:2011 Section 9
+	return "01" + txt + chkDigit;
 }
 
 struct State : public RowReader::DecodingState
@@ -197,7 +198,7 @@ Barcode DataBarReader::decodePattern(int rowNumber, PatternView& next, std::uniq
 			if (ChecksumIsValid(leftPair, rightPair)) {
 				Diagnostics::put("  Decode:");
 				// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
-				Barcode res{DecoderResult(Content(ByteArray(ConstructText(leftPair, rightPair)), {'e', '0'}))
+				Barcode res{DecoderResult(Content(ByteArray(ConstructText(leftPair, rightPair)), {'e', '0', 0, AIFlag::GS1}))
 								.setLineCount(EstimateLineCount(leftPair, rightPair)),
 							{{}, EstimatePosition(leftPair, rightPair)},
 							BarcodeFormat::DataBar};

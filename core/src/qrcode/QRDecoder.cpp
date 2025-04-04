@@ -78,8 +78,8 @@ static void DecodeHanziSegment(BitSource& bits, int count, Content& result, Char
 			// In the 0xB0A1 to 0xFAFE range
 			assembledTwoBytes += 0x0A6A1;
 		}
-		result += narrow_cast<uint8_t>((assembledTwoBytes >> 8) & 0xFF);
-		result += narrow_cast<uint8_t>(assembledTwoBytes & 0xFF);
+		result.push_back((assembledTwoBytes >> 8) & 0xFF);
+		result.push_back(assembledTwoBytes & 0xFF);
 		count--;
 	}
 }
@@ -107,8 +107,8 @@ static void DecodeKanjiSegment(BitSource& bits, int count, Content& result, Char
 			// In the 0xE040 to 0xEBBF range
 			assembledTwoBytes += 0x0C140;
 		}
-		result += narrow_cast<uint8_t>(assembledTwoBytes >> 8);
-		result += narrow_cast<uint8_t>(assembledTwoBytes);
+		result.push_back(assembledTwoBytes >> 8);
+		result.push_back(assembledTwoBytes);
 		count--;
 	}
 }
@@ -124,7 +124,7 @@ static void DecodeByteSegment(BitSource& bits, int count, Content& result, Chara
 	result.reserve(count);
 
 	for (int i = 0; i < count; i++)
-		result += narrow_cast<uint8_t>(bits.readBits(8));
+		result.push_back(bits.readBits(8));
 }
 
 static char ToAlphaNumericChar(int value)
@@ -181,7 +181,7 @@ static void DecodeAlphanumericSegment(BitSource& bits, int count, Content& resul
 		currentCharset = cs;
 		result.switchEncoding(cs);
 	}
-	result += buffer;
+	result.append(buffer);
 }
 
 static void DecodeNumericSegment(BitSource& bits, int count, Content& result, CharacterSet& currentCharset)
@@ -300,9 +300,9 @@ DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCo
 				appInd = bits.readBits(8); // Number 00-99 or ASCII value + 100
 				Diagnostics::fmt("FNC1(2nd,%d)", appInd);
 				if (appInd < 100) // "00-09"
-					result += ZXing::ToString(appInd, 2);
+					result.append(ZXing::ToString(appInd, 2));
 				else if ((appInd >= 165 && appInd <= 190) || (appInd >= 197 && appInd <= 222)) // "A-Za-z"
-					result += narrow_cast<uint8_t>(appInd - 100);
+					result.push_back(appInd - 100);
 				else
 					throw FormatError("Invalid AIM Application Indicator");
 				result.symbology.aiFlag = AIFlag::AIM; // see also above

@@ -303,7 +303,7 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 			throw FormatError("incomplete Base256 segment");
 		}
 
-		result += narrow_cast<uint8_t>(Unrandomize255State(bits.readBits(8), codewordPosition++));
+		result.push_back(Unrandomize255State(bits.readBits(8), codewordPosition++));
 	}
 }
 

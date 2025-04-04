@@ -226,7 +226,6 @@ static constexpr BarcodeFormatZXing2Zint barcodeFormatZXing2Zint[] = {
 static int ParseECLevel(int symbology, std::string_view s)
 {
 	constexpr std::string_view EC_LABELS_QR[4] = {"L", "M", "Q", "H"};
-
 	int res = 0;
 
 	// Convert L/M/Q/H to Zint 1-4
@@ -249,20 +248,15 @@ static int ParseECLevel(int symbology, std::string_view s)
 	};
 
 	// Convert percentage to Zint
-	if (s.back()=='%'){
+	if (s.back() == '%') {
 		switch (symbology) {
-		case BARCODE_QRCODE:
-			return findClosestECLevel({20, 37, 55, 65}, res);
-		case BARCODE_MICROQR:
-			return findClosestECLevel({20, 37, 55}, res);
-		case BARCODE_RMQR:
-			return res <= 46 ? 2 : 4;
-		case BARCODE_AZTEC:
-			return findClosestECLevel({10, 23, 36, 50}, res);
+		case BARCODE_QRCODE: return findClosestECLevel({20, 37, 55, 65}, res);
+		case BARCODE_MICROQR: return findClosestECLevel({20, 37, 55}, res);
+		case BARCODE_RMQR: return res <= 46 ? 2 : 4;
+		case BARCODE_AZTEC: return findClosestECLevel({10, 23, 36, 50}, res);
 		case BARCODE_PDF417:
 			// TODO: do something sensible with PDF417?
-		case BARCODE_HANXIN:
-			return findClosestECLevel({8, 15, 23, 30}, res);
+		case BARCODE_HANXIN: return findClosestECLevel({8, 15, 23, 30}, res);
 
 		default:
 			return -1;
@@ -342,7 +336,7 @@ static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& o
 	} else if (format == BarcodeFormat::Code39) {
 		if (FindIf(ba, zx_iscntrl) != ba.end()) // Extended Code 39?
 			ret.modifier = static_cast<char>(ret.modifier + 4);
-	} else if (opts.gs1() && SupportsGS1(format)) {
+	} else if ((opts.gs1() && SupportsGS1(format)) || format == BarcodeFormat::DataBar || format == BarcodeFormat::DataBarLimited) {
 		if (format == BarcodeFormat::Aztec || format == BarcodeFormat::Code128 || format == BarcodeFormat::Code16K
 				|| format == BarcodeFormat::DotCode)
 			ret.modifier = '1';
@@ -562,7 +556,7 @@ zint_symbol* CreatorOptions::zint() const
 
 #define CHECK(ZINT_CALL) \
 	if (int err = (ZINT_CALL); err >= ZINT_ERROR) \
-		throw std::invalid_argument(zint->errtxt)
+		throw std::invalid_argument(std::string(zint->errtxt) + " (retval: " + std::to_string(err) + ")");
 
 #define CHECK_NO_ERRTXT(ZINT_CALL) \
 	if (int err = (ZINT_CALL); err >= ZINT_ERROR) \
@@ -619,8 +613,8 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 		auto end = std::min(ba.begin() + EANUPCLength(format) + 1, ba.end());
 		if (auto p = std::find(ba.begin(), end, '+'); p != end)
 			std::replace(p, p, '+', ' ');
-	} else if (format == BarcodeFormat::DataBarLimited) {
-		// Add "01" prefix (note BarcodeFormat::DataBar does not include prefix)
+	} else if (format == BarcodeFormat::DataBar || format == BarcodeFormat::DataBarLimited) {
+		// Add "01" prefix
 		ba.insert(ba.begin(), {'0', '1'});
 	} else if (format == BarcodeFormat::DXFilmEdge) {
 		// Convert "DDDD" to "DDD-DD" and "DDDDFF" to "DDD-DD/FF" (FF frame no.)

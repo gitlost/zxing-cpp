@@ -390,8 +390,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		// Note not marked as GS1, and not prefixed with "01" by ODDataBarReader (unlike ODDataBarLimitedReader)
-		check(__LINE__, barcode, "]e0", "00000000012348", "30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\00002600000000012348", "5D 65 30 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "00000000012348", "Text", "1x0 96x0 96x32 1x32");
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 96x0 96x32 1x32");
 
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
@@ -409,7 +408,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 		cOpts.stacked(true);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
 		// Note not marked as GS1, and not prefixed with "01" by ODDataBarReader (unlike ODDataBarLimitedReader)
-		check(__LINE__, barcode, "]e0", "00000000012348", "30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\00002600000000012348", "5D 65 30 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "00000000012348", "Text", "1x0 50x0 50x68 1x68");
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 50x0 50x68 1x68");
 
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
@@ -459,7 +458,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
 		// Note not marked as GS1, and hence HRI AI not parenthesized TODO: check
-		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "0100000000012348", "Text", "1x0 73x0 73x9 1x9");
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 73x0 73x9 1x9");
 
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);

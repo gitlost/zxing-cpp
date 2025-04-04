@@ -79,10 +79,17 @@ void put(const int value)
 	put(nullptr, value);
 }
 
+#ifdef __cpp_lib_span
+void put(std::span<const uint8_t> value, int begin, int end)
+{
+	put(nullptr, value, begin, end);
+}
+#else
 void put(const ByteArray& value, int begin, int end)
 {
 	put(nullptr, value, begin, end);
 }
+#endif
 
 // https://stackoverflow.com/a/49812018/664741
 void fmt(const char* const format, ...)
@@ -205,6 +212,22 @@ void put(std::list<std::string>* p_diagnostics, const int value)
 	}
 }
 
+#ifdef __cpp_lib_span
+void put(std::list<std::string>* p_diagnostics, std::span<const uint8_t> value, int begin, int end)
+{
+	if (_enabled) {
+		if (begin == -1) {
+			begin = 0;
+		}
+		if (end == -1) {
+			end = narrow_cast<int>(value.size());
+		}
+		for (int i = begin; i < end; i++) {
+			chr(p_diagnostics, value[i], "", true/*appendHex*/);
+		}
+	}
+}
+#else
 void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begin, int end)
 {
 	if (_enabled) {
@@ -219,6 +242,7 @@ void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begi
 		}
 	}
 }
+#endif
 
 void fmt(std::list<std::string>* p_diagnostics, const char* const format, ...)
 {

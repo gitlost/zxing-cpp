@@ -18,6 +18,9 @@
 #include "ByteArray.h"
 
 #include <list>
+#if __has_include(<span>) // c++20
+#include <span>
+#endif
 #include <string>
 #include <vector>
 
@@ -38,7 +41,11 @@ void clear();
 
 void put(const std::string& value);
 void put(const int value);
+#ifdef __cpp_lib_span
+void put(std::span<const uint8_t> value, int begin = -1, int end = -1);
+#else
 void put(const ByteArray& value, int begin = -1, int end = -1);
+#endif
 void fmt(const char* const format, ...);
 void chr(const unsigned char value, const char* const prefixIfNonASCII = "", const bool appendHex = true);
 void dump(const std::vector<int> value, const char* const postfix = "", int begin = -1, int end = -1, bool hex = false);
@@ -48,7 +55,11 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 
 void put(std::list<std::string>* p_diagnostics, const std::string& value);
 void put(std::list<std::string>* p_diagnostics, const int value);
+#ifdef __cpp_lib_span
+void put(std::list<std::string>* p_diagnostics, std::span<const uint8_t> value, int begin = -1, int end = -1);
+#else
 void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begin = -1, int end = -1);
+#endif
 void fmt(std::list<std::string>* p_diagnostics, const char* const format, ...);
 void chr(std::list<std::string>* p_diagnostics, const unsigned char value, const char* const prefixIfNonASCII = "",
 		 const bool appendHex = false);
@@ -64,7 +75,11 @@ static inline void clear() {}
 
 static inline void put(const std::string& /*value*/) {}
 static inline void put(const int /*value*/) {}
+#ifdef __cpp_lib_span
+static inline void put(std::span<const uint8_t> /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
+#else
 static inline void put(const ByteArray& /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
+#endif
 static inline void fmt(const char* const /*format*/, ...) {}
 static inline void chr(const unsigned char /*value*/, const char* const /*prefixIfNonASCII*/ = "", const bool /*appendHex*/ = true) {}
 static inline void dump(const std::vector<int> /*value*/, const char* const /*postfix*/ = "", int /*begin*/ = -1, int /*end*/ = -1, bool /*hex*/ = false) {}

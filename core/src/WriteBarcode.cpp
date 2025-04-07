@@ -613,15 +613,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 		auto end = std::min(ba.begin() + EANUPCLength(format) + 1, ba.end());
 		if (auto p = std::find(ba.begin(), end, '+'); p != end)
 			std::replace(p, p, '+', ' ');
-	} else if (format == BarcodeFormat::DataBar || format == BarcodeFormat::DataBarLimited) {
-		// Add "01" prefix
-		ba.insert(ba.begin(), {'0', '1'});
-	} else if (format == BarcodeFormat::DXFilmEdge) {
-		// Convert "DDDD" to "DDD-DD" and "DDDDFF" to "DDD-DD/FF" (FF frame no.)
-		std::string text = std::string(reinterpret_cast<const char *>(zint->raw_segs[0].source), zint->raw_segs[0].length);
-		int dxcode = std::stoi(text.substr(0, 4));
-		std::string frame = text.size() > 4 ? "/" + text.substr(4) : "";
-		ba = ByteArray(std::to_string(dxcode >> 4) + "-" + std::to_string(dxcode & 0xF) + frame);
 	} else if (format == BarcodeFormat::Code93) {
 		// Remove checksum digits
 		if (ba.size() > 2)

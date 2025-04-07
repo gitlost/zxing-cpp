@@ -508,16 +508,10 @@ TEST(WriteBarcodeTest, ZintASCII)
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
-		wOpts.scale(3); // Needs at least 3 pixels for `ReadBarcode()` to work
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/, false /*cmpBits*/);
-		EXPECT_EQ(ToString(readBarcode.position()), "0x10 68x10 68x10 0x10"); // TODO: check x position difference (3 x 22 != 68) (2 diff)
-
-		// Scale CreateBarcode bits
-		BitMatrix bits = Inflate(barcode.bits().copy(), barcode.bits().width() * 3, barcode.bits().height() * 3, 0 /*quietZone*/);
-		std::string bitsStr = ToString(bits, 'X', ' ', false /*addSpace*/);
-		std::string readBitsStr = ToString(readBarcode.bits(), 'X', ' ', false /*addSpace*/);
-		EXPECT_EQ(bitsStr, readBitsStr);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x4 22x4 22x4 0x4");
+		check_x_position(__LINE__, barcode, readBarcode);
 #endif
 	}
 	{
@@ -531,16 +525,10 @@ TEST(WriteBarcodeTest, ZintASCII)
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
-		wOpts.scale(3); // Needs at least 3 pixels for `ReadBarcode()` to work
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/, false /*cmpBits*/);
-		EXPECT_EQ(ToString(readBarcode.position()), "0x10 92x10 92x10 0x10"); // TODO: check x position difference (3 x 30 != 92) (2 diff)
-
-		// Scale CreateBarcode bits
-		BitMatrix bits = Inflate(barcode.bits().copy(), barcode.bits().width() * 3, barcode.bits().height() * 3, 0 /*quietZone*/);
-		std::string bitsStr = ToString(bits, 'X', ' ', false /*addSpace*/);
-		std::string readBitsStr = ToString(readBarcode.bits(), 'X', ' ', false /*addSpace*/);
-		EXPECT_EQ(bitsStr, readBitsStr);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x4 30x4 30x4 0x4");
+		check_x_position(__LINE__, barcode, readBarcode);
 #endif
 	}
 	{

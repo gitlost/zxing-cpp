@@ -80,6 +80,7 @@ public:
 	void append(std::span<const uint8_t> ba) { bytes.insert(bytes.end(), ba.begin(), ba.end()); Diagnostics::put(ba); }
 #else
 	void append(const ByteArray& ba) { bytes.insert(bytes.end(), ba.begin(), ba.end()); Diagnostics::put(ba); }
+	void append(std::basic_string_view<uint8_t> ba) { bytes.insert(bytes.end(), ba.begin(), ba.end()); Diagnostics::put(ba); }
 #endif
 	void append(const Content& other);
 

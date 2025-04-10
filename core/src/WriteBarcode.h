@@ -27,7 +27,7 @@ class CreatorOptions
 	friend Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions& options);
 
 public:
-	CreatorOptions(BarcodeFormat format);
+	CreatorOptions(BarcodeFormat format, std::string options = {});
 
 	~CreatorOptions();
 	CreatorOptions(CreatorOptions&&);
@@ -36,7 +36,7 @@ public:
 	zint_symbol* zint() const;
 
 #define ZX_PROPERTY(TYPE, NAME) \
-	TYPE NAME() const noexcept; \
+	const TYPE& NAME() const noexcept; \
 	CreatorOptions& NAME(TYPE v)&; \
 	CreatorOptions&& NAME(TYPE v)&&;
 
@@ -46,19 +46,25 @@ public:
 	ZX_PROPERTY(std::string, ecLevel)
 	ZX_PROPERTY(bool, withQuietZones)
 #ifdef ZXING_USE_ZINT
-	ZX_PROPERTY(bool, stacked)
 	ZX_PROPERTY(int, margin)
 	ZX_PROPERTY(CharacterSet, encoding)
 	ZX_PROPERTY(int, rotate)
 	ZX_PROPERTY(ECI, eci)
-	ZX_PROPERTY(int, vers)
-	ZX_PROPERTY(int, mask)
 	ZX_PROPERTY(float, height)
-	ZX_PROPERTY(bool, gs1)
 	ZX_PROPERTY(bool, debug)
 #endif
+	ZX_PROPERTY(std::string, options)
 
 #undef ZX_PROPERTY
+
+#define ZX_RO_PROPERTY(TYPE, NAME) \
+	TYPE NAME() const noexcept;
+
+	ZX_RO_PROPERTY(bool, gs1);
+	ZX_RO_PROPERTY(bool, stacked);
+	ZX_RO_PROPERTY(std::string_view, version);
+	ZX_RO_PROPERTY(std::string_view, datamask);
+#undef ZX_RO_PROPERTY
 };
 
 /**

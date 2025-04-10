@@ -46,38 +46,18 @@ Result::Result(const std::string& text, int y, int xStart, int xStop, BarcodeFor
 	}
 }
 
-#ifdef ZXING_EXPERIMENTAL_API
-Result::Result(Content&& content, BarcodeFormat format, Error error, bool readerInit,
-			   std::string ecLevel, Position position, int versionNumber, int dataMask)
-	: _content(std::move(content)),
-	  _error(error),
-	  _position(position),
-	  _format(format),
-	  _dataMask(dataMask),
-	  _readerInit(readerInit)
-{
-	if (!ecLevel.empty())
-		snprintf(_ecLevel, 4, "%s", ecLevel.data());
-	if (versionNumber)
-		snprintf(_version, 4, "%d", versionNumber);
-	if (Diagnostics::enabled()) {
-		Diagnostics::moveTo(_diagnostics);
-	}
-}
-#endif
-
 Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format)
 	: _content(std::move(decodeResult).content()),
 	  _error(std::move(decodeResult).error()),
 	  _position(std::move(detectorResult).position()),
 	  _sai(decodeResult.structuredAppend()),
 	  _format(format),
-	  _dataMask(decodeResult.dataMask()),
 	  _lineCount(decodeResult.lineCount()),
 	  _isMirrored(decodeResult.isMirrored()),
 	  _readerInit(decodeResult.readerInit())
 #ifdef ZXING_EXPERIMENTAL_API
 	  , _symbol(std::make_shared<BitMatrix>(std::move(detectorResult).bits()))
+	  , _json(std::move(decodeResult).json())
 #endif
 {
 	if (decodeResult.versionNumber())
@@ -195,11 +175,6 @@ std::string Result::version() const
 	return _version;
 }
 
-int Result::dataMask() const
-{
-	return _dataMask;
-}
-
 Result& Result::setReaderOptions(const ReaderOptions& opts)
 {
 	if (opts.characterSet() != CharacterSet::Unknown)
@@ -242,19 +217,19 @@ void Result::setContentDiagnostics()
 
 bool Result::operator==(const Result& o) const
 {
-	// handle case where both are MatrixCodes first
-	if (!BarcodeFormats(BarcodeFormat::LinearCodes).testFlags(format() | o.format())) {
-		if (format() != o.format() || (bytes() != o.bytes() && isValid() && o.isValid()))
+	if (format() != o.format())
+		return false;
+
+	// handle MatrixCodes first
+	if (!IsLinearBarcode(format())) {
+		if (bytes() != o.bytes() && isValid() && o.isValid())
 			return false;
 
 		// check for equal position if both are valid with equal bytes or at least one is in error
 		return IsInside(Center(o.position()), position());
 	}
 
-	if (format() != o.format() || bytes() != o.bytes() || error() != o.error())
-		return false;
-
-	if (orientation() != o.orientation())
+	if (bytes() != o.bytes() || error() != o.error() || orientation() != o.orientation())
 		return false;
 
 	if (lineCount() > 1 && o.lineCount() > 1)

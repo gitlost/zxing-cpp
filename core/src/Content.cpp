@@ -235,13 +235,13 @@ CharacterSet Content::guessEncoding() const
 
 	return TextDecoder::GuessEncoding(input.data(), input.size(), CharacterSet::ISO8859_1);
 #else
-	return CharacterSet::Unknown;
+	return CharacterSet::ISO8859_1;
 #endif
 }
 
 ContentType Content::type() const
 {
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
+#if 1 //def ZXING_READERS
 	if (empty())
 		return ContentType::Text;
 

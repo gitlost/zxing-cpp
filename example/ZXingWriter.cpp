@@ -7,6 +7,7 @@
 #ifdef ZXING_USE_ZINT
 #include "ECI.h"
 #endif
+#include "JSON.h"
 #include "Utf.h"
 #include "WriteBarcode.h"
 #else
@@ -41,18 +42,15 @@ static void PrintUsage(const char* exePath)
 			  << "    -verbose    Print barcode information\n"
 #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
 			  << "    -scale      Set X-dimension of generated image\n"
-			  << "    -stacked    Use stacked version of DataBar\n"
 			  << "    -margin     Margin around barcode\n"
 			  << "    -encoding   Encoding used to encode input text\n"
 			  << "    -eci        Set ECI\n"
-			  << "    -vers       Set version of symbol\n"
-			  << "    -mask       Set data mask of symbol\n"
 			  << "    -height     Set height in X-dimensions of linear symbol\n"
-			  << "    -gs1        GS1 symbol\n"
 			  << "    -readerinit Reader Initialisation/Programming\n"
 			  << "    -rotate     Rotate 0, 90, 180, 270 degrees\n"
 			  << "    -debug      Print debug information\n"
 #endif
+			  << "    -options    Comma separated list of symbology specific options and flags\n"
 			  << "    -help       Print usage information\n"
 			  << "    -version    Print version information\n"
 			  << "\n"
@@ -87,6 +85,7 @@ struct CLI
 	std::string input;
 	std::string outPath;
 	std::string ecLevel;
+	std::string options;
 	bool inputIsFile = false;
 	bool withHRT = false;
 	bool withQZ = true;
@@ -94,13 +93,9 @@ struct CLI
 #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
 	int scale = 0;
 	CharacterSet encoding = CharacterSet::Unknown;
-	bool stacked = false;
 	int margin = 0;
 	ECI eci = ECI::Unknown;
-	int vers = 0;
-	int mask = -1;
 	float height = 0.0f;
-	bool gs1 = false;
 	bool readerInit = false;
 	bool debug = false;
 #endif
@@ -129,8 +124,6 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.margin = std::stoi(argv[i]);
-		} else if (is("-stacked")) {
-			cli.stacked = true;
 		} else if (is("-encoding")) {
 			if (++i == argc)
 				return false;
@@ -145,20 +138,10 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 				std::cerr << "Unrecognized ECI: " << argv[i] << std::endl;
 				return false;
 			}
-		} else if (is("-vers")) {
-			if (++i == argc)
-				return false;
-			cli.vers = std::stoi(argv[i]);
-		} else if (is("-mask")) {
-			if (++i == argc)
-				return false;
-			cli.mask = std::stoi(argv[i]);
 		} else if (is("-height")) {
 			if (++i == argc)
 				return false;
 			cli.height = std::stof(argv[i]);
-		} else if (is("-gs1")) {
-			cli.gs1 = true;
 		} else if (is("-readerinit")) {
 			cli.readerInit = true;
 		} else if (is("-debug")) {
@@ -174,6 +157,10 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			cli.withHRT = true;
 		} else if (is("-noqz")) {
 			cli.withQZ = false;
+		} else if (is("-options")) {
+			if (++i == argc)
+				return false;
+			cli.options = argv[i];
 		} else if (is("-verbose")) {
 			cli.verbose = true;
 		} else if (is("-help") || is("--help")) {
@@ -246,10 +233,10 @@ int main(int argc, char* argv[])
 
 	try {
 #ifdef ZXING_EXPERIMENTAL_API
-		auto cOpts = CreatorOptions(cli.format).ecLevel(cli.ecLevel);
+		auto cOpts = CreatorOptions(cli.format).ecLevel(cli.ecLevel).options(cli.options);
 #ifdef ZXING_USE_ZINT
-		cOpts.withQuietZones(cli.withQZ).encoding(cli.encoding).margin(cli.margin).stacked(cli.stacked)
-			 .eci(cli.eci).vers(cli.vers).mask(cli.mask).height(cli.height).gs1(cli.gs1)
+		cOpts.withQuietZones(cli.withQZ).encoding(cli.encoding).margin(cli.margin)
+			 .eci(cli.eci).height(cli.height)
 			 .readerInit(cli.readerInit).debug(cli.debug).rotate(cli.rotate);
 #endif
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts) : CreateBarcodeFromText(cli.input, cOpts);
@@ -301,7 +288,7 @@ int main(int argc, char* argv[])
 				std::cout << "Version:    " << barcode.version() << azType << "\n";
 			}
 			if (barcode.format() == BarcodeFormat::QRCode || barcode.format() == BarcodeFormat::MicroQRCode)
-				std::cout << "Data Mask:  " << std::to_string(barcode.dataMask()) << "\n";
+				std::cout << "Data Mask:  " << JsonGetStr(barcode.extra(), "DataMask") << "\n";
 			if (barcode.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 			std::cout << WriteBarcodeToUtf8(barcode);

@@ -122,7 +122,7 @@ static BitArray ExtractBits(const DetectorResult& ddata)
 /**
 * @brief Performs RS error correction on an array of bits.
 */
-static BitArray CorrectBits(const DetectorResult& ddata, const BitArray& rawbits)
+static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const BitArray& rawbits)
 {
 	const GenericGF* gf = nullptr;
 	int codewordSize;
@@ -170,7 +170,7 @@ static BitArray CorrectBits(const DetectorResult& ddata, const BitArray& rawbits
 			correctedBits.appendBits(dataWord, codewordSize);
 	}
 
-	return correctedBits;
+	return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
 }
 
 /**
@@ -385,7 +385,7 @@ DecoderResult Decode(const DetectorResult& detectorResult)
 			return DecodeRune(detectorResult);
 		}
 		auto rawBits = ExtractBits(detectorResult);
-		auto bits = CorrectBits(detectorResult, rawBits);
+		auto [bits, ecLevel] = CorrectBits(detectorResult, rawBits);
 
 		const int layers = detectorResult.nbLayers();
 		const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
@@ -400,7 +400,7 @@ DecoderResult Decode(const DetectorResult& detectorResult)
 
 		auto result = Decode(bits);
 		if (result.isValid())
-			result.setEcLevel(std::to_string((numECCodewords - 3) * 100 / numCodewords) + "%");
+			result.setEcLevel(std::to_string(ecLevel) + "%");
 		return result;
 	} catch (Error e) {
 		return e;

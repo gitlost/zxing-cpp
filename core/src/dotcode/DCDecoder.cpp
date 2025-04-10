@@ -24,6 +24,7 @@
 #include "DCBitMatrixParser.h"
 #include "DCDataBlock.h"
 #include "DCGField.h"
+#include "JSON.h"
 #include "ReedSolomonDecoder.h"
 #include "ZXTestSupport.h"
 
@@ -613,12 +614,12 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 		}
 	}
 
-	int mask;
-	Unmask(resultBytes, mask);
+	int dataMask;
+	Unmask(resultBytes, dataMask);
 
 	Diagnostics::fmt("  Unmasked:   (%d)", resultBytes.size()); Diagnostics::dump(resultBytes, "\n");
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset).setDataMask(mask);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset).setJson(JsonValue("DataMask", dataMask));
 }
 
 } // namespace ZXing::DotCode

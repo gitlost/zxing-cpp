@@ -11,6 +11,7 @@
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"
+#include "JSON.h"
 #include "QRBitMatrixParser.h"
 #include "QRCodecMode.h"
 #include "QRDataBlock.h"
@@ -411,11 +412,14 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	}
 	Diagnostics::fmt("  Codewords:  (%d)", Size(resultBytes)); Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
+	auto versionStr = version.isRMQR() ? "R" + ToString(Version::SymbolSize(version.versionNumber(), version.type()), true)
+									   : (version.isMicro() ? "M" : "") + std::to_string(version.versionNumber());
+
 	// Decode the contents of that stream of bytes
 	Diagnostics::put("  Decode:     ");
 	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset)
-		.setDataMask(formatInfo.dataMask)
-		.setIsMirrored(formatInfo.isMirrored);
+		.setIsMirrored(formatInfo.isMirrored)
+		.setJson(JsonValue("DataMask", formatInfo.dataMask) + JsonValue("Version", versionStr));
 	if (error)
 		ret.setError(error);
 	return ret;

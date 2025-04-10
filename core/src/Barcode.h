@@ -70,11 +70,6 @@ public:
 	Result(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
 		   bool readerInit = false);
 
-#ifdef ZXING_EXPERIMENTAL_API
-	Result(Content&& content, BarcodeFormat format, Error error = {}, bool readerInit = false,
-		   std::string ecLevel = {}, Position position = {}, int versionNumber = 0, int dataMask = -1);
-#endif
-
 	Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
 
 	[[deprecated]] Result(DecoderResult&& decodeResult, Position&& position, BarcodeFormat format);
@@ -194,11 +189,6 @@ public:
 	 */
 	std::string version() const;
 
-	/**
-	 * @brief dataMask QRCode / MicroQRCode mask.
-	 */
-	int dataMask() const;
-
 	const std::list<std::string>& diagnostics() const;
 	void setContentDiagnostics();
 
@@ -208,6 +198,8 @@ public:
 	const BitMatrix& bits() const;
 	void zint(unique_zint_symbol&& z);
 	zint_symbol* zint() const { return _zint.get(); }
+	Result&& extra(std::string&& json) { _json = std::move(json); return std::move(*this); }
+	std::string extra() const { return _json.size() ? "{" + _json.substr(0, _json.size() - 1) + "}" : ""; }
 #endif
 
 	bool operator==(const Result& o) const;
@@ -221,7 +213,6 @@ private:
 	BarcodeFormat _format = BarcodeFormat::None;
 	char _ecLevel[4] = {};
 	char _version[4] = {};
-	int _dataMask = -1;
 	int _lineCount = 0;
 	bool _isMirrored = false;
 	bool _isInverted = false;
@@ -229,6 +220,7 @@ private:
 #ifdef ZXING_EXPERIMENTAL_API
 	std::shared_ptr<BitMatrix> _symbol;
 	std::shared_ptr<zint_symbol> _zint;
+	std::string _json;
 #endif
 	ResultMetadata _metadata;
 	std::list<std::string> _diagnostics;

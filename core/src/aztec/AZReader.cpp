@@ -39,7 +39,6 @@ Barcode Reader::decode(const BinaryBitmap& image) const
 
 Barcodes Reader::decode(const BinaryBitmap& image, int maxSymbols) const
 {
-	fprintf(stderr, "AZReader::decode\n");
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
 		return {};

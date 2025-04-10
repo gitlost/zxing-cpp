@@ -17,6 +17,7 @@
 #include "pdf417/PDFDecoderResultExtra.h"
 
 #ifdef ZXING_EXPERIMENTAL_API
+#include "JSON.h"
 #include "WriteBarcode.h"
 #endif
 
@@ -412,8 +413,8 @@ int main(int argc, char* argv[])
 			}
 #endif
 			printOptional("Version:      ", barcode.version() + azType);
-			if (barcode.dataMask() != -1)
-				std::cout << "Data Mask:    " << std::to_string(barcode.dataMask()) << "\n";
+			if (!JsonGetStr(barcode.extra(), "DataMask").empty())
+				std::cout << "Data Mask:    " << JsonGetStr(barcode.extra(), "DataMask") << "\n";
 			printOptional("Error:        ", ToString(barcode.error()));
 
 			if (barcode.lineCount())
@@ -468,6 +469,7 @@ int main(int argc, char* argv[])
 				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
 #endif
 #ifdef ZXING_EXPERIMENTAL_API
+			printOptional("Extra:      ", barcode.extra());
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
 #endif

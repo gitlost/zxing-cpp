@@ -25,6 +25,7 @@
 #include "GenericGF.h"
 #include "HXBitMatrixParser.h"
 #include "HXDataBlock.h"
+#include "JSON.h"
 #include "ReedSolomonDecoder.h"
 #include "ZXTestSupport.h"
 
@@ -350,15 +351,15 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	int version;
 	int ecLevel;
-	int mask;
+	int dataMask;
 
-	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, version, ecLevel, mask);
+	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, version, ecLevel, dataMask);
 	if (codewords.size() == 0) {
 		return {};
 	}
 
 	Diagnostics::fmt("  Version:    %d (%dx%d)\n", version, bits.height(), bits.width());
-	Diagnostics::fmt("  Mask:       %c%c\n", mask & 2 ? '1' : '0', mask & 1 ? '1' : '0');
+	Diagnostics::fmt("  Mask:       %c%c\n", dataMask & 2 ? '1' : '0', dataMask & 1 ? '1' : '0');
 	Diagnostics::fmt("  Codewords:  (%d)", codewords.size());
 	Diagnostics::dump(codewords, "\n", -1, -1, true /*hex*/);
 
@@ -383,7 +384,8 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	Diagnostics::dump(resultBytes, "\n", -1, -1, true /*hex*/);
 
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel).setDataMask(mask).setVersionNumber(version);
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel)
+			.setJson(JsonValue("DataMask", dataMask)).setVersionNumber(version);
 }
 
 } // namespace ZXing::HanXin

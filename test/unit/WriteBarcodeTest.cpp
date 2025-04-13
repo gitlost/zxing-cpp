@@ -39,9 +39,8 @@ namespace {
 			EXPECT_EQ(ToString(barcode.position()), position) << "line:" << line;
 		EXPECT_EQ(barcode.ecLevel(), ecLevel) << "line:" << line;
 		EXPECT_EQ(barcode.version(), version) << "line:" << line;
-		std::string extra = barcode.extra().size() ? barcode.extra().substr(1, barcode.extra().size() - 2) : ""; // Remove braces
 		if (dataMask != -1)
-			EXPECT_EQ(JsonGetStr(extra, "DataMask"), std::to_string(dataMask)) << "line:" << line;
+			EXPECT_EQ(JsonGetStr(barcode.extra(), "DataMask"), std::to_string(dataMask)) << "line:" << line;
 	}
 
 	static void check_same(int line, const Barcode& b1, const Barcode& b2,

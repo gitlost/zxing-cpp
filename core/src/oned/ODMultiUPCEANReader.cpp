@@ -308,7 +308,6 @@ Barcode MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::
 			// ISO/IEC 15420:2009 4.3.5 max add-on gap is 12X (`begin` at right guard, which is 3X)
 			&& ext.skipSingle(static_cast<int>(begin.sum() * 4)) && (AddOn(addOnRes, ext, 5) || AddOn(addOnRes, ext, 2))) {
 		if (res.format == BarcodeFormat::EAN8) {
-			res.json = JsonValue("EAN-8", res.txt);
 			res.txt = "00000" + res.txt;
 		}
 		res.txt += addOnRes.txt;

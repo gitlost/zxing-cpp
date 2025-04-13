@@ -629,11 +629,11 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 		json += JsonValue("Version", format == BarcodeFormat::RMQRCode
 										? "R" + ToString(QRCode::Version::SymbolSize(decRes.versionNumber(), QRCode::Type::rMQR), true)
 										: (format == BarcodeFormat::MicroQRCode ? "M" : "") + std::to_string(decRes.versionNumber()));
-	} else if (format == BarcodeFormat::UPCE || (format == BarcodeFormat::EAN8 && decRes.content().bytes.size() > 13)) {
+	} else if (format == BarcodeFormat::UPCE) {
 		std::string text(reinterpret_cast<const char *>(zint->text));
 		if (auto pos = text.find('+'); pos != text.npos)
 			text = text.substr(0, pos);
-		json += JsonValue(format == BarcodeFormat::UPCE ? "UPC-E" : "EAN-8", text);
+		json += JsonValue("UPC-E", text);
 	}
 
 	decRes.setJson(json);

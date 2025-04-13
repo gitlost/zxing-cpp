@@ -86,9 +86,10 @@ struct CreatorOptions::Data
 	TYPE CreatorOptions::NAME() const noexcept { return JsonGet<TYPE>(d->options, #NAME); }
 
 	ZX_RO_PROPERTY(bool, gs1);
+	ZX_RO_PROPERTY(bool, gs1parens);
 	ZX_RO_PROPERTY(bool, stacked);
 	ZX_RO_PROPERTY(std::string_view, version);
-	ZX_RO_PROPERTY(std::string_view, datamask);
+	ZX_RO_PROPERTY(std::string_view, dataMask);
 
 #undef ZX_PROPERTY
 
@@ -326,7 +327,7 @@ static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& o
 	assert(i != std::end(barcodeFormat2SymbologyIdentifier));
 	SymbologyIdentifier ret = i->si;
 
-	if ((BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::UPCE).testFlag(format)) {
+	if ((BarcodeFormat::EAN8 | BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::UPCE).testFlag(format)) {
 		if (ba.size() > 13) // Have EAN-2/5 add-on?
 			ret.modifier = '3'; // Combined packet, EAN-13, UPC-A, UPC-E, with add-on
 	} else if (format == BarcodeFormat::Code39) {
@@ -512,18 +513,6 @@ static int DataMaskZint2ZXing(const zint_symbol* zint)
 	return -1;
 }
 
-static std::string NormalizedOptionsString(std::string_view sv)
-{
-	std::string str(sv);
-	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return (char)std::tolower(c); });
-#ifdef __cpp_lib_erase_if
-	std::erase_if(str, [](char c) { return Contains("\n \"", c); });
-#else
-	str.erase(std::remove_if(str.begin(), str.end(), [](char c) { return Contains("\n \"", c); }), str.end());
-#endif
-	return str;
-}
-
 zint_symbol* CreatorOptions::zint() const
 {
 	auto& zint = d->zint;
@@ -534,7 +523,6 @@ zint_symbol* CreatorOptions::zint() const
 #endif
 		zint.reset(ZBarcode_Create());
 
-		d->options = NormalizedOptionsString(options());
 #ifdef PRINT_DEBUG
 		printf("options: %s\n", options().c_str());
 #endif
@@ -558,15 +546,10 @@ zint_symbol* CreatorOptions::zint() const
 			zint->option_1 = ParseECLevel(zint->symbology, ecLevel());
 
 		if (auto str = version(); str.size() && !IsLinearBarcode(format()))
-			if (std::from_chars(str.data(), str.data() + str.size(), zint->option_2).ec != std::errc())
-				throw std::invalid_argument("failed to parse version number from options");
+			zint->option_2 = svtoi(str);
 
-		if (auto str = datamask(); str.size() && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format())) {
-			int val = 0;
-			if (std::from_chars(str.data(), str.data() + str.size(), val).ec != std::errc())
-				throw std::invalid_argument("failed to parse version number from options");
-			zint->option_3 = (zint->option_3 & 0xFF) | (val + 1) << 8;
-		}
+		if (auto str = dataMask(); str.size() && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format()))
+			zint->option_3 = (zint->option_3 & 0xFF) | (svtoi(str) + 1) << 8;
 
 		zint->output_options |= withQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
 		if (height() && IsLinearBarcode(format()))
@@ -596,6 +579,8 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	const auto format = opts.format();
 
 	zint->input_mode = mode == -1 || mode == UNICODE_MODE ? opts.gs1() && SupportsGS1(format) ? GS1_MODE : UNICODE_MODE : mode;
+	if (opts.gs1parens())
+		zint->input_mode |= GS1PARENS_MODE;
 
 	zint->show_hrt = 0;
 	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_RAW_TEXT;
@@ -640,14 +625,16 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (int dataMask = DataMaskZint2ZXing(zint); dataMask != -1)
 		json += JsonValue("DataMask", dataMask);
 
-	if ((BarcodeFormat::MicroQRCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode).testFlag(format))
+	if ((BarcodeFormat::MicroQRCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode).testFlag(format)) {
 		json += JsonValue("Version", format == BarcodeFormat::RMQRCode
 										? "R" + ToString(QRCode::Version::SymbolSize(decRes.versionNumber(), QRCode::Type::rMQR), true)
 										: (format == BarcodeFormat::MicroQRCode ? "M" : "") + std::to_string(decRes.versionNumber()));
-	else if (format == BarcodeFormat::UPCE)
-		json += JsonValue("UPC-E", reinterpret_cast<const char *>(zint->text));
-	else if (format == BarcodeFormat::EAN8 && decRes.symbologyIdentifier() == "]e3")
-		json += JsonValue("EAN-8", reinterpret_cast<const char *>(zint->text));
+	} else if (format == BarcodeFormat::UPCE || (format == BarcodeFormat::EAN8 && decRes.content().bytes.size() > 13)) {
+		std::string text(reinterpret_cast<const char *>(zint->text));
+		if (auto pos = text.find('+'); pos != text.npos)
+			text = text.substr(0, pos);
+		json += JsonValue(format == BarcodeFormat::UPCE ? "UPC-E" : "EAN-8", text);
+	}
 
 	decRes.setJson(json);
 

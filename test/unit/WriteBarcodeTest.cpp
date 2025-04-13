@@ -39,9 +39,9 @@ namespace {
 			EXPECT_EQ(ToString(barcode.position()), position) << "line:" << line;
 		EXPECT_EQ(barcode.ecLevel(), ecLevel) << "line:" << line;
 		EXPECT_EQ(barcode.version(), version) << "line:" << line;
-		std::string extra = barcode.extra().size() >= 2 ? barcode.extra().substr(1, barcode.extra().size() - 2) : ""; // Remove braces
+		std::string extra = barcode.extra().size() ? barcode.extra().substr(1, barcode.extra().size() - 2) : ""; // Remove braces
 		if (dataMask != -1)
-			EXPECT_EQ(JsonGetStr(extra, "\"DataMask\""), "\"" + std::to_string(dataMask) + "\"") << "line:" << line;
+			EXPECT_EQ(JsonGetStr(extra, "DataMask"), std::to_string(dataMask)) << "line:" << line;
 	}
 
 	static void check_same(int line, const Barcode& b1, const Barcode& b2,
@@ -105,7 +105,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]z0", "1234", "31 32 33 34", false, "]z3\\0000261234", "5D 7A 33 31 32 33 34", "1234", "Text", "0x0 15x0 15x15 0x15", "58%", "1" /*version*/);
+		check(__LINE__, barcode, "]z0", "1234", "31 32 33 34", false, "]z3\\0000261234", "5D 7A 33 31 32 33 34",
+			  "1234", "Text", "0x0 15x0 15x15 0x15", "58%", "1" /*version*/);
 
 		std::string bitsStr = ToString(barcode.bits(), 'X', ' ', false /*addSpace*/);
 		std::string expected_bitsStr =
@@ -158,7 +159,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("A12B", cOpts);
-		check(__LINE__, barcode, "]F0", "A12B", "41 31 32 42", false, "]F0\\000026A12B", "5D 46 30 41 31 32 42", "A12B", "Text", "0x0 40x0 40x49 0x49");
+		check(__LINE__, barcode, "]F0", "A12B", "41 31 32 42", false, "]F0\\000026A12B", "5D 46 30 41 31 32 42",
+			  "A12B", "Text", "0x0 40x0 40x49 0x49");
 
 		std::string bitsStr = ToString(barcode.bits(), 'X', ' ', false /*addSpace*/);
 		std::string expected_bitsStr =
@@ -240,8 +242,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]O4", "1234", "31 32 33 34", false, "]O4\\0000261234", "5D 4F 34 31 32 33 34", "1234", "Text", "0x0 100x0 100x21 0x21");
-
+		check(__LINE__, barcode, "]O4", "1234", "31 32 33 34", false, "]O4\\0000261234", "5D 4F 34 31 32 33 34",
+			  "1234", "Text", "0x0 100x0 100x21 0x21");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -254,8 +256,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]C0", "1234", "31 32 33 34", false, "]C0\\0000261234", "5D 43 30 31 32 33 34", "1234", "Text", "0x0 56x0 56x49 0x49");
-
+		check(__LINE__, barcode, "]C0", "1234", "31 32 33 34", false, "]C0\\0000261234", "5D 43 30 31 32 33 34",
+			  "1234", "Text", "0x0 56x0 56x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -270,8 +272,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]K0", "1234", "31 32 33 34", false, "]K0\\0000261234", "5D 4B 30 31 32 33 34", "1234", "Text", "0x0 69x0 69x23 0x23");
-
+		check(__LINE__, barcode, "]K0", "1234", "31 32 33 34", false, "]K0\\0000261234", "5D 4B 30 31 32 33 34",
+			  "1234", "Text", "0x0 69x0 69x23 0x23");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -285,8 +287,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]A0", "1234", "31 32 33 34", false, "]A0\\0000261234", "5D 41 30 31 32 33 34", "1234", "Text", "0x0 76x0 76x49 0x49");
-
+		check(__LINE__, barcode, "]A0", "1234", "31 32 33 34", false, "]A0\\0000261234", "5D 41 30 31 32 33 34",
+			  "1234", "Text", "0x0 76x0 76x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -303,8 +305,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("12\17734", cOpts);
 		// HRI not escaped as content type considered "Text" (DEL not recognized)
-		check(__LINE__, barcode, "]A4", "12\17734", "31 32 7F 33 34", false, "]A4\\00002612\17734", "5D 41 34 31 32 7F 33 34", "12\17734", "Text", "0x0 102x0 102x49 0x49");
-
+		check(__LINE__, barcode, "]A4", "12\17734", "31 32 7F 33 34", false, "]A4\\00002612\17734", "5D 41 34 31 32 7F 33 34",
+			  "12\17734", "Text", "0x0 102x0 102x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -321,8 +323,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("12\001\17734", cOpts);
 		// HRI escaped as content type considered "Binary" (SOH)
-		check(__LINE__, barcode, "]A4", "12\001\17734", "31 32 01 7F 33 34", false, "]A4\\00002612\001\17734", "5D 41 34 31 32 01 7F 33 34", "12<SOH><DEL>34", "Binary", "0x0 128x0 128x49 0x49");
-
+		check(__LINE__, barcode, "]A4", "12\001\17734", "31 32 01 7F 33 34", false, "]A4\\00002612\001\17734",
+			  "5D 41 34 31 32 01 7F 33 34", "12<SOH><DEL>34", "Binary", "0x0 128x0 128x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -339,8 +341,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		// HRI escaped as content type considered "Binary" (NUL)
 		Barcode barcode = CreateBarcodeFromText(std::string("12\00034", 5), cOpts);
-		check(__LINE__, barcode, "]A4", std::string("12\00034", 5), "31 32 00 33 34", false, std::string("]A4\\00002612\00034", 15), "5D 41 34 31 32 00 33 34", "12<NUL>34", "Binary", "0x0 102x0 102x49 0x49");
-
+		check(__LINE__, barcode, "]A4", std::string("12\00034", 5), "31 32 00 33 34", false,
+			  std::string("]A4\\00002612\00034", 15), "5D 41 34 31 32 00 33 34", "12<NUL>34", "Binary", "0x0 102x0 102x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -355,8 +357,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]G0", "1234", "31 32 33 34", false, "]G0\\0000261234", "5D 47 30 31 32 33 34", "1234", "Text", "0x0 72x0 72x39 0x39"); // Check digits removed
-
+		check(__LINE__, barcode, "]G0", "1234", "31 32 33 34", false, "]G0\\0000261234", "5D 47 30 31 32 33 34", "1234", "Text",
+			  "0x0 72x0 72x39 0x39"); // Check digits removed
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -371,8 +373,9 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 96x0 96x32 1x32");
-
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false,
+			  "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348",
+			  "GS1", "1x0 96x0 96x32 1x32");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -387,9 +390,9 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format, "stacked").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		// Note not marked as GS1, and not prefixed with "01" by ODDataBarReader (unlike ODDataBarLimitedReader)
-		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 50x0 50x68 1x68");
-
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false,
+			  "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348",
+			  "GS1", "1x0 50x0 50x68 1x68");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -402,10 +405,13 @@ TEST(WriteBarcodeTest, ZintASCII)
 	{
 		BarcodeFormat format = BarcodeFormat::DataBarExpanded;
 
-		auto cOpts = CreatorOptions(format).withQuietZones(false);
-		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12[90]123[91]1234", cOpts);
-		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false, "]e0\\0000260112345678901231201290123\x1D" "911234", "5D 65 30 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", "(01)12345678901231(20)12(90)123(91)1234", "GS1", "2x0 246x0 246x33 2x33");
-
+		auto cOpts = CreatorOptions(format, "gs1parens").withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
+		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234",
+			  "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false,
+			  "]e0\\0000260112345678901231201290123\x1D" "911234",
+			  "5D 65 30 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34",
+			  "(01)12345678901231(20)12(90)123(91)1234", "GS1", "2x0 246x0 246x33 2x33");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -418,10 +424,13 @@ TEST(WriteBarcodeTest, ZintASCII)
 	{
 		BarcodeFormat format = BarcodeFormat::DataBarExpanded; // Stacked
 
-		auto cOpts = CreatorOptions(format, "stacked").withQuietZones(false);
-		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12[90]123[91]1234", cOpts);
-		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false, "]e0\\0000260112345678901231201290123\x1D" "911234", "5D 65 30 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", "(01)12345678901231(20)12(90)123(91)1234", "GS1", "0x0 102x0 102x108 0x108");
-
+		auto cOpts = CreatorOptions(format, "gs1parens,stacked").withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
+		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234",
+			  "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false,
+			  "]e0\\0000260112345678901231201290123\x1D" "911234",
+			  "5D 65 30 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34",
+			  "(01)12345678901231(20)12(90)123(91)1234", "GS1", "0x0 102x0 102x108 0x108");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -436,9 +445,9 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		// Note not marked as GS1, and hence HRI AI not parenthesized TODO: check
-		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348", "GS1", "1x0 73x0 73x9 1x9");
-
+		check(__LINE__, barcode, "]e0", "0100000000012348", "30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", false,
+			  "]e0\\0000260100000000012348", "5D 65 30 30 31 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "(01)00000000012348",
+			  "GS1", "1x0 73x0 73x9 1x9");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -453,8 +462,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]d1", "1234", "31 32 33 34", false, "]d4\\0000261234", "5D 64 34 31 32 33 34", "1234", "Text", "0x0 9x0 9x9 0x9", "" /*ecLevel*/, "1" /*version*/);
-
+		check(__LINE__, barcode, "]d1", "1234", "31 32 33 34", false, "]d4\\0000261234", "5D 64 34 31 32 33 34", "1234", "Text",
+			  "0x0 9x0 9x9 0x9", "" /*ecLevel*/, "1" /*version*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -467,8 +476,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]J0", "1234", "31 32 33 34", false, "]J3\\0000261234", "5D 4A 33 31 32 33 34", "1234", "Text", "1x1 25x1 25x19 1x19", "" /*ecLevel*/, "" /*version*/, 3 /*dataMask*/);
-
+		check(__LINE__, barcode, "]J0", "1234", "31 32 33 34", false, "]J3\\0000261234", "5D 4A 33 31 32 33 34", "1234", "Text",
+			  "1x1 25x1 25x19 1x19", "" /*ecLevel*/, "" /*version*/, 3 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -482,8 +491,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "" /*si*/, "77-2", "37 37 2D 32", false, "\\00002677-2", "37 37 2D 32", "77-2", "Text", "0x0 22x0 22x5 0x5");
-
+		check(__LINE__, barcode, "" /*si*/, "77-2", "37 37 2D 32", false, "\\00002677-2", "37 37 2D 32", "77-2", "Text",
+			  "0x0 22x0 22x5 0x5");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -499,8 +508,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("77-2/XA", cOpts);
-		check(__LINE__, barcode, "" /*si*/, "77-2/62A", "37 37 2D 32 2F 36 32 41", false, "\\00002677-2/62A", "37 37 2D 32 2F 36 32 41", "77-2/62A", "Text", "0x0 30x0 30x5 0x5");
-
+		check(__LINE__, barcode, "" /*si*/, "77-2/62A", "37 37 2D 32 2F 36 32 41", false, "\\00002677-2/62A",
+			  "37 37 2D 32 2F 36 32 41", "77-2/62A", "Text", "0x0 30x0 30x5 0x5");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -515,8 +524,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("123456", cOpts);
-		check(__LINE__, barcode, "]E4", "01234565", "30 31 32 33 34 35 36 35", false, "]E4\\00002601234565", "5D 45 34 30 31 32 33 34 35 36 35", "01234565", "Text", "0x0 66x0 66x59 0x59");
-
+		check(__LINE__, barcode, "]E4", "01234565", "30 31 32 33 34 35 36 35", false, "]E4\\00002601234565",
+			  "5D 45 34 30 31 32 33 34 35 36 35", "01234565", "Text", "0x0 66x0 66x59 0x59");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -531,8 +540,9 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("123456789", cOpts);
-		check(__LINE__, barcode, "]E0", "0001234567895", "30 30 30 31 32 33 34 35 36 37 38 39 35", false, "]E0\\0000260001234567895", "5D 45 30 30 30 30 31 32 33 34 35 36 37 38 39 35", "0001234567895", "Text", "0x0 94x0 94x73 0x73");
-
+		check(__LINE__, barcode, "]E0", "0001234567895", "30 30 30 31 32 33 34 35 36 37 38 39 35", false,
+			  "]E0\\0000260001234567895", "5D 45 30 30 30 30 31 32 33 34 35 36 37 38 39 35", "0001234567895", "Text",
+			  "0x0 94x0 94x73 0x73");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -547,8 +557,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]h0", "1234", "31 32 33 34", false, "]h1\\0000261234", "5D 68 31 31 32 33 34", "1234", "Text", "0x0 22x0 22x22 0x22", "L4", "1" /*version*/, 2 /*dataMask*/);
-
+		check(__LINE__, barcode, "]h0", "1234", "31 32 33 34", false, "]h1\\0000261234", "5D 68 31 31 32 33 34", "1234", "Text",
+			  "0x0 22x0 22x22 0x22", "L4", "1" /*version*/, 2 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -561,8 +571,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]I0", "1234", "31 32 33 34", false, "]I0\\0000261234", "5D 49 30 31 32 33 34", "1234", "Text", "0x0 44x0 44x49 0x49");
-
+		check(__LINE__, barcode, "]I0", "1234", "31 32 33 34", false, "]I0\\0000261234", "5D 49 30 31 32 33 34", "1234", "Text",
+			  "0x0 44x0 44x49 0x49");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -577,8 +587,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]U0", "1234", "31 32 33 34", false, "]U2\\0000261234", "5D 55 32 31 32 33 34", "1234", "Text", "0x0 148x0 148x132 0x132", "4" /*ecLevel*/);
-
+		check(__LINE__, barcode, "]U0", "1234", "31 32 33 34", false, "]U2\\0000261234", "5D 55 32 31 32 33 34", "1234", "Text",
+			  "0x0 148x0 148x132 0x132", "4" /*ecLevel*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -591,8 +601,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]L2", "1234", "31 32 33 34", false, "]L1\\0000261234", "5D 4C 31 31 32 33 34", "1234", "Text", "0x0 37x0 37x21 0x21", "64%" /*ecLevel*/);
-
+		check(__LINE__, barcode, "]L2", "1234", "31 32 33 34", false, "]L1\\0000261234", "5D 4C 31 31 32 33 34", "1234", "Text",
+			  "0x0 37x0 37x21 0x21", "64%" /*ecLevel*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -606,8 +616,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text", "0x0 10x0 10x10 0x10", "L", "1" /*version*/, 2 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text",
+			  "0x0 10x0 10x10 0x10", "L", "1" /*version*/, 2 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -620,8 +630,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]L2", "1234", "31 32 33 34", false, "]L1\\0000261234", "5D 4C 31 31 32 33 34", "1234", "Text", "0x0 102x0 102x17 0x17", "66%" /*ecLevel*/);
-
+		check(__LINE__, barcode, "]L2", "1234", "31 32 33 34", false, "]L1\\0000261234", "5D 4C 31 31 32 33 34", "1234", "Text",
+			  "0x0 102x0 102x17 0x17", "66%" /*ecLevel*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -634,8 +644,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text", "0x0 20x0 20x20 0x20", "H", "1" /*version*/, 6 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text",
+			  "0x0 20x0 20x20 0x20", "H", "1" /*version*/, 6 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -648,8 +658,8 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text", "0x0 26x0 26x10 0x10", "H", "11" /*version*/, 4 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q1", "1234", "31 32 33 34", false, "]Q2\\0000261234", "5D 51 32 31 32 33 34", "1234", "Text",
+			  "0x0 26x0 26x10 0x10", "H", "11" /*version*/, 4 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -662,8 +672,9 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]E0", "0000000012348", "30 30 30 30 30 30 30 30 31 32 33 34 38", false, "]E0\\0000260000000012348", "5D 45 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "0000000012348", "Text", "0x0 94x0 94x73 0x73");
-
+		check(__LINE__, barcode, "]E0", "0000000012348", "30 30 30 30 30 30 30 30 31 32 33 34 38", false,
+			  "]E0\\0000260000000012348", "5D 45 30 30 30 30 30 30 30 30 30 31 32 33 34 38", "0000000012348", "Text",
+			  "0x0 94x0 94x73 0x73");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -678,14 +689,87 @@ TEST(WriteBarcodeTest, ZintASCII)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
-		check(__LINE__, barcode, "]E0", "0000120000034", "30 30 30 30 31 32 30 30 30 30 30 33 34", false, "]E0\\0000260000120000034", "5D 45 30 30 30 30 30 31 32 30 30 30 30 30 33 34", "0000120000034", "Text", "0x0 50x0 50x73 0x73");
-
+		check(__LINE__, barcode, "]E0", "0000120000034", "30 30 30 30 31 32 30 30 30 30 30 33 34", false,
+			  "]E0\\0000260000120000034", "5D 45 30 30 30 30 30 31 32 30 30 30 30 30 33 34", "0000120000034", "Text",
+			  "0x0 50x0 50x73 0x73");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
 		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
 		EXPECT_EQ(ToString(readBarcode.position()), "0x37 50x37 50x37 0x37");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+}
+
+TEST(WriteBarcodeTest, ZintEANUPCAddOn)
+{
+	{
+		BarcodeFormat format = BarcodeFormat::EAN8;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("123456+01", cOpts);
+		check(__LINE__, barcode, "]E3", "000000123456501", "30 30 30 30 30 30 31 32 33 34 35 36 35 30 31", false,
+			  "]E3\\000026000000123456501", "5D 45 33 30 30 30 30 30 30 31 32 33 34 35 36 35 30 31", "000000123456501", "Text",
+			  "0x0 93x0 93x59 0x59");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true).setEanAddOnSymbol(EanAddOnSymbol::Read);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x30 93x30 93x30 0x30");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::EAN13;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("123456789+12345", cOpts);
+		check(__LINE__, barcode, "]E3", "000123456789512345", "30 30 30 31 32 33 34 35 36 37 38 39 35 31 32 33 34 35", false,
+			  "]E3\\000026000123456789512345", "5D 45 33 30 30 30 31 32 33 34 35 36 37 38 39 35 31 32 33 34 35",
+			  "000123456789512345", "Text", "0x0 148x0 148x73 0x73");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true).setEanAddOnSymbol(EanAddOnSymbol::Read);;
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x37 148x37 148x37 0x37");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::UPCA;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("123456789+12345", cOpts);
+		check(__LINE__, barcode, "]E3", "000123456789512345", "30 30 30 31 32 33 34 35 36 37 38 39 35 31 32 33 34 35", false,
+			  "]E3\\000026000123456789512345", "5D 45 33 30 30 30 31 32 33 34 35 36 37 38 39 35 31 32 33 34 35",
+			  "000123456789512345", "Text", "0x0 150x0 150x73 0x73");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true).setEanAddOnSymbol(EanAddOnSymbol::Read);;
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x37 150x37 150x37 0x37");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::UPCE;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("1234+01", cOpts);
+		check(__LINE__, barcode, "]E3", "000012000003401", "30 30 30 30 31 32 30 30 30 30 30 33 34 30 31", false,
+			  "]E3\\000026000012000003401", "5D 45 33 30 30 30 30 31 32 30 30 30 30 30 33 34 30 31", "000012000003401", "Text",
+			  "0x0 77x0 77x73 0x73");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true).setEanAddOnSymbol(EanAddOnSymbol::Read);;
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x37 77x37 77x37 0x37");
 		check_x_position(__LINE__, barcode, readBarcode);
 #endif
 	}
@@ -699,8 +783,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("12\001\17734", cOpts);
-		check(__LINE__, barcode, "]C0", "12\001\17734", "31 32 01 7F 33 34", false, "]C0\\00002612\001\17734", "5D 43 30 31 32 01 7F 33 34", "12<SOH><DEL>34", "Binary");
-
+		check(__LINE__, barcode, "]C0", "12\001\17734", "31 32 01 7F 33 34", false, "]C0\\00002612\001\17734",
+			  "5D 43 30 31 32 01 7F 33 34", "12<SOH><DEL>34", "Binary");
 #ifdef ZXING_READERS
 		auto wOpts = WriterOptions().withQuietZones(false);
 		Image image = WriteBarcodeToImage(barcode, wOpts);
@@ -716,8 +800,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText(std::string("12\00034", 5), cOpts);
-		check(__LINE__, barcode, "]C0", std::string("12\00034", 5), "31 32 00 33 34", false, std::string("]C0\\00002612\00034", 15), "5D 43 30 31 32 00 33 34", "12<NUL>34", "Binary");
-
+		check(__LINE__, barcode, "]C0", std::string("12\00034", 5), "31 32 00 33 34", false,
+			  std::string("]C0\\00002612\00034", 15), "5D 43 30 31 32 00 33 34", "12<NUL>34", "Binary");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -732,8 +816,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("12é34", cOpts);
-		check(__LINE__, barcode, "]C0", "12é34", "31 32 E9 33 34", false, "]C0\\00002612é34", "5D 43 30 31 32 E9 33 34", "12é34", "Text");
-
+		check(__LINE__, barcode, "]C0", "12é34", "31 32 E9 33 34", false, "]C0\\00002612é34", "5D 43 30 31 32 E9 33 34",
+			  "12é34", "Text");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -872,7 +956,6 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 "                                                                       X                                                                \n"
 "                                                                      X                                                                 \n";
 		check(__LINE__, barcode, "]C0", "\007Ç", "07 C7", false, "]C0\\000026\007Ç", "5D 43 30 07 C7", "<BEL>Ç", "Binary");
-
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		Barcode readBarcode = ReadBarcode(image, rOpts);
@@ -886,8 +969,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]z0", "1234é", "31 32 33 34 E9", false, "]z3\\0000261234é", "5D 7A 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "35%" /*ecLevel*/, "1" /*version*/);
-
+		check(__LINE__, barcode, "]z0", "1234é", "31 32 33 34 E9", false, "]z3\\0000261234é", "5D 7A 33 31 32 33 34 E9",
+			  "1234é", "Text", "" /*position*/, "35%" /*ecLevel*/, "1" /*version*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -902,8 +985,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]z3", "1234é", "31 32 33 34 E9", true, "]z3\\0000261234é", "5D 7A 33 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "17%", "1");
-
+		check(__LINE__, barcode, "]z3", "1234é", "31 32 33 34 E9", true, "]z3\\0000261234é",
+			  "5D 7A 33 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "17%", "1");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -917,8 +1000,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]d1", "1234é", "31 32 33 34 E9", false, "]d4\\0000261234é", "5D 64 34 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "" /*ecLevel*/, "2" /*version*/);
-
+		check(__LINE__, barcode, "]d1", "1234é", "31 32 33 34 E9", false, "]d4\\0000261234é", "5D 64 34 31 32 33 34 E9",
+			  "1234é", "Text", "" /*position*/, "" /*ecLevel*/, "2" /*version*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -933,8 +1016,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]d4", "1234é", "31 32 33 34 E9", true, "]d4\\0000261234é", "5D 64 34 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "" /*ecLevel*/, "3");
-
+		check(__LINE__, barcode, "]d4", "1234é", "31 32 33 34 E9", true, "]d4\\0000261234é",
+			  "5D 64 34 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "" /*ecLevel*/, "3");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -948,8 +1031,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]U0", "1234é", "31 32 33 34 E9", false, "]U2\\0000261234é", "5D 55 32 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "4" /*ecLevel*/);
-
+		check(__LINE__, barcode, "]U0", "1234é", "31 32 33 34 E9", false, "]U2\\0000261234é", "5D 55 32 31 32 33 34 E9",
+			  "1234é", "Text", "" /*position*/, "4" /*ecLevel*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -964,8 +1047,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]U2", "1234é", "31 32 33 34 E9", true, "]U2\\0000261234é", "5D 55 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "4" /*ecLevel*/);
-
+		check(__LINE__, barcode, "]U2", "1234é", "31 32 33 34 E9", true, "]U2\\0000261234é",
+			  "5D 55 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "4" /*ecLevel*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -979,8 +1062,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]L2", "1234é", "31 32 33 34 E9", false, "]L1\\0000261234é", "5D 4C 31 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "57%");
-
+		check(__LINE__, barcode, "]L2", "1234é", "31 32 33 34 E9", false, "]L1\\0000261234é", "5D 4C 31 31 32 33 34 E9",
+			  "1234é", "Text", "" /*position*/, "57%");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -995,8 +1078,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]L1", "1234é", "31 32 33 34 E9", true, "]L1\\0000261234é", "5D 4C 31 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "50%");
-
+		check(__LINE__, barcode, "]L1", "1234é", "31 32 33 34 E9", true, "]L1\\0000261234é",
+			  "5D 4C 31 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "50%");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1010,8 +1093,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]Q1", "1234é", "31 32 33 34 E9", false, "]Q2\\0000261234é", "5D 51 32 31 32 33 34 E9", "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 0 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q1", "1234é", "31 32 33 34 E9", false, "]Q2\\0000261234é", "5D 51 32 31 32 33 34 E9",
+			  "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 0 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1026,8 +1109,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é", "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 1 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é",
+			  "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 1 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1041,8 +1124,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]Q1", "1234é", "31 32 33 34 E9", false, "]Q2\\0000261234é", "5D 51 32 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "H", "11", 4 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q1", "1234é", "31 32 33 34 E9", false, "]Q2\\0000261234é", "5D 51 32 31 32 33 34 E9",
+			  "1234é", "Text", "0x0 26x0 26x10 0x10", "H", "11", 4 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1057,8 +1140,8 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		cOpts.eci(ECI::ISO8859_1);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
-		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é", "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "M", "11", 4 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é",
+			  "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "M", "11", 4 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1073,10 +1156,11 @@ TEST(WriteBarcodeTest, ZintGS1)
 	{
 		BarcodeFormat format = BarcodeFormat::Aztec;
 
-		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
-		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12", cOpts);
-		check(__LINE__, barcode, "]z1", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]z4\\00002601123456789012312012", "5D 7A 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", "(01)12345678901231(20)12", "GS1", "0x0 19x0 19x19 0x19", "50%", "2" /*version*/);
-
+		auto cOpts = CreatorOptions(format, "GS1,gs1parens").withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12", cOpts);
+		check(__LINE__, barcode, "]z1", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  false, "]z4\\00002601123456789012312012", "5D 7A 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  "(01)12345678901231(20)12", "GS1", "0x0 19x0 19x19 0x19", "50%", "2" /*version*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1090,8 +1174,9 @@ TEST(WriteBarcodeTest, ZintGS1)
 
 		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12", cOpts);
-		check(__LINE__, barcode, "]C1", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]C1\\00002601123456789012312012", "5D 43 31 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", "(01)12345678901231(20)12", "GS1", "0x0 155x0 155x63 0x63");
-
+		check(__LINE__, barcode, "]C1", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  false, "]C1\\00002601123456789012312012", "5D 43 31 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  "(01)12345678901231(20)12", "GS1", "0x0 155x0 155x63 0x63");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1111,7 +1196,6 @@ TEST(WriteBarcodeTest, ZintGS1)
 			  false, "]K1\\00002601049123451234591597033130128\x1D" "10ABC123",
 			  "5D 4B 31 30 31 30 34 39 31 32 33 34 35 31 32 33 34 35 39 31 35 39 37 30 33 33 31 33 30 31 32 38 1D 31 30 41 42 43 31 32 33",
 			  "(01)04912345123459(15)970331(30)128(10)ABC123", "GS1", "0x0 69x0 69x67 0x67");
-
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1124,8 +1208,9 @@ TEST(WriteBarcodeTest, ZintGS1)
 
 		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12", cOpts);
-		check(__LINE__, barcode, "]d2", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]d5\\00002601123456789012312012", "5D 64 35 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", "(01)12345678901231(20)12", "GS1", "0x0 15x0 15x15 0x15", "" /*ecLevel*/, "4" /*version*/);
-
+		check(__LINE__, barcode, "]d2", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  false, "]d5\\00002601123456789012312012", "5D 64 35 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  "(01)12345678901231(20)12", "GS1", "0x0 15x0 15x15 0x15", "" /*ecLevel*/, "4" /*version*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1138,10 +1223,12 @@ TEST(WriteBarcodeTest, ZintGS1)
 
 		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("[01]00012345678905[17]201231[10]ABC123456", cOpts);
-		check(__LINE__, barcode, "]J1", "01000123456789051720123110ABC123456", "30 31 30 30 30 31 32 33 34 35 36 37 38 39 30 35 31 37 32 30 31 32 33 31 31 30 41 42 43 31 32 33 34 35 36",
-			  false, "]J4\\00002601000123456789051720123110ABC123456", "5D 4A 34 30 31 30 30 30 31 32 33 34 35 36 37 38 39 30 35 31 37 32 30 31 32 33 31 31 30 41 42 43 31 32 33 34 35 36",
-			  "(01)00012345678905(17)201231(10)ABC123456", "GS1", "1x1 57x1 57x39 1x39", "" /*ecLevel*/, "" /*version*/, 1 /*dataMask*/);
-
+		check(__LINE__, barcode, "]J1", "01000123456789051720123110ABC123456",
+			  "30 31 30 30 30 31 32 33 34 35 36 37 38 39 30 35 31 37 32 30 31 32 33 31 31 30 41 42 43 31 32 33 34 35 36",
+			  false, "]J4\\00002601000123456789051720123110ABC123456",
+			  "5D 4A 34 30 31 30 30 30 31 32 33 34 35 36 37 38 39 30 35 31 37 32 30 31 32 33 31 31 30 41 42 43 31 32 33 34 35 36",
+			  "(01)00012345678905(17)201231(10)ABC123456", "GS1", "1x1 57x1 57x39 1x39", "" /*ecLevel*/, "" /*version*/,
+			  1 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1154,8 +1241,9 @@ TEST(WriteBarcodeTest, ZintGS1)
 
 		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12", cOpts);
-		check(__LINE__, barcode, "]Q3", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]Q4\\00002601123456789012312012", "5D 51 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", "(01)12345678901231(20)12", "GS1", "0x0 20x0 20x20 0x20", "Q", "1", 7 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q3", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  false, "]Q4\\00002601123456789012312012", "5D 51 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  "(01)12345678901231(20)12", "GS1", "0x0 20x0 20x20 0x20", "Q", "1", 7 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);
@@ -1168,8 +1256,9 @@ TEST(WriteBarcodeTest, ZintGS1)
 
 		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("[01]12345678901231[20]12", cOpts);
-		check(__LINE__, barcode, "]Q3", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", false, "]Q4\\00002601123456789012312012", "5D 51 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32", "(01)12345678901231(20)12", "GS1", "0x0 26x0 26x12 0x12", "M", "17", 4 /*dataMask*/);
-
+		check(__LINE__, barcode, "]Q3", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  false, "]Q4\\00002601123456789012312012", "5D 51 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
+			  "(01)12345678901231(20)12", "GS1", "0x0 26x0 26x12 0x12", "M", "17", 4 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().withQuietZones(false);

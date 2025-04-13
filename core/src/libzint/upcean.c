@@ -157,7 +157,7 @@ static int upca(struct zint_symbol *symbol, const unsigned char source[], int le
 
 /* UPC-E, allowing for composite if `cc_rows` set */
 static int upce_cc(struct zint_symbol *symbol, unsigned char source[], int length, char *d, int cc_rows,
-                    unsigned char equivalent[12]) {
+                    unsigned char equivalent[11]) {
     int i, num_system;
     char emode, check_digit;
     const char *parity;
@@ -266,7 +266,6 @@ static int upce_cc(struct zint_symbol *symbol, unsigned char source[], int lengt
         return ZEXT errtxtf(ZINT_ERROR_INVALID_CHECK, symbol, 274, "Invalid check digit '%1$c', expecting '%2$c'",
                             src_check_digit, check_digit);
     }
-    equivalent[11] = check_digit;
 
     /* Use the number system and check digit information to choose a parity scheme */
     if (num_system == 1) {
@@ -298,7 +297,7 @@ static int upce_cc(struct zint_symbol *symbol, unsigned char source[], int lengt
     hrt_cat_chr_nochk(symbol, check_digit);
 
     if (symbol->debug & ZINT_DEBUG_PRINT) {
-        printf("UPC-E: %s, equivalent: %.11s, hrt: %.8s, Check digit: %c\n", source, equivalent, hrt, check_digit);
+        printf("UPC-E: %s, equivalent: %.10s, hrt: %.8s, Check digit: %c\n", source, equivalent, hrt, check_digit);
     }
 
     if (symbol->output_options & COMPLIANT_HEIGHT) {
@@ -324,7 +323,7 @@ static int upce_cc(struct zint_symbol *symbol, unsigned char source[], int lengt
 
 /* UPC-E is a zero-compressed version of UPC-A */
 static int upce(struct zint_symbol *symbol, unsigned char source[], int length, char dest[],
-                unsigned char equivalent[12]) {
+                unsigned char equivalent[11]) {
     return upce_cc(symbol, source, length, dest, 0 /*cc_rows*/, equivalent);
 }
 
@@ -755,7 +754,7 @@ INTERNAL int ean_leading_zeroes(struct zint_symbol *symbol, const unsigned char 
 INTERNAL int eanx_cc(struct zint_symbol *symbol, unsigned char source[], int length, int cc_rows) {
     unsigned char first_part[14], second_part[6];
     unsigned char local_source[20]; /* Allow 13 + "+" + 5 + 1 */
-    unsigned char equivalent[12] = {0}; /* For UPC-E - GTIN-12 equivalent */
+    unsigned char equivalent[11] = {0}; /* For UPC-E - GTIN-12 equivalent (less check digit) */
     char dest[1000] = {0};
     int with_addon;
     int error_number = 0, i, plus_count;
@@ -947,6 +946,10 @@ INTERNAL int eanx_cc(struct zint_symbol *symbol, unsigned char source[], int len
         ean_add_on(second_part, second_part_len, dest, addon_gap);
         hrt_cat_chr_nochk(symbol, '+');
         hrt_cat_nochk(symbol, second_part, second_part_len);
+        if (first_part_len <= 8 && (symbol->symbology == BARCODE_EANX || symbol->symbology == BARCODE_EANX_CHK
+                || symbol->symbology == BARCODE_EANX_CC)) {
+            error_number = errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 292, "EAN-8 with add-on is non-standard");
+        }
     }
 
     if (raw_text) {
@@ -961,11 +964,11 @@ INTERNAL int eanx_cc(struct zint_symbol *symbol, unsigned char source[], int len
             unsigned char gtin13[13];
             /* EAN-13, ISBNX */
             if (is_ean && symbol->text_length >= 13) {
-                memcpy(gtin13, symbol->text, 13);
+                memcpy(gtin13, symbol->text, 12);
             /* UPC-E */
             } else if (*equivalent) {
                 gtin13[0] = '0';
-                memcpy(gtin13 + 1, equivalent, 12);
+                memcpy(gtin13 + 1, equivalent, 11);
             /* UPC-A, EAN-8 */
             } else {
                 const int zeroes = 13 - (symbol->text_length - (second_part_len ? second_part_len + 1 : 0));
@@ -973,6 +976,7 @@ INTERNAL int eanx_cc(struct zint_symbol *symbol, unsigned char source[], int len
                 memset(gtin13, '0', zeroes);
                 memcpy(gtin13 + zeroes, symbol->text, 13 - zeroes);
             }
+            gtin13[12] = gs1_check_digit(gtin13, 12); /* Calculate check digit over full 12 digits */
             if (rt_cpy_cat(symbol, gtin13, 13, '\xFF' /*none*/, second_part, second_part_len)) {
                 return ZINT_ERROR_MEMORY; /* `rt_cpy_cat()` only fails with OOM */
             }

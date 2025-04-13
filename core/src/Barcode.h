@@ -10,9 +10,6 @@
 #include "BarcodeFormat.h"
 #include "ByteArray.h"
 #include "Content.h"
-#ifdef ZXING_EXPERIMENTAL_API
-#include "ECI.h"
-#endif
 #include "ReaderOptions.h"
 #include "Error.h"
 #include "ImageView.h"

@@ -89,6 +89,10 @@ void put(const ByteArray& value, int begin, int end)
 {
 	put(nullptr, value, begin, end);
 }
+void put(std::basic_string_view<uint8_t> ba, int begin, int end)
+{
+	put(nullptr, ba, begin, end);
+}
 #endif
 
 // https://stackoverflow.com/a/49812018/664741
@@ -229,6 +233,20 @@ void put(std::list<std::string>* p_diagnostics, std::span<const uint8_t> value, 
 }
 #else
 void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begin, int end)
+{
+	if (_enabled) {
+		if (begin == -1) {
+			begin = 0;
+		}
+		if (end == -1) {
+			end = narrow_cast<int>(value.size());
+		}
+		for (int i = begin; i < end; i++) {
+			chr(p_diagnostics, value[i], "", true/*appendHex*/);
+		}
+	}
+}
+void put(std::list<std::string>* p_diagnostics, std::basic_string_view<uint8_t> value, int begin, int end)
 {
 	if (_enabled) {
 		if (begin == -1) {

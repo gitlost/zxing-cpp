@@ -413,8 +413,10 @@ int main(int argc, char* argv[])
 			}
 #endif
 			printOptional("Version:      ", barcode.version() + azType);
+#ifdef ZXING_EXPERIMENTAL_API
 			if (!JsonGetStr(barcode.extra(), "DataMask").empty())
 				std::cout << "Data Mask:    " << JsonGetStr(barcode.extra(), "DataMask") << "\n";
+#endif
 			printOptional("Error:        ", ToString(barcode.error()));
 
 			if (barcode.lineCount())

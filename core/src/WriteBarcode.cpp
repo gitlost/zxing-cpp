@@ -18,7 +18,6 @@
 
 #ifdef ZXING_USE_ZINT
 
-#include "oned/ODUPCEANCommon.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "ZXCType.h"
@@ -675,7 +674,7 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 	return CreateBarcode(data, size, DATA_MODE, opts);
 }
 
-// Writer ========================================================================
+// Writer
 
 struct SetCommonWriterOptions
 {

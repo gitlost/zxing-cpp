@@ -45,6 +45,7 @@ void put(const int value);
 void put(std::span<const uint8_t> value, int begin = -1, int end = -1);
 #else
 void put(const ByteArray& value, int begin = -1, int end = -1);
+void put(ByteView value, int begin = -1, int end = -1);
 void put(std::basic_string_view<uint8_t> ba, int begin = -1, int end = -1);
 #endif
 void fmt(const char* const format, ...);
@@ -60,6 +61,7 @@ void put(std::list<std::string>* p_diagnostics, const int value);
 void put(std::list<std::string>* p_diagnostics, std::span<const uint8_t> value, int begin = -1, int end = -1);
 #else
 void put(std::list<std::string>* p_diagnostics, const ByteArray& value, int begin = -1, int end = -1);
+void put(std::list<std::string>* p_diagnostics, ByteView value, int begin = -1, int end = -1);
 void put(std::list<std::string>* p_diagnostics, std::basic_string_view<uint8_t> ba, int begin = -1, int end = -1);
 #endif
 void fmt(std::list<std::string>* p_diagnostics, const char* const format, ...);
@@ -81,7 +83,8 @@ static inline void put(const int /*value*/) {}
 static inline void put(std::span<const uint8_t> /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
 #else
 static inline void put(const ByteArray& /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
-static inline void put(std::basic_string_view<uint8_t> ba, int /*begin*/ = -1, int /*end*/ = -1) {}
+static inline void put(ByteView /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
+static inline void put(std::basic_string_view<uint8_t> /*ba*/, int /*begin*/ = -1, int /*end*/ = -1) {}
 #endif
 static inline void fmt(const char* const /*format*/, ...) {}
 static inline void chr(const unsigned char /*value*/, const char* const /*prefixIfNonASCII*/ = "", const bool /*appendHex*/ = true) {}
@@ -93,6 +96,7 @@ static inline std::string print(const std::list<std::string>* /*p_diagnostics*/,
 static inline void put(std::list<std::string>* /*p_diagnostics*/, const std::string& /*value*/) {}
 static inline void put(std::list<std::string>* /*p_diagnostics*/, const int /*value*/) {}
 static inline void put(std::list<std::string>* /*p_diagnostics*/, const ByteArray& /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
+static inline void put(std::list<std::string>* /*p_diagnostics*/, ByteView /*value*/, int /*begin*/ = -1, int /*end*/ = -1) {}
 static inline void fmt(std::list<std::string>* /*p_diagnostics*/, const char* const /*format*/, ...) {}
 static inline void chr(std::list<std::string>* /*p_diagnostics*/, const unsigned char /*value*/, const char* const /*prefixIfNonASCII*/ = "",
 		 const bool /*appendHex*/ = false) {}

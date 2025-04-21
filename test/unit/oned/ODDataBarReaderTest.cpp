@@ -36,3 +36,19 @@ TEST(ODDataBarReaderTest, Composite)
 		EXPECT_EQ(result.text(), "(01)01234567890128");
 	}
 }
+
+TEST(ODDataBarReaderTest, Issue935)
+{
+	{
+		PatternRow row = { 4, 1, 4, 1, 1, 1, 3, 1, 1, 3, 9, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 1, 4, 1, 2, 1, 2, 2, 2, 1, 1, 8, 3, 2, 4, 1, 2, 2, 1, 1, 1, 4 };
+		auto result = parse(row);
+		EXPECT_TRUE(result.isValid());
+		EXPECT_EQ(result.text(), "(01)08801234560009");
+	}
+	{
+		PatternRow row = { 1, 1, 4, 1, 6, 1, 1, 1, 3, 1, 9, 1, 1, 1, 2, 2, 1, 1, 2, 4, 2, 1, 1, 4, 1, 3, 3, 1, 1, 1, 1, 7, 5, 1, 2, 1, 2, 3, 1, 3, 3, 1 };
+		auto result = parse(row);
+		EXPECT_TRUE(result.isValid());
+		EXPECT_EQ(result.text(), "(01)02001234567893");
+	}
+}

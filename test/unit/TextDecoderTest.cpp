@@ -119,7 +119,8 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		// Shift JIS 0x5C (backslash in ASCII) normally mapped to U+00A5 YEN SIGN, but direct ASCII mapping used
 		static const uint8_t data[] = { 0x5C };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "\u005C"); // Would normally be "\u00A5" ("¥")
+		EXPECT_EQ(str, L"\u005C"); // Would normally be "\u00A5"
+		EXPECT_EQ(ToUtf8(str), "\\"); // "¥" ditto
 	}
 	{
 		// Non-direct ASCII mapping
@@ -146,14 +147,16 @@ TEST(TextDecoderTest, AppendShift_JIS)
 		// Shift JIS 0xA5 (Yen sign in ISO/IEC 8859-1) goes to U+FF65 HALFWIDTH KATAKANA MIDDLE DOT
 		static const uint8_t data[] = { 0xA5 };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "\uFF65");
+		EXPECT_EQ(str, L"\uFF65");
+		EXPECT_EQ(ToUtf8(str), "･");
 	}
 
 	{
 		// Shift JIS 0x7E (tilde in ASCII) normally mapped to U+203E (overline), but direct ASCII mapping used
 		static const uint8_t data[] = { 0x7E };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "\u007E"); // Tilde, would normally be "\u203E" ("‾")
+		EXPECT_EQ(str, L"~"); // Would normally be "\u203E"
+		EXPECT_EQ(ToUtf8(str), "~"); // "‾" ditto
 	}
 	{
 		// Non-direct ASCII mapping
@@ -212,13 +215,15 @@ TEST(TextDecoderTest, AppendBig5)
 	{
 		static const uint8_t data[] = { 0xA1, 0x56 }; // En dash U+2013 in Big5, horizontal bar U+2015 in Big5-2003
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "\u2013");
+		EXPECT_EQ(str, L"\u2013");
+		EXPECT_EQ(ToUtf8(str), "–");
 	}
 
 	{
 		static const uint8_t data[] = { 0x1, ' ', 0xA1, 0x71, '@', 0xC0, 0x40, 0xF9, 0xD5, 0x7F };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "\u0001 \u3008@\u9310\u9F98\u007F");
+		EXPECT_EQ(str, L"\u0001 \u3008@\u9310\u9F98\u007F");
+		EXPECT_EQ(ToUtf8(str), "\x01 〈@錐龘\x7F");
 
 #ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
@@ -248,7 +253,7 @@ TEST(TextDecoderTest, AppendGBK)
 	CharacterSet cs = CharacterSet::GBK;
 	{
 		// In GBK, 0xA1A4 -> U+00B7 MIDDLE DOT and 0xA1AA -> U+2014 EM DASH
-		static const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0xA1, 0xA4, 0xA1, 0xAA, 0xA8, 0xA6, 'Z' };
+		const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0xA1, 0xA4, 0xA1, 0xAA, 0xA8, 0xA6, 'Z' };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(ToUtf8(str), std::string("a\u03B2c\u00B7\u2014\u00E9Z"));
 
@@ -270,10 +275,11 @@ TEST(TextDecoderTest, AppendGB18030)
 	CharacterSet cs = CharacterSet::GB18030;
 	{
 		// GB 18030 uses GBK values (superset)
-		static const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0x81, 0x39, 0xA7, 0x39, 0xA1, 0xA4, 0xA1, 0xAA,
+		const uint8_t data[] = { 'a', 0xA6, 0xC2, 'c', 0x81, 0x39, 0xA7, 0x39, 0xA1, 0xA4, 0xA1, 0xAA,
 										0xA8, 0xA6, 'Z' };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
-		EXPECT_EQ(ToUtf8(str), "a\u03B2c\u30FB\u00B7\u2014\u00E9Z");
+		EXPECT_EQ(str, L"a\u03B2c\u30FB\u00B7\u2014\u00E9Z");
+		EXPECT_EQ(ToUtf8(str), "aβc・·—éZ");
 
 #ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
@@ -286,7 +292,7 @@ TEST(TextDecoderTest, AppendEUC_KR)
 {
 	CharacterSet cs = CharacterSet::EUC_KR;
 	{
-		static const uint8_t data[] = { 0xA2, 0xE6 }; // Euro sign U+20AC added KS X 1001:1998, now supported, previously not
+		const uint8_t data[] = { 0xA2, 0xE6 }; // Euro sign U+20AC added KS X 1001:1998, now supported, previously not
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(ToUtf8(str), "\u20AC"); // Note previously unmapped
 	}
@@ -298,9 +304,11 @@ TEST(TextDecoderTest, AppendEUC_KR)
 	}
 
 	{
-		static const uint8_t data[] = { 'a', 0xA4, 0xA1, 'Z' };
+		const uint8_t data[] = { 'a', 0xA4, 0xA1, 'Z' };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(ToUtf8(str), "a\u3131Z");
+		EXPECT_EQ(str, L"a\u3131Z");
+		EXPECT_EQ(ToUtf8(str), "aㄱZ");
 
 #ifndef ZXING_USE_ZINT
 		std::string enc = TextEncoder::FromUnicode(str, cs);
@@ -313,7 +321,7 @@ TEST(TextDecoderTest, AppendUTF16BE)
 {
 	CharacterSet cs = CharacterSet::UTF16BE;
 	{
-		static const uint8_t data[] = { 0x00, 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x01, 0xFF, 0x10, 0xFF,
+		const uint8_t data[] = { 0x00, 0x01, 0x00, 0x7F, 0x00, 0x80, 0x00, 0xFF, 0x01, 0xFF, 0x10, 0xFF,
 										0xFF, 0xFD };
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(ToUtf8(str), "\u0001\u007F\u0080\u00FF\u01FF\u10FF\uFFFD");
@@ -332,7 +340,7 @@ TEST(TextDecoderTest, AppendUTF16BE)
 	}
 
 	{
-		static const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
+		const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(ToUtf8(str), std::string("\U00010000"));
 
@@ -342,7 +350,7 @@ TEST(TextDecoderTest, AppendUTF16BE)
 #endif
 	}
 	{
-		static const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
+		const uint8_t data[] = { 0xD8, 0x00, 0xDC, 0x00 }; // Surrogate pair U+10000
 		std::wstring str = FromUtf8(BytesToUtf8(data, cs));
 		EXPECT_EQ(str, L"\U00010000");
 		EXPECT_EQ(ToUtf8(str), "𐀀");

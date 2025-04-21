@@ -25,10 +25,8 @@ std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 		eci = ECI::Binary;
 
 	int error_number = zueci_dest_len_utf8(ToInt(eci), bytes.data(), bytes.size(), replacement, flags, &utf8_len);
-	if (error_number >= ZUECI_ERROR) {
-		fprintf(stderr, "BytesToUtf8: zueci_dest_len_utf8(%d) error_number %d\n", ToInt(eci), error_number);
+	if (error_number >= ZUECI_ERROR)
 		throw std::runtime_error("zueci_dest_len_utf8 failed");
-	}
 
 	std::string utf8(utf8_len, 0);
 

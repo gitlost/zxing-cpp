@@ -85,7 +85,6 @@ ZX_PROPERTY(std::string, options)
 	TYPE CreatorOptions::NAME() const noexcept { return JsonGet<TYPE>(d->options, #NAME); }
 
 ZX_RO_PROPERTY(bool, gs1);
-ZX_RO_PROPERTY(bool, gs1parens);
 ZX_RO_PROPERTY(bool, stacked);
 ZX_RO_PROPERTY(std::string_view, version);
 ZX_RO_PROPERTY(std::string_view, dataMask);
@@ -127,8 +126,8 @@ WriterOptions& WriterOptions::operator=(WriterOptions&&) = default;
 #ifdef ZXING_USE_ZINT
 static bool SupportsGS1(BarcodeFormat format)
 {
-	return (BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::Code16K | BarcodeFormat::DataMatrix
-			| BarcodeFormat::DotCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode)
+	return (BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::Code16K | BarcodeFormat::DataBarExpanded
+			| BarcodeFormat::DataMatrix | BarcodeFormat::DotCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode)
 		.testFlag(format);
 }
 #endif
@@ -206,8 +205,8 @@ static constexpr BarcodeFormatZXing2Zint barcodeFormatZXing2Zint[] = {
 	{BarcodeFormat::DataMatrix, BARCODE_DATAMATRIX},
 	{BarcodeFormat::DotCode, BARCODE_DOTCODE},
 	{BarcodeFormat::DXFilmEdge, BARCODE_DXFILMEDGE},
-	{BarcodeFormat::EAN8, BARCODE_EANX},
-	{BarcodeFormat::EAN13, BARCODE_EANX},
+	{BarcodeFormat::EAN8, BARCODE_EAN8},
+	{BarcodeFormat::EAN13, BARCODE_EAN13},
 	{BarcodeFormat::HanXin, BARCODE_HANXIN},
 	{BarcodeFormat::ITF, BARCODE_C25INTER},
 	{BarcodeFormat::MaxiCode, BARCODE_MAXICODE},
@@ -518,13 +517,9 @@ zint_symbol* CreatorOptions::zint() const
 
 	if (!zint) {
 #ifdef PRINT_DEBUG
-		printf("zint version: %d, sizeof(zint_symbol): %ld\n", ZBarcode_Version(), sizeof(zint_symbol));
+//		printf("zint version: %d, sizeof(zint_symbol): %ld, options: %s\n", ZBarcode_Version(), sizeof(zint_symbol), options().c_str());
 #endif
 		zint.reset(ZBarcode_Create());
-
-#ifdef PRINT_DEBUG
-		printf("options: %s\n", options().c_str());
-#endif
 
 		auto i = FindIf(barcodeFormatZXing2Zint, [zxing = format()](auto& v) { return v.zxing == zxing; });
 		if (i == std::end(barcodeFormatZXing2Zint))
@@ -578,7 +573,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	const auto format = opts.format();
 
 	zint->input_mode = mode == -1 || mode == UNICODE_MODE ? opts.gs1() && SupportsGS1(format) ? GS1_MODE : UNICODE_MODE : mode;
-	if (opts.gs1parens())
+	if ((zint->input_mode == UNICODE_MODE || zint->input_mode == GS1_MODE) && static_cast<const char*>(data)[0] != '[')
 		zint->input_mode |= GS1PARENS_MODE;
 
 	zint->show_hrt = 0;

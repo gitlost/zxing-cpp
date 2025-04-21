@@ -61,7 +61,6 @@ public:
 	TYPE NAME() const noexcept;
 
 	ZX_RO_PROPERTY(bool, gs1);
-	ZX_RO_PROPERTY(bool, gs1parens);
 	ZX_RO_PROPERTY(bool, stacked);
 	ZX_RO_PROPERTY(std::string_view, version);
 	ZX_RO_PROPERTY(std::string_view, dataMask);

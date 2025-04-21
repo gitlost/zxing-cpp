@@ -4,8 +4,10 @@
  */
 // SPDX-License-Identifier: Apache-2.0
 
+#include "GTIN.h"
 #include "Version.h"
 
+#include <iomanip>
 #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_WRITERS) && defined(ZXING_USE_ZINT)
 
 #include "BitMatrix.h"
@@ -404,7 +406,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 	{
 		BarcodeFormat format = BarcodeFormat::DataBarExpanded;
 
-		auto cOpts = CreatorOptions(format, "gs1parens").withQuietZones(false);
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
 		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234",
 			  "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false,
@@ -423,7 +425,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 	{
 		BarcodeFormat format = BarcodeFormat::DataBarExpanded; // Stacked
 
-		auto cOpts = CreatorOptions(format, "gs1parens,stacked").withQuietZones(false);
+		auto cOpts = CreatorOptions(format, "stacked").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
 		check(__LINE__, barcode, "]e0", "0112345678901231201290123\x1D" "911234",
 			  "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32 39 30 31 32 33 1D 39 31 31 32 33 34", false,
@@ -1155,7 +1157,7 @@ TEST(WriteBarcodeTest, ZintGS1)
 	{
 		BarcodeFormat format = BarcodeFormat::Aztec;
 
-		auto cOpts = CreatorOptions(format, "GS1,gs1parens").withQuietZones(false);
+		auto cOpts = CreatorOptions(format, "GS1").withQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12", cOpts);
 		check(__LINE__, barcode, "]z1", "01123456789012312012", "30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
 			  false, "]z4\\00002601123456789012312012", "5D 7A 34 30 31 31 32 33 34 35 36 37 38 39 30 31 32 33 31 32 30 31 32",
@@ -1266,5 +1268,31 @@ TEST(WriteBarcodeTest, ZintGS1)
 #endif
 	}
 }
+
+#if 0
+TEST(WriteBarcodeTest, RandomDataBar)
+{
+	auto randomTest = [](BarcodeFormat format) {
+		auto read_opts = ReaderOptions().setFormats(format).setIsPure(true).setBinarizer(Binarizer::BoolCast);
+
+		int n = 1000;
+		int nErrors = 0;
+		for (int i = 0; i < n; i += 1) {
+			auto input = ToString(rand(), 13);
+			input = "(01)" + input + GTIN::ComputeCheckDigit(input);
+			auto bc = CreateBarcodeFromText(input, format);
+			auto br = ReadBarcode(bc.symbol(), read_opts);
+
+			nErrors += !br.isValid() || bc.text(TextMode::HRI) != input;
+		}
+		EXPECT_EQ(nErrors, 0) << std::fixed << std::setw(4) << std::setprecision(2) << "(Error rate of " << ToString(format) << " is "
+							  << nErrors * 100 / (double)n << "%)";
+	};
+
+	randomTest(BarcodeFormat::DataBar);
+	randomTest(BarcodeFormat::DataBarLimited);
+	randomTest(BarcodeFormat::DataBarExpanded);
+}
+#endif
 
 #endif // #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_WRITERS) && defined(ZXING_USE_ZINT)

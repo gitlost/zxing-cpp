@@ -326,7 +326,7 @@ std::string appendBinIfTextEmpty(const Barcode& barcode)
 {
 	std::string text = barcode.text(TextMode::Plain);
 	if (text.empty() && !barcode.bytes().empty()) {
-		TextDecoder::Append(text, barcode.bytes().data(), barcode.bytes().size(), CharacterSet::BINARY);
+		text = BytesToUtf8(barcode.bytes(), CharacterSet::BINARY);
 	}
 	return text;
 }

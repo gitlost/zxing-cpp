@@ -57,7 +57,7 @@ inline constexpr int ToInt(ECI eci)
 
 inline constexpr bool IsText(ECI eci)
 {
-	return ToInt(eci) >= 0 && ToInt(eci) <= 170;
+	return ToInt(eci) >= 0 && (ToInt(eci) <= 35 || ToInt(eci) == 170);
 }
 
 inline constexpr bool CanProcess(ECI eci)

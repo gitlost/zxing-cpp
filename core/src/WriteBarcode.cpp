@@ -64,38 +64,38 @@ struct CreatorOptions::Data
 	CreatorOptions& CreatorOptions::NAME(TYPE v)& { return d->NAME = std::move(v), *this; } \
 	CreatorOptions&& CreatorOptions::NAME(TYPE v)&& { return d->NAME = std::move(v), std::move(*this); }
 
-	ZX_PROPERTY(BarcodeFormat, format)
-	ZX_PROPERTY(bool, readerInit)
-	ZX_PROPERTY(bool, forceSquareDataMatrix)
-	ZX_PROPERTY(std::string, ecLevel)
+ZX_PROPERTY(BarcodeFormat, format)
+ZX_PROPERTY(bool, readerInit)
+ZX_PROPERTY(bool, forceSquareDataMatrix)
+ZX_PROPERTY(std::string, ecLevel)
 #ifdef ZXING_USE_ZINT
-	ZX_PROPERTY(bool, withQuietZones)
-	ZX_PROPERTY(int, margin)
-	ZX_PROPERTY(CharacterSet, encoding)
-	ZX_PROPERTY(int, rotate)
-	ZX_PROPERTY(ECI, eci)
-	ZX_PROPERTY(float, height)
-	ZX_PROPERTY(bool, debug)
+ZX_PROPERTY(bool, withQuietZones)
+ZX_PROPERTY(int, margin)
+ZX_PROPERTY(CharacterSet, encoding)
+ZX_PROPERTY(int, rotate)
+ZX_PROPERTY(ECI, eci)
+ZX_PROPERTY(float, height)
+ZX_PROPERTY(bool, debug)
 #endif
-	ZX_PROPERTY(std::string, options)
+ZX_PROPERTY(std::string, options)
 
 #undef ZX_PROPERTY
 
 #define ZX_RO_PROPERTY(TYPE, NAME) \
 	TYPE CreatorOptions::NAME() const noexcept { return JsonGet<TYPE>(d->options, #NAME); }
 
-	ZX_RO_PROPERTY(bool, gs1);
-	ZX_RO_PROPERTY(bool, gs1parens);
-	ZX_RO_PROPERTY(bool, stacked);
-	ZX_RO_PROPERTY(std::string_view, version);
-	ZX_RO_PROPERTY(std::string_view, dataMask);
+ZX_RO_PROPERTY(bool, gs1);
+ZX_RO_PROPERTY(bool, gs1parens);
+ZX_RO_PROPERTY(bool, stacked);
+ZX_RO_PROPERTY(std::string_view, version);
+ZX_RO_PROPERTY(std::string_view, dataMask);
 
-#undef ZX_PROPERTY
+#undef ZX_RO_PROPERTY
 
-	CreatorOptions::CreatorOptions(BarcodeFormat format, std::string options) : d(std::make_unique<Data>(format, std::move(options))) {}
-	CreatorOptions::~CreatorOptions() = default;
-	CreatorOptions::CreatorOptions(CreatorOptions&&) = default;
-	CreatorOptions& CreatorOptions::operator=(CreatorOptions&&) = default;
+CreatorOptions::CreatorOptions(BarcodeFormat format, std::string options) : d(std::make_unique<Data>(format, std::move(options))) {}
+CreatorOptions::~CreatorOptions() = default;
+CreatorOptions::CreatorOptions(CreatorOptions&&) = default;
+CreatorOptions& CreatorOptions::operator=(CreatorOptions&&) = default;
 
 struct WriterOptions::Data
 {

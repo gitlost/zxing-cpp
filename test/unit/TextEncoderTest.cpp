@@ -18,8 +18,7 @@ void EnDeCode(CharacterSet cs, const CharT* in, std::string_view out)
 	std::string bytes = TextEncoder::FromUnicode(reinterpret_cast<const char*>(in), cs);
 	EXPECT_EQ(bytes, out);
 
-	std::string dec;
-	TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+	std::string dec = BytesToUtf8({reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size()}, cs);
 	EXPECT_EQ(dec, reinterpret_cast<const char*>(in));
 }
 
@@ -73,8 +72,7 @@ TEST(TextEncoderTest, Shift_JIS)
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\x5C"); // Mapped to backslash
 
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+        std::string dec = BytesToUtf8({reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size()}, cs);
 		EXPECT_EQ(dec, "\\"); // Mapped straight-thru to backslash
 	}
 	{
@@ -82,8 +80,7 @@ TEST(TextEncoderTest, Shift_JIS)
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\x7E"); // Mapped to tilde
 
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+        std::string dec = BytesToUtf8({reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size()}, cs);
 		EXPECT_EQ(dec, "~"); // Mapped straight-thru to tilde
 	}
 }
@@ -96,8 +93,7 @@ TEST(TextEncoderTest, GBK)
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "\xA1\xA1");
 
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+        std::string dec = BytesToUtf8({reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size()}, cs);
 		EXPECT_EQ(dec, str);
 	}
 }
@@ -110,8 +106,7 @@ TEST(TextEncoderTest, ISO646_Inv)
 		std::string bytes = TextEncoder::FromUnicode(str, cs);
 		EXPECT_EQ(bytes, "%");
 
-		std::string dec;
-		TextDecoder::Append(dec, reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), cs);
+        std::string dec = BytesToUtf8({reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size()}, cs);
 		EXPECT_EQ(dec, str);
 	}
 }

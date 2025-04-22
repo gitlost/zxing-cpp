@@ -323,7 +323,7 @@ Barcode MultiUPCEANReader::decodePattern(int rowNumber, PatternView& next, std::
 
 	return Barcode(res.txt, rowNumber, begin.pixelsInFront(), next.pixelsTillEnd(), res.format, symbologyIdentifier, error)
 #ifdef ZXING_EXPERIMENTAL_API
-		.extra(std::move(res.json))
+		.addExtra(std::move(res.json))
 #endif
 		;
 }

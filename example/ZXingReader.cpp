@@ -471,6 +471,7 @@ int main(int argc, char* argv[])
 				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
 #endif
 #ifdef ZXING_EXPERIMENTAL_API
+			printOptional("UPC-E:      ", barcode.extra("UPC-E"));
 			printOptional("Extra:      ", barcode.extra());
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);

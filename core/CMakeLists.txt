@@ -238,6 +238,7 @@ set (PUBLIC_HEADERS
     src/ImageView.h
     src/Point.h
     src/Quadrilateral.h
+    src/Range.h # re-evaluate for 3.0
     src/ReadBarcode.h
     src/ReaderOptions.h
     src/StructuredAppend.h
@@ -266,6 +267,7 @@ endif()
 if (ZXING_WRITERS_OLD)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/BitMatrixIO.h
+        src/Matrix.h
         src/MultiFormatWriter.h
     )
 endif()

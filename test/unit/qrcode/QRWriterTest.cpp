@@ -178,8 +178,7 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 #if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
 		auto cOpts = CreatorOptions(format).margin(aQRBorder).withQuietZones(false).ecLevel(std::to_string(bqrEcc)).eci(ECI::UTF8);
 		auto barcode = CreateBarcodeFromText(QRText, cOpts);
-		BitMatrix bitmatrix(barcode.bits().copy());
-		auto actual = ToString(bitmatrix, 'X', ' ', true);
+		auto actual = ToString(barcode.bits(), ' ', 'X', true); // Bits inverted
 		EXPECT_EQ(actual, // Different encodation than non-Zint
 "                                                                              \n"
 "  X X X X X X X   X   X   X X X X   X X X           X   X X   X X X X X X X   \n"

@@ -508,7 +508,7 @@ INTERNAL int dbar_omn_cc(struct zint_symbol *symbol, unsigned char source[], int
         symbol->rows += 2;
         set_module(symbol, symbol->rows, 0);
         unset_module(symbol, symbol->rows, 1);
-        writer = dbar_expand(symbol, 2 /*writer*/, 1 /*latch*/, total_widths, 23 /*start*/, 46 /*end*/);
+        (void) dbar_expand(symbol, 2 /*writer*/, 1 /*latch*/, total_widths, 23 /*start*/, 46 /*end*/);
         symbol->row_height[symbol->rows] = 7.0f; /* ISO/IEC 24724:2011 5.3.2.1 set to 7X */
 
         /* Separator pattern */

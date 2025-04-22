@@ -261,6 +261,8 @@ static int ParseECLevel(int symbology, std::string_view s)
 
 	switch (symbology) {
 	case BARCODE_AZTEC:
+	case BARCODE_QRCODE:
+	case BARCODE_HANXIN:
 		if (res >= 1 && res <= 4)
 			return res;
 		break;
@@ -272,16 +274,8 @@ static int ParseECLevel(int symbology, std::string_view s)
 		if (res >= 0 && res <= 8)
 			return res;
 		break;
-	case BARCODE_QRCODE:
-		if (res >= 1 && res <= 4)
-			return res;
-		break;
 	case BARCODE_RMQR:
 		if (res == 2 || res == 4)
-			return res;
-		break;
-	case BARCODE_HANXIN:
-		if (res >= 1 && res <= 4)
 			return res;
 		break;
 	}
@@ -488,23 +482,17 @@ static int DataMaskZint2ZXing(const zint_symbol* zint)
 
 	switch (zint->symbology) {
 	case BARCODE_MICROQR:
+	case BARCODE_HANXIN:
 		if (mask >= 1 && mask <= 4)
 			return mask - 1;
 		break;
+	case BARCODE_DOTCODE:
 	case BARCODE_QRCODE:
 		if (mask >= 1 && mask <= 8)
 			return mask - 1;
 		break;
 	case BARCODE_RMQR:
 		return 4; // Set to 4 (pattern 100)
-	case BARCODE_DOTCODE:
-		if (mask >= 1 && mask <= 8)
-			return mask - 1;
-		break;
-	case BARCODE_HANXIN:
-		if (mask >= 1 && mask <= 4)
-			return mask - 1;
-		break;
 	default:
 		break;
 	}
@@ -562,10 +550,6 @@ zint_symbol* CreatorOptions::zint() const
 #define CHECK(ZINT_CALL) \
 	if (int err = (ZINT_CALL); err >= ZINT_ERROR) \
 		throw std::invalid_argument(std::string(zint->errtxt) + " (retval: " + std::to_string(err) + ")");
-
-#define CHECK_NO_ERRTXT(ZINT_CALL) \
-	if (int err = (ZINT_CALL); err >= ZINT_ERROR) \
-		throw std::invalid_argument(std::to_string(err))
 
 Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions& opts)
 {
@@ -625,22 +609,23 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 										: (format == BarcodeFormat::MicroQRCode ? "M" : "") + std::to_string(decRes.versionNumber()));
 	} else if (format == BarcodeFormat::UPCE) {
 		std::string text(reinterpret_cast<const char *>(zint->text));
-		if (auto pos = text.find('+'); pos != text.npos)
+		if (auto pos = text.find('+'); pos != text.npos || (pos = text.find(' ')) != text.npos)
 			text = text.substr(0, pos);
 		json += JsonValue("UPC-E", text);
 	}
 
 	decRes.setJson(json);
 
-	// Byte array `bits` has white as 0, black as non-zero (0xFF)
+	// Byte array `bits` initially has white as 0, black as non-zero (0xFF), but gets inverted below
 	auto bits = BitMatrix(zint->bitmap_width, zint->bitmap_height);
 	std::transform(zint->bitmap, zint->bitmap + zint->bitmap_width * zint->bitmap_height, bits.row(0).begin(),
 				   [](unsigned char v) { return (v != '0') * BitMatrix::SET_V; });
 
 	Position pos = PositionZint2ZXing(opts, bits);
-	DetectorResult detRes(std::move(bits), std::move(pos));
+	DetectorResult detRes(BitMatrix(1, 1).copy(), std::move(pos)); // Bits gets properly set below
 
 	auto res = Barcode(std::move(decRes), std::move(detRes), format);
+	res.symbol(std::move(bits)); // Bits gets inverted in `symbol()`
 	res.zint(std::move(opts.d->zint));
 
 	// Reset zint for writing
@@ -860,8 +845,8 @@ std::string WriteBarcodeToUtf8(const Barcode& barcode, [[maybe_unused]] const Wr
 			continue;
 
 		for (int x = 0; x < iv.width(); ++x) {
-			int tp = bool(*iv.data(x, y)) ^ inverted;
-			int bt = (iv.height() == 1 && tp) || (y + 1 < iv.height() && (bool(*iv.data(x, y + 1)) ^ inverted));
+			int tp = bool(!*iv.data(x, y)) ^ inverted; // Bits inverted
+			int bt = (iv.height() == 1 && tp) || (y + 1 < iv.height() && (bool(!*iv.data(x, y + 1)) ^ inverted));
 			res << map[tp | (bt << 1)];
 		}
 		res << '\n';

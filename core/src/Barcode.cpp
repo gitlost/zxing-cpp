@@ -186,6 +186,7 @@ Result& Result::setReaderOptions(const ReaderOptions& opts)
 #ifdef ZXING_EXPERIMENTAL_API
 void Result::symbol(BitMatrix&& bits)
 {
+	bits.flipAll();
 	_symbol = std::make_shared<BitMatrix>(std::move(bits));
 }
 

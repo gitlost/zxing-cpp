@@ -9,13 +9,14 @@
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "PDFDecoderResultExtra.h"
+#include "PDFCustomData.h"
 #include "ZXAlgorithms.h"
 #include "ZXBigInteger.h"
 #include "ZXTestSupport.h"
 
 #include <array>
 #include <cassert>
+#include <charconv>
 #include <sstream>
 #include <utility>
 
@@ -570,7 +571,8 @@ static int DecodeMacroOptionalTextField(const std::vector<int>& codewords, int c
 /*
 * Helper to deal with optional numeric fields in Macros.
 */
-static int DecodeMacroOptionalNumericField(const std::vector<int>& codewords, int codeIndex, uint64_t& field)
+template<typename T>
+int DecodeMacroOptionalNumericField(const std::vector<int>& codewords, int codeIndex, T& field)
 {
 	Content result;
 	// Each optional field begins with an implied reset to ECI 2 (Annex H.2.3). ECI 2 is ASCII for 0-127, and Cp437
@@ -579,13 +581,15 @@ static int DecodeMacroOptionalNumericField(const std::vector<int>& codewords, in
 
 	codeIndex = NumericCompaction(codewords, codeIndex, result);
 
-	field = std::stoll(result.utf8());
+	auto txt = result.utf8();
+	if (std::from_chars(txt.data(), txt.data()+txt.size(), field).ec != std::errc())
+		throw FormatError();
 
 	return codeIndex;
 }
 
 ZXING_EXPORT_TEST_ONLY
-int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderResultExtra& resultMetadata)
+int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, PDF417CustomData& customData)
 {
 	// we must have at least two codewords left for the segment index
 	if (codeIndex + NUMBER_OF_SEQUENCE_CODEWORDS > codewords[0]) {
@@ -595,7 +599,7 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 
 	std::string strBuf = DecodeBase900toBase10(codewords, codeIndex += NUMBER_OF_SEQUENCE_CODEWORDS, NUMBER_OF_SEQUENCE_CODEWORDS);
 
-	resultMetadata.setSegmentIndex(std::stoi(strBuf));
+	customData.segmentIndex = std::stoi(strBuf);
 	Diagnostics::fmt("SegIdx(%s)", strBuf.c_str());
 
 	// Decoding the fileId codewords as 0-899 numbers, each 0-filled to width 3. This follows the spec
@@ -607,7 +611,7 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 		 codeIndex++) {
 		fileId << ToString(codewords[codeIndex], 3);
 	}
-	resultMetadata.setFileId(fileId.str());
+	customData.fileId = fileId.str();
 	Diagnostics::fmt("FileId(%s)", fileId.str().c_str());
 
 	int optionalFieldsStart = -1;
@@ -622,51 +626,37 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 				break;
 			switch (codewords[codeIndex]) {
 			case MACRO_PDF417_OPTIONAL_FIELD_FILE_NAME: {
-				std::string fileName;
-				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, fileName);
-				resultMetadata.setFileName(fileName);
-				Diagnostics::fmt("FileName(%s)", fileName.c_str());
+				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, customData.fileName);
+				Diagnostics::fmt("FileName(%s)", customData.fileName.c_str());
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_SENDER: {
-				std::string sender;
-				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, sender);
-				resultMetadata.setSender(sender);
-				Diagnostics::fmt("Sender(%s)", sender.c_str());
+				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, customData.sender);
+				Diagnostics::fmt("Sender(%s)", customData.sender.c_str());
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_ADDRESSEE: {
-				std::string addressee;
-				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, addressee);
-				resultMetadata.setAddressee(addressee);
-				Diagnostics::fmt("Addressee(%s)", addressee.c_str());
+				codeIndex = DecodeMacroOptionalTextField(codewords, codeIndex + 1, customData.addressee);
+				Diagnostics::fmt("Addressee(%s)", customData.addressee.c_str());
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_SEGMENT_COUNT: {
-				uint64_t segmentCount;
-				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, segmentCount);
-				resultMetadata.setSegmentCount(narrow_cast<int>(segmentCount));
-				Diagnostics::fmt("SegmentCount(%d)", narrow_cast<int>(segmentCount));
+				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, customData.segmentCount);
+				Diagnostics::fmt("SegmentCount(%d)", narrow_cast<int>(customData.segmentCount));
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_TIME_STAMP: {
-				uint64_t timestamp;
-				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, timestamp);
-				resultMetadata.setTimestamp(timestamp);
+				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, customData.timestamp);
 				Diagnostics::put("Timestamp");
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_CHECKSUM: {
-				uint64_t checksum;
-				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, checksum);
-				resultMetadata.setChecksum(narrow_cast<int>(checksum));
-				Diagnostics::fmt("Checksum(%d)", static_cast<int>(checksum));
+				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, customData.checksum);
+				Diagnostics::fmt("Checksum(%d)", static_cast<int>(customData.checksum));
 				break;
 			}
 			case MACRO_PDF417_OPTIONAL_FIELD_FILE_SIZE: {
-				uint64_t fileSize;
-				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, fileSize);
-				resultMetadata.setFileSize(fileSize);
+				codeIndex = DecodeMacroOptionalNumericField(codewords, codeIndex + 1, customData.fileSize);
 				Diagnostics::put("FileSize");
 				break;
 			}
@@ -676,7 +666,7 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 		}
 		case MACRO_PDF417_TERMINATOR: {
 			codeIndex++;
-			resultMetadata.setLastSegment(true);
+			customData.isLastSegment = true;
 			Diagnostics::put("MACROTerm");
 			break;
 		}
@@ -687,11 +677,11 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, DecoderRe
 	// copy optional fields to additional options
 	if (optionalFieldsStart != -1) {
 		int optionalFieldsLength = codeIndex - optionalFieldsStart;
-		if (resultMetadata.isLastSegment())
+		if (customData.isLastSegment)
 			optionalFieldsLength--; // do not include terminator
 
-		resultMetadata.setOptionalData(
-			std::vector<int>(codewords.begin() + optionalFieldsStart, codewords.begin() + optionalFieldsStart + optionalFieldsLength));
+		customData.optionalData =
+			std::vector<int>(codewords.begin() + optionalFieldsStart, codewords.begin() + optionalFieldsStart + optionalFieldsLength);
 	}
 
 	return codeIndex;
@@ -705,7 +695,7 @@ DecoderResult Decode(const std::vector<int>& codewords)
 	result.defaultCharset = CharacterSet::ISO8859_1;
 
 	bool readerInit = false;
-	auto resultMetadata = std::make_shared<DecoderResultExtra>();
+	auto customData = std::make_shared<PDF417CustomData>();
 
 	Diagnostics::put("  Decode:     ");
 
@@ -739,7 +729,7 @@ DecoderResult Decode(const std::vector<int>& codewords)
 				break;
 			case BEGIN_MACRO_PDF417_CONTROL_BLOCK:
 				Diagnostics::put("MACRO");
-				codeIndex = DecodeMacroBlock(codewords, codeIndex, *resultMetadata);
+				codeIndex = DecodeMacroBlock(codewords, codeIndex, *customData);
 				break;
 			case BEGIN_MACRO_PDF417_OPTIONAL_FIELD:
 			case MACRO_PDF417_TERMINATOR:
@@ -786,24 +776,24 @@ DecoderResult Decode(const std::vector<int>& codewords)
 		return e;
 	}
 
-	if (result.empty() && resultMetadata->segmentIndex() == -1) {
+	if (result.empty() && customData->segmentIndex == -1) {
 		Diagnostics::put("SEGIDXError");
 		return FormatError();
 	}
 
 	StructuredAppendInfo sai;
-	if (resultMetadata->segmentIndex() > -1) {
-		sai.count = resultMetadata->segmentCount() != -1
-						? resultMetadata->segmentCount()
-						: (resultMetadata->isLastSegment() ? resultMetadata->segmentIndex() + 1 : 0);
-		sai.index = resultMetadata->segmentIndex();
-		sai.id    = resultMetadata->fileId();
+	if (customData->segmentIndex > -1) {
+		sai.count = customData->segmentCount != -1
+						? customData->segmentCount
+						: (customData->isLastSegment ? customData->segmentIndex + 1 : 0);
+		sai.index = customData->segmentIndex;
+		sai.id    = customData->fileId;
 	}
 
 	return DecoderResult(std::move(result))
 		.setStructuredAppend(sai)
 		.setReaderInit(readerInit)
-		.setExtra(resultMetadata);
+		.setCustomData(customData);
 }
 
 } // namespace ZXing::Pdf417

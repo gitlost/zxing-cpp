@@ -620,14 +620,14 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 16, 16, 270 },
 		});
 
-		runTests("qrcode-2", "QRCode", 52, {
+		runTests("qrcode-2", "QRCode", 53, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 46, 49, 0   },
-			{ 46, 49, 90  },
-			{ 46, 49, 180 },
-			{ 46, 49, 270 },
+			{ 47, 50, 0   },
+			{ 47, 50, 90  },
+			{ 47, 50, 180 },
+			{ 47, 50, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 22, 1, pure }, // the misread is the 'outer' symbol in 16.png
+			{ 23, 1, pure }, // the misread is the 'outer' symbol in 16.png
 		});
 
 		runTests("qrcode-3", "QRCode", 28, {

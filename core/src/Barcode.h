@@ -127,14 +127,6 @@ public:
 	 */
 	bool isMirrored() const { return _isMirrored; }
 
-	const ResultMetadata& metadata() const {
-		return _metadata;
-	}
-
-	ResultMetadata& metadata() {
-		return _metadata;
-	}
-
 	/**
 	 * @brief isInverted is the symbol inverted / has reveresed reflectance (see ReaderOptions::tryInvert)
 	 */
@@ -219,7 +211,6 @@ private:
 	std::shared_ptr<zint_symbol> _zint;
 	std::string _json;
 #endif
-	ResultMetadata _metadata;
 	std::list<std::string> _diagnostics;
 };
 

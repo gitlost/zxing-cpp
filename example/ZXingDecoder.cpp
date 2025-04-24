@@ -37,7 +37,6 @@
 #include "oned/ODReader.h"
 #include "pdf417/MicroPDFReader.h"
 #include "pdf417/PDFReader.h"
-#include "pdf417/PDFDecoderResultExtra.h"
 #include "qrcode/QRReader.h"
 
 #include <chrono>
@@ -495,27 +494,6 @@ int main(int argc, char* argv[])
 			std::cout << "    Sequence: " << result.sequenceIndex() + 1 << " of unknown number\n";
 		if (!result.sequenceId().empty())
 			std::cout << "    Id:       \"" << result.sequenceId() << "\"\n";
-	}
-
-	const auto& meta = result.metadata();
-	if (meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA)) {
-		const auto& extra = std::dynamic_pointer_cast<Pdf417::DecoderResultExtra>(meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA));
-		if (!extra->empty()) {
-			std::cout << "PDF417 Macro";
-			if (!extra->fileName().empty())
-				std::cout << "\n  File Name:  " << extra->fileName();
-			if (extra->timestamp() != -1)
-				std::cout << "\n  Time Stamp: " << extra->timestamp();
-			if (!extra->sender().empty())
-				std::cout << "\n  Sender:     " << extra->sender();
-			if (!extra->addressee().empty())
-				std::cout << "\n  Addressee:  " << extra->addressee();
-			if (extra->fileSize() != -1)
-				std::cout << "\n  File Size:  " << extra->fileSize();
-			if (extra->checksum() != -1)
-				std::cout << "\n  Checksum:   " << extra->checksum();
-			std::cout << "\n";
-		}
 	}
 
 	if (result.readerInit())

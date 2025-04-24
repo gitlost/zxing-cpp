@@ -8,19 +8,19 @@
 #include "PDFReader.h"
 
 #include "Barcode.h"
-#include "BitMatrixCursor.h"
-#include "BitMatrixIO.h"
 #include "BinaryBitmap.h"
 #include "BitArray.h"
+#include "BitMatrixCursor.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "Diagnostics.h"
-#include "Pattern.h"
+#include "JSON.h"
 #include "PDFCodewordDecoder.h"
-#include "PDFDecoder.h"
-#include "PDFDecoderResultExtra.h"
+#include "PDFCustomData.h"
 #include "PDFDetector.h"
 #include "PDFScanningDecoder.h"
+#include "Pattern.h"
+#include "ReaderOptions.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -88,23 +88,30 @@ static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotat
 			ScanningDecoder::Decode(*detectorResult.bits, points[4], points[5], points[6], points[7],
 									GetMinCodewordWidth(points), GetMaxCodewordWidth(points));
 		if (decoderResult.isValid(returnErrors)) {
+			auto customData = std::static_pointer_cast<PDF417CustomData>(decoderResult.customData());
 			auto point = [&](int i) {
-				auto meta = dynamic_cast<DecoderResultExtra*>(decoderResult.extra().get());
-				if (points[i].hasValue() || i < 2 || !meta)
+				if (points[i].hasValue() || i < 2 || !customData)
 					return rotate(PointI(points[i].value()));
 				else {
-					auto p = rotate(PointI(points[i - 2].value()) + PointI(meta->approxSymbolWidth, 0));
+					auto p = rotate(PointI(points[i - 2].value()) + PointI(customData->approxSymbolWidth, 0));
 					p.x = std::clamp(p.x, 0, image.width() - 1);
 					p.y = std::clamp(p.y, 0, image.height() - 1);
 					return p;
 				}
 			};
-			Barcode barcode(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}},
-						  BarcodeFormat::PDF417);
-			if (auto extra = decoderResult.extra()) {
-				barcode.metadata().put(ResultMetadata::PDF417_EXTRA_METADATA, extra);
-			}
-			res.emplace_back(barcode);
+			auto barcode =
+				Barcode(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}}, BarcodeFormat::PDF417)
+#ifdef ZXING_EXPERIMENTAL_API
+					.addExtra(JsonValue("Sender", customData->sender))
+					.addExtra(JsonValue("Addresse", customData->addressee))
+					.addExtra(JsonValue("FileId", customData->fileId))
+					.addExtra(JsonValue("FileName", customData->fileName))
+					.addExtra(customData->fileSize != -1 ? JsonValue("FileSize", customData->fileSize) : "")
+					.addExtra(customData->timestamp != -1 ? JsonValue("Timestamp", customData->timestamp) : "")
+					.addExtra(customData->checksum != -1 ? JsonValue("Checksum", customData->checksum) : "")
+#endif
+					;
+			res.push_back(std::move(barcode));
 			if (!multiple)
 				return res;
 		}

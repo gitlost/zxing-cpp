@@ -65,25 +65,6 @@ Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, Ba
 		snprintf(_version, 4, "%d", decodeResult.versionNumber());
 	snprintf(_ecLevel, 4, "%s", decodeResult.ecLevel().data());
 
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#pragma warning(disable: 4996) /* was declared deprecated */
-#endif
-	if (sequenceSize() != -1) {
-		_metadata.put(ResultMetadata::STRUCTURED_APPEND_CODE_COUNT, sequenceSize());
-	}
-	if (sequenceIndex() != -1) {
-		_metadata.put(ResultMetadata::STRUCTURED_APPEND_SEQUENCE, sequenceIndex());
-	}
-	if (_format == BarcodeFormat::QRCode && !sequenceId().empty()) {
-		_metadata.put(ResultMetadata::STRUCTURED_APPEND_PARITY, std::stoi(sequenceId()));
-	}
-#if defined(__clang__) || defined(__GNUC__)
-#pragma GCC diagnostic pop
-#endif
-
 	// TODO: add type opaque and code specific 'extra data'? (see DecoderResult::extra())
 
 	if (Diagnostics::enabled()) {

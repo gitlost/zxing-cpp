@@ -16,6 +16,7 @@ add_executable (UnitTest
     BitArrayUtility.h
     BitHacksTest.cpp
     CharacterSetECITest.cpp
+    ContentTest.cpp
     ErrorTest.cpp
     GTINTest.cpp
     JSONTest.cpp
@@ -80,7 +81,6 @@ endif()
 
 if (ZXING_READERS AND ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
 target_sources (UnitTest PRIVATE
-    ContentTest.cpp
     ReedSolomonTest.cpp
     TextEncoderTest.cpp
     aztec/AZEncodeDecodeTest.cpp

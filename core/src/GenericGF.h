@@ -45,7 +45,6 @@ protected:
 	*  In most cases it should be 1, but for QR code it is 0.
 	*/
 	GenericGF(int primitive, int size, int b);
-	virtual ~GenericGF() = default;
 
 	int fast_mod(const int input, const int ceil) const {
 		// avoid using the '%' modulo operator => ReedSolomon computation is more than twice as fast
@@ -54,6 +53,8 @@ protected:
 	};
 
 public:
+	virtual ~GenericGF() = default;
+
 	static const GenericGF& AztecData12();
 	static const GenericGF& AztecData10();
 	static const GenericGF& AztecData6();

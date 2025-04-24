@@ -14,7 +14,6 @@
 #include "TextDecoder.h"
 #include "Utf.h"
 #include "Version.h"
-#include "pdf417/PDFDecoderResultExtra.h"
 
 #ifdef ZXING_EXPERIMENTAL_API
 #include "JSON.h"
@@ -413,11 +412,10 @@ int main(int argc, char* argv[])
 			}
 #endif
 			printOptional("Version:      ", barcode.version() + azType);
-#ifdef ZXING_EXPERIMENTAL_API
-			if (!JsonGetStr(barcode.extra(), "DataMask").empty())
-				std::cout << "Data Mask:    " << JsonGetStr(barcode.extra(), "DataMask") << "\n";
-#endif
 			printOptional("Error:        ", ToString(barcode.error()));
+#ifdef ZXING_EXPERIMENTAL_API
+			printOptional("Extra:        ", barcode.extra());
+#endif
 
 			if (barcode.lineCount())
 				std::cout << "Lines:        " << barcode.lineCount() << "\n";
@@ -442,27 +440,6 @@ int main(int argc, char* argv[])
 					std::cout << "    Id:       \"" << barcode.sequenceId() << "\"\n";
 			}
 
-			const auto& meta = barcode.metadata();
-			if (meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA)) {
-				const auto& extra = std::dynamic_pointer_cast<Pdf417::DecoderResultExtra>(meta.getCustomData(ResultMetadata::PDF417_EXTRA_METADATA));
-				if (!extra->empty()) {
-					std::cout << "PDF417 Macro";
-					if (!extra->fileName().empty())
-						std::cout << "\n  File Name:  " << extra->fileName();
-					if (extra->timestamp() != -1)
-						std::cout << "\n  Time Stamp: " << extra->timestamp();
-					if (!extra->sender().empty())
-						std::cout << "\n  Sender:     " << extra->sender();
-					if (!extra->addressee().empty())
-						std::cout << "\n  Addressee:  " << extra->addressee();
-					if (extra->fileSize() != -1)
-						std::cout << "\n  File Size:  " << extra->fileSize();
-					if (extra->checksum() != -1)
-						std::cout << "\n  Checksum:   " << extra->checksum();
-					std::cout << "\n";
-				}
-			}
-
 			if (barcode.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 
@@ -471,8 +448,6 @@ int main(int argc, char* argv[])
 				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
 #endif
 #ifdef ZXING_EXPERIMENTAL_API
-			printOptional("UPC-E:      ", barcode.extra("UPC-E"));
-			printOptional("Extra:      ", barcode.extra());
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
 #endif

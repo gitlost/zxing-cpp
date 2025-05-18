@@ -42,22 +42,22 @@ namespace DecodedBitStreamParser {
 * See ISO 16022:2006, Annex C Table C.1
 * The C40 Basic Character Set (*'s used for placeholders for the shift values)
 */
-static const char C40_BASIC_SET_CHARS[] = {
+static constexpr std::array C40_BASIC_SET_CHARS = {
 	'*', '*', '*', ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
 	'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 };
 
-static const char C40_SHIFT2_SET_CHARS[] = {
+static constexpr std::array C40_SHIFT2_SET_CHARS = {
 	'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*',  '+', ',', '-', '.',
-	'/', ':', ';', '<', '=', '>', '?',  '@', '[', '\\', ']', '^', '_', 29 // FNC1->29
+	'/', ':', ';', '<', '=', '>', '?',  '@', '[', '\\', ']', '^', '_', (char)29 // FNC1->29
 };
 
 /**
 * See ISO 16022:2006, Annex C Table C.2
 * The Text Basic Character Set (*'s used for placeholders for the shift values)
 */
-static const char TEXT_BASIC_SET_CHARS[] = {
+static constexpr std::array TEXT_BASIC_SET_CHARS = {
 	'*', '*', '*', ' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 	'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
 	'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
@@ -66,9 +66,9 @@ static const char TEXT_BASIC_SET_CHARS[] = {
 // Shift 2 for Text is the same encoding as C40
 #define TEXT_SHIFT2_SET_CHARS C40_SHIFT2_SET_CHARS
 
-static const char TEXT_SHIFT3_SET_CHARS[] = {
+static constexpr std::array TEXT_SHIFT3_SET_CHARS = {
 	'`', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
-	'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '{', '|', '}', '~', 127
+	'O',  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '{', '|', '}', '~', (char)127
 };
 
 struct Shift128
@@ -152,8 +152,8 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 	int shift = 0;
 
 	const bool isC40 = mode == Mode::C40;
-	const char* const BASIC_SET_CHARS = isC40 ? C40_BASIC_SET_CHARS : TEXT_BASIC_SET_CHARS;
-	const char* const SHIFT_SET_CHARS = isC40 ? C40_SHIFT2_SET_CHARS : TEXT_SHIFT2_SET_CHARS;
+	auto& BASIC_SET_CHARS = mode == Mode::C40 ? C40_BASIC_SET_CHARS : TEXT_BASIC_SET_CHARS;
+	auto& SHIFT_SET_CHARS = mode == Mode::C40 ? C40_SHIFT2_SET_CHARS : TEXT_SHIFT2_SET_CHARS;
 	//const char* const prefixIfNonASCII = isC40 ? "C" : "T";
 	const char* const modeName = isC40 ? "C40" : "TEX";
 
@@ -165,7 +165,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 				if (cValue < 3) {
 					shift = cValue + 1;
 					Diagnostics::fmt("Sh%d", shift);
-				} else if (cValue < 40) { // Size(BASIC_SET_CHARS)
+				} else if (cValue < Size(BASIC_SET_CHARS)) {
 					result.push_back(upperShift(BASIC_SET_CHARS[cValue]));
 				} else {
 					Diagnostics::fmt("%sErrorShift0(%d)", modeName, cValue);
@@ -181,7 +181,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 				}
 				break;
 			case 2:
-				if (cValue < 28) // Size(SHIFT_SET_CHARS))
+				if (cValue < Size(SHIFT_SET_CHARS))
 					result.push_back(upperShift(SHIFT_SET_CHARS[cValue]));
 				else if (cValue == 30) { // Upper Shift
 					upperShift.set = true;

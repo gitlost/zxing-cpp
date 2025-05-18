@@ -82,12 +82,12 @@ ZX_PROPERTY(std::string, options)
 #undef ZX_PROPERTY
 
 #define ZX_RO_PROPERTY(TYPE, NAME) \
-	TYPE CreatorOptions::NAME() const noexcept { return JsonGet<TYPE>(d->options, #NAME); }
+	std::optional<TYPE> CreatorOptions::NAME() const noexcept { return JsonGet<TYPE>(d->options, #NAME); }
 
 ZX_RO_PROPERTY(bool, gs1);
 ZX_RO_PROPERTY(bool, stacked);
-ZX_RO_PROPERTY(std::string_view, version);
-ZX_RO_PROPERTY(std::string_view, dataMask);
+ZX_RO_PROPERTY(int, version);
+ZX_RO_PROPERTY(int, dataMask);
 
 #undef ZX_RO_PROPERTY
 
@@ -231,7 +231,7 @@ static int ParseECLevel(int symbology, std::string_view s)
 
 	// Convert as number into `res`, up to optional percent
 	if (std::from_chars(s.data(), s.data() + s.size() - (s.back() == '%'), res).ec != std::errc{})
-		throw std::invalid_argument("Invalid ecLevel: '" + std::string(s) + "'");
+		throw std::invalid_argument(StrCat("Invalid ecLevel: '", s, "'"));
 
 	auto findClosestECLevel = [](const std::vector<int>& list, int val) {
 		int mIdx = -2, mAbs = 100;
@@ -391,7 +391,6 @@ static std::string ECLevelZint2ZXing(const zint_symbol* zint)
 static Position PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& bits)
 {
 	const BarcodeFormat format = opts.format();
-	const bool stacked = opts.stacked();
 	const int rotate = opts.rotate();
 
 	Position pos;
@@ -402,7 +401,7 @@ static Position PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& 
 		if (format == BarcodeFormat::Aztec) {
 			// Do nothing
 		} else if (format == BarcodeFormat::DataBar) {
-			if (stacked) {
+			if (opts.stacked()) {
 				width--;
 				left++;
 			} else {
@@ -410,7 +409,7 @@ static Position PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& 
 			}
 			height--; // Point at bottommost
 		} else if (format == BarcodeFormat::DataBarExpanded) {
-			if (stacked) {
+			if (opts.stacked()) {
 			} else {
 				width--; // Point at rightmost
 				height--; // Point at bottommost
@@ -527,11 +526,11 @@ zint_symbol* CreatorOptions::zint() const
 		if (!ecLevel().empty() && !IsLinearBarcode(format()))
 			zint->option_1 = ParseECLevel(zint->symbology, ecLevel());
 
-		if (auto str = version(); str.size() && !IsLinearBarcode(format()))
-			zint->option_2 = svtoi(str);
+		if (auto val = version(); val && !IsLinearBarcode(format()))
+			zint->option_2 = *val;
 
-		if (auto str = dataMask(); str.size() && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format()))
-			zint->option_3 = (zint->option_3 & 0xFF) | (svtoi(str) + 1) << 8;
+		if (auto val = dataMask(); val && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format()))
+			zint->option_3 = (zint->option_3 & 0xFF) | (*val + 1) << 8;
 
 		zint->output_options |= withQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
 		if (height() && IsLinearBarcode(format()))
@@ -549,7 +548,7 @@ zint_symbol* CreatorOptions::zint() const
 
 #define CHECK(ZINT_CALL) \
 	if (int err = (ZINT_CALL); err >= ZINT_ERROR) \
-		throw std::invalid_argument(std::string(zint->errtxt) + " (retval: " + std::to_string(err) + ")");
+		throw std::invalid_argument(StrCat(zint->errtxt, " (retval: ", std::to_string(err), ")"));
 
 Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions& opts)
 {

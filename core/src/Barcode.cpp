@@ -174,7 +174,8 @@ void Result::symbol(BitMatrix&& bits)
 
 ImageView Result::symbol() const
 {
-	return {_symbol->row(0).begin(), _symbol->width(), _symbol->height(), ImageFormat::Lum};
+	return _symbol && !_symbol->empty() ? ImageView{_symbol->row(0).begin(), _symbol->width(), _symbol->height(), ImageFormat::Lum}
+										: ImageView{};
 }
 
 const BitMatrix& Result::bits() const

@@ -484,7 +484,9 @@ int main(int argc, char* argv[])
 
 	printOptional("Error:      ", ToString(result.error()));
 	printOptional("EC Level:   ", result.ecLevel());
+#ifdef ZXING_EXPERIMENTAL_API
 	printOptional("Extra:      ", result.extra());
+#endif
 
 	if (result.isPartOfSequence()) {
 		std::cout << "Structured Append\n";

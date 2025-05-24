@@ -48,6 +48,7 @@ struct CLI
 	bool bytesOnly = false;
 	bool showSymbol = false;
 	bool angleEscape = false;
+	bool json = false;
 };
 
 static void PrintUsage(const char* exePath)
@@ -67,6 +68,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
 #ifdef ZXING_EXPERIMENTAL_API
 			  << "    -symbol       Print the detected symbol (if available)\n"
+			  << "    -json         Print a complete JSON formated serialization\n"
 #endif
 			  << "    -pngout <file name>\n"
 			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
@@ -187,6 +189,8 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			cli.bytesOnly = true;
 		} else if (is("-symbol")) {
 			cli.showSymbol = true;
+		} else if (is("-json")) {
+			cli.json = true;
 		} else if (is("-pngout")) {
 			if (++i == argc)
 				return false;
@@ -339,6 +343,13 @@ int main(int argc, char* argv[])
 #ifdef ZX_DIAGNOSTICS
 			if (options.enableDiagnostics()) {
 				barcode.setContentDiagnostics();
+			}
+#endif
+#ifdef ZXING_EXPERIMENTAL_API
+			if (cli.json) {
+				if (barcode.format() != ZXing::BarcodeFormat::None)
+					std::cout << "{\"FilePath\":\"" << filePath << "\"," << barcode.extra("ALL").substr(1) << "\n";
+				continue;
 			}
 #endif
 

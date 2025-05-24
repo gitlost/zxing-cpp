@@ -619,7 +619,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 
 	Diagnostics::fmt("  Unmasked:   (%d)", resultBytes.size()); Diagnostics::dump(resultBytes, "\n");
 	Diagnostics::put("  Decode:     ");
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset).setJson(JsonValue("DataMask", dataMask));
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset).setJson(JsonProp(BarcodeExtra::DataMask, dataMask, -1 /*ignore*/));
 }
 
 } // namespace ZXing::DotCode

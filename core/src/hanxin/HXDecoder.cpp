@@ -385,7 +385,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 
 	Diagnostics::put("  Decode:     ");
 	return DecodedBitStreamParser::Decode(std::move(resultBytes), optionsCharset, ecLevel)
-			.setJson(JsonValue("DataMask", dataMask)).setVersionNumber(version);
+			.setJson(JsonProp(BarcodeExtra::DataMask, dataMask, -1 /*ignore*/)).setVersionNumber(version);
 }
 
 } // namespace ZXing::HanXin

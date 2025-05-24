@@ -311,7 +311,7 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::UPCE, {'E', '0'}},
 };
 
-static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, const ByteArray& ba)
+static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, const ByteArray& ba, std::string &eanAddOn)
 {
 	const BarcodeFormat format = opts.format();
 
@@ -320,8 +320,10 @@ static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& o
 	SymbologyIdentifier ret = i->si;
 
 	if ((BarcodeFormat::EAN8 | BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::UPCE).testFlag(format)) {
-		if (ba.size() > 13) // Have EAN-2/5 add-on?
+		if (ba.size() > 13) { // Have EAN-2/5 add-on?
 			ret.modifier = '3'; // Combined packet, EAN-13, UPC-A, UPC-E, with add-on
+			eanAddOn = ba.asString(13);
+		}
 	} else if (format == BarcodeFormat::Code39) {
 		if (FindIf(ba, zx_iscntrl) != ba.end()) // Extended Code 39?
 			ret.modifier = static_cast<char>(ret.modifier + 4);
@@ -585,7 +587,8 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 			ba.erase(ba.end() - 2, ba.end());
 	}
 
-	SymbologyIdentifier si = SymbologyIdentifierZint2ZXing(opts, ba);
+	std::string eanAddOn;
+	SymbologyIdentifier si = SymbologyIdentifierZint2ZXing(opts, ba, eanAddOn);
 	Content content(std::move(ba), si, {}, eci);
 	if (eci == ECI::Unknown)
 		content.switchEncoding(CharacterSetFromString(std::to_string(zint->raw_segs[0].eci)));
@@ -600,17 +603,23 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	std::string json;
 
 	if (int dataMask = DataMaskZint2ZXing(zint); dataMask != -1)
-		json += JsonValue("DataMask", dataMask);
+		json += JsonProp(BarcodeExtra::DataMask, dataMask, -1 /*ignore*/);
 
 	if ((BarcodeFormat::MicroQRCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode).testFlag(format)) {
-		json += JsonValue("Version", format == BarcodeFormat::RMQRCode
+		json += JsonProp(BarcodeExtra::Version, format == BarcodeFormat::RMQRCode
 										? "R" + ToString(QRCode::Version::SymbolSize(decRes.versionNumber(), QRCode::Type::rMQR), true)
 										: (format == BarcodeFormat::MicroQRCode ? "M" : "") + std::to_string(decRes.versionNumber()));
-	} else if (format == BarcodeFormat::UPCE) {
-		std::string text(reinterpret_cast<const char *>(zint->text));
-		if (auto pos = text.find('+'); pos != text.npos || (pos = text.find(' ')) != text.npos)
-			text = text.substr(0, pos);
-		json += JsonValue("UPC-E", text);
+	} else if (format == BarcodeFormat::DataMatrix) {
+		json += JsonProp(BarcodeExtra::Version, std::to_string(zint->rows) + 'x' + std::to_string(zint->width));
+	} else if ((BarcodeFormat::EAN8 | BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::UPCE).testFlag(format)) {
+		if (format == BarcodeFormat::UPCE) {
+			std::string text(reinterpret_cast<const char *>(zint->text));
+			if (auto pos = text.find('+'); pos != text.npos || (pos = text.find(' ')) != text.npos)
+				text = text.substr(0, pos);
+			json += JsonProp(BarcodeExtra::UPCE, text);
+		}
+		if (si.modifier == '3') // Have EAN-2/5 add-on?
+			json += JsonProp(BarcodeExtra::EanAddOn, eanAddOn);
 	}
 
 	decRes.setJson(json);

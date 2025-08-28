@@ -46,66 +46,57 @@
 #define AZ_BIN_CAP_CWDS_S   "1661" /* String version of (AZTEC_BIN_CAPACITY / 12) */
 
 /* Count number of consecutive (. SP) or (, SP) Punct mode doubles for comparison against Digit mode encoding */
-static int az_count_doubles(const unsigned char source[], int i, const int length) {
-    int c = 0;
+static int az_count_doubles(const unsigned char source[], const int position, const int length) {
+    int i;
 
-    while ((i + 1 < length) && ((source[i] == '.') || (source[i] == ',')) && (source[i + 1] == ' ')) {
-        c++;
-        i += 2;
-    }
+    for (i = position; i + 1 < length && (source[i] == '.' || source[i] == ',') && source[i + 1] == ' '; i += 2);
 
-    return c;
+    return (i - position) >> 1;
 }
 
 /* Count number of consecutive full stops or commas (can be encoded in Punct or Digit mode) */
-static int az_count_dotcomma(const unsigned char source[], int i, const int length) {
-    int c = 0;
+static int az_count_dotcomma(const unsigned char source[], const int position, const int length) {
+    int i;
 
-    while (i < length && ((source[i] == '.') || (source[i] == ','))) {
-        c++;
-        i++;
-    }
+    for (i = position; i < length && (source[i] == '.' || source[i] == ','); i++);
 
-    return c;
+    return i - position;
 }
 
 /* Count number of consecutive `chr`s */
-static int az_count_chr(const unsigned char source[], int i, const int length, const unsigned char chr) {
-    int c = 0;
+static int az_count_chr(const unsigned char source[], const int position, const int length, const unsigned char chr) {
+    int i;
 
-    while (i < length && source[i] == chr) {
-        c++;
-        i++;
-    }
+    for (i = position; i < length && source[i] == chr; i++);
 
-    return c;
+    return i - position;
 }
 
 /* Return mode following current, or 'E' if none */
-static char az_get_next_mode(const char encode_mode[], const int src_len, int i) {
-    int current_mode = encode_mode[i];
+static char az_get_next_mode(const char encode_mode[], const int length, int i) {
+    const char current_mode = encode_mode[i];
 
     do {
         i++;
-    } while ((i < src_len) && (encode_mode[i] == current_mode));
-    if (i >= src_len) {
+    } while (i < length && encode_mode[i] == current_mode);
+
+    if (i >= length) {
         return 'E';
-    } else {
-        return encode_mode[i];
     }
+    return encode_mode[i];
 }
 
-/* Same as `bin_append_posn()`, except check for buffer overflow first */
+/* Same as `z_bin_append_posn()`, except check for buffer overflow first */
 static int az_bin_append_posn(const int arg, const int length, char *binary, const int bin_posn) {
 
     if (bin_posn + length > AZTEC_BIN_CAPACITY) {
         return 0; /* Fail */
     }
-    return bin_append_posn(arg, length, binary, bin_posn);
+    return z_bin_append_posn(arg, length, binary, bin_posn);
 }
 
 /* Determine encoding modes and encode */
-static int aztec_text_process(const unsigned char source[], int src_len, int bp, char binary_string[], const int gs1,
+static int aztec_text_process(const unsigned char source[], int length, int bp, char binary_string[], const int gs1,
             const int gs1_bp, const int eci, char *p_current_mode, int *data_length, const int debug_print) {
 
     int i, j;
@@ -114,11 +105,11 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
     int count;
     char next_mode;
     int reduced_length;
-    char *encode_mode = (char *) z_alloca(src_len + 1);
-    unsigned char *reduced_source = (unsigned char *) z_alloca(src_len + 1);
-    char *reduced_encode_mode = (char *) z_alloca(src_len + 1);
+    char *encode_mode = (char *) z_alloca(length + 1);
+    unsigned char *reduced_source = (unsigned char *) z_alloca(length + 1);
+    char *reduced_encode_mode = (char *) z_alloca(length + 1);
 
-    for (i = 0; i < src_len; i++) {
+    for (i = 0; i < length; i++) {
         if (source[i] >= 128) {
             encode_mode[i] = 'B';
         } else if (gs1 && source[i] == '\x1D') {
@@ -131,41 +122,41 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
     /* Deal first with letter combinations which can be combined to one codeword
        Combinations are (CR LF) (. SP) (, SP) (: SP) in Punct mode */
     current_mode = initial_mode;
-    for (i = 0; i + 1 < src_len; i++) {
+    for (i = 0; i + 1 < length; i++) {
         /* Combination (CR LF) should always be in Punct mode */
-        if ((source[i] == 13) && (source[i + 1] == 10)) {
+        if (source[i] == 13 && source[i + 1] == 10) {
             encode_mode[i] = 'P';
             encode_mode[i + 1] = 'P';
 
         /* Combination (: SP) should always be in Punct mode */
-        } else if ((source[i] == ':') && (source[i + 1] == ' ')) {
+        } else if (source[i] == ':' && source[i + 1] == ' ') {
             encode_mode[i + 1] = 'P';
 
         /* Combinations (. SP) and (, SP) sometimes use fewer bits in Digit mode */
-        } else if (((source[i] == '.') || (source[i] == ',')) && (source[i + 1] == ' ') && (encode_mode[i] == 'X')) {
-            count = az_count_doubles(source, i, src_len);
-            next_mode = az_get_next_mode(encode_mode, src_len, i);
+        } else if ((source[i] == '.' || source[i] == ',') && source[i + 1] == ' ' && encode_mode[i] == 'X') {
+            count = az_count_doubles(source, i, length);
+            next_mode = az_get_next_mode(encode_mode, length, i);
 
             if (current_mode == 'U') {
-                if ((next_mode == 'D') && (count <= 5)) {
+                if (next_mode == 'D' && count <= 5) {
                     memset(encode_mode + i, 'D', 2 * count);
                 }
 
             } else if (current_mode == 'L') {
-                if ((next_mode == 'D') && (count <= 4)) {
+                if (next_mode == 'D' && count <= 4) {
                     memset(encode_mode + i, 'D', 2 * count);
                 }
 
             } else if (current_mode == 'M') {
-                if ((next_mode == 'D') && (count == 1)) {
+                if (next_mode == 'D' && count == 1) {
                     encode_mode[i] = 'D';
                     encode_mode[i + 1] = 'D';
                 }
 
             } else if (current_mode == 'D') {
-                if ((next_mode != 'D') && (count <= 4)) {
+                if (next_mode != 'D' && count <= 4) {
                     memset(encode_mode + i, 'D', 2 * count);
-                } else if ((next_mode == 'D') && (count <= 7)) {
+                } else if (next_mode == 'D' && count <= 7) {
                     memset(encode_mode + i, 'D', 2 * count);
                 }
             }
@@ -177,32 +168,32 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             }
         }
 
-        if ((encode_mode[i] != 'X') && (encode_mode[i] != 'B')) {
+        if (encode_mode[i] != 'X' && encode_mode[i] != 'B') {
             current_mode = encode_mode[i];
         }
     }
 
     if (debug_print) {
         fputs("First Pass:\n", stdout);
-        printf("%.*s\n", src_len, encode_mode);
+        printf("%.*s\n", length, encode_mode);
     }
 
     /* Reduce two letter combinations to one codeword marked as [abcd] in Punct mode */
     i = 0;
     j = 0;
-    while (i < src_len) {
+    while (i < length) {
         reduced_encode_mode[j] = encode_mode[i];
-        if (i + 1 < src_len) {
-            if ((source[i] == 13) && (source[i + 1] == 10)) { /* CR LF */
+        if (i + 1 < length) {
+            if (source[i] == 13 && source[i + 1] == 10) { /* CR LF */
                 reduced_source[j] = 'a';
                 i += 2;
-            } else if ((source[i] == '.') && (source[i + 1] == ' ') && (encode_mode[i] == 'P')) {
+            } else if (source[i] == '.' && source[i + 1] == ' ' && encode_mode[i] == 'P') {
                 reduced_source[j] = 'b';
                 i += 2;
-            } else if ((source[i] == ',') && (source[i + 1] == ' ') && (encode_mode[i] == 'P')) {
+            } else if (source[i] == ',' && source[i + 1] == ' ' && encode_mode[i] == 'P') {
                 reduced_source[j] = 'c';
                 i += 2;
-            } else if ((source[i] == ':') && (source[i + 1] == ' ')) {
+            } else if (source[i] == ':' && source[i + 1] == ' ') {
                 reduced_source[j] = 'd';
                 i += 2;
             } else {
@@ -223,21 +214,20 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             count = az_count_chr(reduced_source, i, reduced_length, 13);
             next_mode = az_get_next_mode(reduced_encode_mode, reduced_length, i);
 
-            if ((current_mode == 'U') && ((next_mode == 'U') || (next_mode == 'B')) && (count == 1)) {
+            if (current_mode == 'U' && (next_mode == 'U' || next_mode == 'B') && count == 1) {
                 reduced_encode_mode[i] = 'P';
 
-            } else if ((current_mode == 'L') && ((next_mode == 'L') || (next_mode == 'B')) && (count == 1)) {
+            } else if (current_mode == 'L' && (next_mode == 'L' || next_mode == 'B') && count == 1) {
                 reduced_encode_mode[i] = 'P';
 
-            } else if ((current_mode == 'P') || (next_mode == 'P')) {
+            } else if (current_mode == 'P' || next_mode == 'P') {
                 reduced_encode_mode[i] = 'P';
             }
 
             if (current_mode == 'D') {
-                if (((next_mode == 'E') || (next_mode == 'U') || (next_mode == 'D') || (next_mode == 'B'))
-                        && (count <= 2)) {
+                if ((next_mode == 'E' || next_mode == 'U' || next_mode == 'D' || next_mode == 'B') && count <= 2) {
                     memset(reduced_encode_mode + i, 'P', count);
-                } else if ((next_mode == 'L') && (count == 1)) {
+                } else if (next_mode == 'L' && count == 1) {
                     reduced_encode_mode[i] = 'P';
                 }
             }
@@ -248,32 +238,30 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             }
 
         /* Resolve full stop and comma which can be in Punct or Digit mode */
-        } else if ((reduced_source[i] == '.') || (reduced_source[i] == ',')) {
+        } else if (reduced_source[i] == '.' || reduced_source[i] == ',') {
             count = az_count_dotcomma(reduced_source, i, reduced_length);
             next_mode = az_get_next_mode(reduced_encode_mode, reduced_length, i);
 
             if (current_mode == 'U') {
-                if (((next_mode == 'U') || (next_mode == 'L') || (next_mode == 'M') || (next_mode == 'B'))
-                        && (count == 1)) {
+                if ((next_mode == 'U' || next_mode == 'L' || next_mode == 'M' || next_mode == 'B') && count == 1) {
                     reduced_encode_mode[i] = 'P';
                 }
 
             } else if (current_mode == 'L') {
-                if ((next_mode == 'L') && (count <= 2)) {
+                if (next_mode == 'L' && count <= 2) {
                     memset(reduced_encode_mode + i, 'P', count);
-                } else if (((next_mode == 'M') || (next_mode == 'B')) && (count == 1)) {
+                } else if ((next_mode == 'M' || next_mode == 'B') && count == 1) {
                     reduced_encode_mode[i] = 'P';
                 }
 
             } else if (current_mode == 'M') {
-                if (((next_mode == 'E') || (next_mode == 'U') || (next_mode == 'L') || (next_mode == 'M'))
-                        && (count <= 4)) {
+                if ((next_mode == 'E' || next_mode == 'U' || next_mode == 'L' || next_mode == 'M') && count <= 4) {
                     memset(reduced_encode_mode + i, 'P', count);
-                } else if ((next_mode == 'B') && (count <= 2)) {
+                } else if (next_mode == 'B' && count <= 2) {
                     memset(reduced_encode_mode + i, 'P', count);
                 }
 
-            } else if ((current_mode == 'P') && (next_mode != 'D') && (count <= 9)) {
+            } else if (current_mode == 'P' && next_mode != 'D' && count <= 9) {
                 memset(reduced_encode_mode + i, 'P', count);
             }
 
@@ -288,44 +276,44 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             next_mode = az_get_next_mode(reduced_encode_mode, reduced_length, i);
 
             if (current_mode == 'U') {
-                if ((next_mode == 'E') && (count <= 5)) {
+                if (next_mode == 'E' && count <= 5) {
                     memset(reduced_encode_mode + i, 'U', count);
-                } else if (((next_mode == 'U') || (next_mode == 'L') || (next_mode == 'M') || (next_mode == 'P')
-                        || (next_mode == 'B')) && (count <= 9)) {
+                } else if ((next_mode == 'U' || next_mode == 'L' || next_mode == 'M' || next_mode == 'P'
+                            || next_mode == 'B') && count <= 9) {
                     memset(reduced_encode_mode + i, 'U', count);
                 }
 
             } else if (current_mode == 'L') {
-                if ((next_mode == 'E') && (count <= 5)) {
+                if (next_mode == 'E' && count <= 5) {
                     memset(reduced_encode_mode + i, 'L', count);
 
-                } else if ((next_mode == 'U') && (count == 1)) {
+                } else if (next_mode == 'U' && count == 1) {
                     reduced_encode_mode[i] = 'L';
 
-                } else if ((next_mode == 'L') && (count <= 14)) {
+                } else if (next_mode == 'L' && count <= 14) {
                     memset(reduced_encode_mode + i, 'L', count);
 
-                } else if (((next_mode == 'M') || (next_mode == 'P') || (next_mode == 'B')) && (count <= 9)) {
+                } else if ((next_mode == 'M' || next_mode == 'P' || next_mode == 'B') && count <= 9) {
                     memset(reduced_encode_mode + i, 'L', count);
                 }
 
             } else if (current_mode == 'M') {
-                if (((next_mode == 'E') || (next_mode == 'U')) && (count <= 9)) {
+                if ((next_mode == 'E' || next_mode == 'U') && count <= 9) {
                     memset(reduced_encode_mode + i, 'M', count);
 
-                } else if (((next_mode == 'L') || (next_mode == 'B')) && (count <= 14)) {
+                } else if ((next_mode == 'L' || next_mode == 'B') && count <= 14) {
                     memset(reduced_encode_mode + i, 'M', count);
 
-                } else if (((next_mode == 'M') || (next_mode == 'P')) && (count <= 19)) {
+                } else if ((next_mode == 'M' || next_mode == 'P') && count <= 19) {
                     memset(reduced_encode_mode + i, 'M', count);
                 }
 
             } else if (current_mode == 'P') {
-                if ((next_mode == 'E') && (count <= 5)) {
+                if (next_mode == 'E' && count <= 5) {
                     memset(reduced_encode_mode + i, 'U', count);
 
-                } else if (((next_mode == 'U') || (next_mode == 'L') || (next_mode == 'M') || (next_mode == 'P')
-                        || (next_mode == 'B')) && (count <= 9)) {
+                } else if ((next_mode == 'U' || next_mode == 'L' || next_mode == 'M' || next_mode == 'P'
+                            || next_mode == 'B') && count <= 9) {
                     memset(reduced_encode_mode + i, 'U', count);
                 }
             }
@@ -347,51 +335,51 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
 
         if (reduced_encode_mode[i] != current_mode) {
 
-            for (count = 0; ((i + count) < reduced_length)
-                            && (reduced_encode_mode[i + count] == reduced_encode_mode[i]); count++);
+            for (count = 0; i + count < reduced_length && reduced_encode_mode[i + count] == reduced_encode_mode[i];
+                    count++);
             next_mode = az_get_next_mode(reduced_encode_mode, reduced_length, i);
 
             if (reduced_encode_mode[i] == 'P') {
-                if ((current_mode == 'U') && (count <= 2)) {
+                if (current_mode == 'U' && count <= 2) {
                     memset(reduced_encode_mode + i, 'p', count);
 
-                } else if ((current_mode == 'L') && (next_mode != 'U') && (count <= 2)) {
+                } else if (current_mode == 'L' && next_mode != 'U' && count <= 2) {
                     memset(reduced_encode_mode + i, 'p', count);
 
-                } else if ((current_mode == 'L') && (next_mode == 'U') && (count == 1)) {
+                } else if (current_mode == 'L' && next_mode == 'U' && count == 1) {
                     reduced_encode_mode[i] = 'p';
 
-                } else if ((current_mode == 'M') && (next_mode != 'M') && (count == 1)) {
+                } else if (current_mode == 'M' && next_mode != 'M' && count == 1) {
                     reduced_encode_mode[i] = 'p';
 
-                } else if ((current_mode == 'M') && (next_mode == 'M') && (count <= 2)) {
+                } else if (current_mode == 'M' && next_mode == 'M' && count <= 2) {
                     memset(reduced_encode_mode + i, 'p', count);
 
-                } else if ((current_mode == 'D') && (next_mode != 'D') && (count <= 3)) {
+                } else if (current_mode == 'D' && next_mode != 'D' && count <= 3) {
                     memset(reduced_encode_mode + i, 'p', count);
 
-                } else if ((current_mode == 'D') && (next_mode == 'D') && (count <= 6)) {
+                } else if (current_mode == 'D' && next_mode == 'D' && count <= 6) {
                     memset(reduced_encode_mode + i, 'p', count);
                 }
 
             } else if (reduced_encode_mode[i] == 'U') {
-                if ((current_mode == 'L') && ((next_mode == 'L') || (next_mode == 'M')) && (count <= 2)) {
+                if (current_mode == 'L' && (next_mode == 'L' || next_mode == 'M') && count <= 2) {
                     memset(reduced_encode_mode + i, 'u', count);
 
-                } else if ((current_mode == 'L') && ((next_mode == 'E') || (next_mode == 'D') || (next_mode == 'B')
-                        || (next_mode == 'P')) && (count == 1)) {
+                } else if (current_mode == 'L' && (next_mode == 'E' || next_mode == 'D' || next_mode == 'B'
+                                                    || next_mode == 'P') && count == 1) {
                     reduced_encode_mode[i] = 'u';
 
-                } else if ((current_mode == 'D') && (next_mode == 'D') && (count == 1)) {
+                } else if (current_mode == 'D' && next_mode == 'D' && count == 1) {
                     reduced_encode_mode[i] = 'u';
 
-                } else if ((current_mode == 'D') && (next_mode == 'P') && (count <= 2)) {
+                } else if (current_mode == 'D' && next_mode == 'P' && count <= 2) {
                     memset(reduced_encode_mode + i, 'u', count);
                 }
             }
         }
 
-        if ((reduced_encode_mode[i] != 'p') && (reduced_encode_mode[i] != 'u') && (reduced_encode_mode[i] != 'B')) {
+        if (reduced_encode_mode[i] != 'p' && reduced_encode_mode[i] != 'u' && reduced_encode_mode[i] != 'B') {
             current_mode = reduced_encode_mode[i];
         }
     }
@@ -402,47 +390,47 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
     }
 
     if (bp == gs1_bp && gs1) {
-        bp = bin_append_posn(0, 5, binary_string, bp); /* P/S */
-        bp = bin_append_posn(0, 5, binary_string, bp); /* FLG(n) */
-        bp = bin_append_posn(0, 3, binary_string, bp); /* FLG(0) */
+        bp = z_bin_append_posn(0, 5, binary_string, bp); /* P/S */
+        bp = z_bin_append_posn(0, 5, binary_string, bp); /* FLG(n) */
+        bp = z_bin_append_posn(0, 3, binary_string, bp); /* FLG(0) */
     }
 
     if (eci != 0) {
-        bp = bin_append_posn(0, initial_mode == 'D' ? 4 : 5, binary_string, bp); /* P/S */
-        bp = bin_append_posn(0, 5, binary_string, bp); /* FLG(n) */
-        if (eci < 10) {
-            bp = bin_append_posn(1, 3, binary_string, bp); /* FLG(1) */
-            bp = bin_append_posn(2 + eci, 4, binary_string, bp);
+        bp = z_bin_append_posn(0, initial_mode == 'D' ? 4 : 5, binary_string, bp); /* P/S */
+        bp = z_bin_append_posn(0, 5, binary_string, bp); /* FLG(n) */
+        if (eci <= 9) {
+            bp = z_bin_append_posn(1, 3, binary_string, bp); /* FLG(1) */
+            bp = z_bin_append_posn(2 + eci, 4, binary_string, bp);
         } else if (eci <= 99) {
-            bp = bin_append_posn(2, 3, binary_string, bp); /* FLG(2) */
-            bp = bin_append_posn(2 + (eci / 10), 4, binary_string, bp);
-            bp = bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2, 3, binary_string, bp); /* FLG(2) */
+            bp = z_bin_append_posn(2 + (eci / 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
         } else if (eci <= 999) {
-            bp = bin_append_posn(3, 3, binary_string, bp); /* FLG(3) */
-            bp = bin_append_posn(2 + (eci / 100), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
-            bp = bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(3, 3, binary_string, bp); /* FLG(3) */
+            bp = z_bin_append_posn(2 + (eci / 100), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
         } else if (eci <= 9999) {
-            bp = bin_append_posn(4, 3, binary_string, bp); /* FLG(4) */
-            bp = bin_append_posn(2 + (eci / 1000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
-            bp = bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(4, 3, binary_string, bp); /* FLG(4) */
+            bp = z_bin_append_posn(2 + (eci / 1000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
         } else if (eci <= 99999) {
-            bp = bin_append_posn(5, 3, binary_string, bp); /* FLG(5) */
-            bp = bin_append_posn(2 + (eci / 10000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 10000) / 1000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
-            bp = bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(5, 3, binary_string, bp); /* FLG(5) */
+            bp = z_bin_append_posn(2 + (eci / 10000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 10000) / 1000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
         } else {
-            bp = bin_append_posn(6, 3, binary_string, bp); /* FLG(6) */
-            bp = bin_append_posn(2 + (eci / 100000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 100000) / 10000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 10000) / 1000), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
-            bp = bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
-            bp = bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(6, 3, binary_string, bp); /* FLG(6) */
+            bp = z_bin_append_posn(2 + (eci / 100000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 100000) / 10000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 10000) / 1000), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 1000) / 100), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + ((eci % 100) / 10), 4, binary_string, bp);
+            bp = z_bin_append_posn(2 + (eci % 10), 4, binary_string, bp);
         }
     }
 
@@ -579,7 +567,7 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             /* Byte mode - process full block here */
             if (reduced_encode_mode[i] == 'B') {
                 int big_batch = 0;
-                for (count = 0; ((i + count) < reduced_length) && (reduced_encode_mode[i + count] == 'B'); count++);
+                for (count = 0; i + count < reduced_length && reduced_encode_mode[i + count] == 'B'; count++);
 
                 if (count > 2047 + 2078) { /* Can't be more than 19968 / 8 = 2496 */
                     return 0;
@@ -614,12 +602,12 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
                 continue;
             }
 
-            if ((reduced_encode_mode[i] != 'u') && (reduced_encode_mode[i] != 'p')) {
+            if (reduced_encode_mode[i] != 'u' && reduced_encode_mode[i] != 'p') {
                 current_mode = reduced_encode_mode[i];
             }
         }
 
-        if ((reduced_encode_mode[i] == 'U') || (reduced_encode_mode[i] == 'u')) {
+        if (reduced_encode_mode[i] == 'U' || reduced_encode_mode[i] == 'u') {
             if (reduced_source[i] == ' ') {
                 if (!(bp = az_bin_append_posn(1, 5, binary_string, bp))) return 0; /* SP */
             } else {
@@ -639,7 +627,7 @@ static int aztec_text_process(const unsigned char source[], int src_len, int bp,
             } else {
                 if (!(bp = az_bin_append_posn(AztecSymbolChar[reduced_source[i]], 5, binary_string, bp))) return 0;
             }
-        } else if ((reduced_encode_mode[i] == 'P') || (reduced_encode_mode[i] == 'p')) {
+        } else if (reduced_encode_mode[i] == 'P' || reduced_encode_mode[i] == 'p') {
             if (gs1 && reduced_source[i] == '\x1D') {
                 if (!(bp = az_bin_append_posn(0, 5, binary_string, bp))) return 0; /* FLG(n) */
                 if (!(bp = az_bin_append_posn(0, 3, binary_string, bp))) return 0; /* FLG(0) = FNC1 */
@@ -693,8 +681,8 @@ static int aztec_text_process_segs(struct zint_symbol *symbol, struct zint_seg s
     /* GS1 raw text dealt with by `ZBarcode_Encode_Segs()` */
     const int raw_text = (symbol->input_mode & 0x07) != GS1_MODE && (symbol->output_options & BARCODE_RAW_TEXT);
 
-    if (raw_text && rt_init_segs(symbol, seg_count)) {
-        return ZINT_ERROR_MEMORY; /* `rt_init_segs()` only fails with OOM */
+    if (raw_text && z_rt_init_segs(symbol, seg_count)) {
+        return ZINT_ERROR_MEMORY; /* `z_rt_init_segs()` only fails with OOM */
     }
 
     for (i = 0; i < seg_count; i++) {
@@ -702,8 +690,8 @@ static int aztec_text_process_segs(struct zint_symbol *symbol, struct zint_seg s
                 &current_mode, &bp, debug_print)) {
             return ZINT_ERROR_TOO_LONG; /* `aztec_text_process()` only fails with too long */
         }
-        if (raw_text && rt_cpy_seg(symbol, i, &segs[i])) {
-            return ZINT_ERROR_MEMORY; /* `rt_cpy_seg()` only fails with OOM */
+        if (raw_text && z_rt_cpy_seg(symbol, i, &segs[i])) {
+            return ZINT_ERROR_MEMORY; /* `z_rt_cpy_seg()` only fails with OOM */
         }
     }
 
@@ -806,7 +794,7 @@ static int az_bitrun_stuff(const char *binary_string, const int data_length, con
             /* 7.3.1.2 "whenever the first B-1 bits ... are all “0”s, then a dummy “1” is inserted..."
                "Similarly a message codeword that starts with B-1 “1”s has a dummy “0” inserted..." */
 
-            if (count == 0 || count == (codeword_size - 1)) {
+            if (count == 0 || count == codeword_size - 1) {
                 /* Codeword of B-1 '0's or B-1 '1's */
                 if (j > data_maxsize) {
                     return 0; /* Fail */
@@ -864,7 +852,7 @@ static int az_codeword_size(const int layers) {
     return codeword_size;
 }
 
-INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int seg_count) {
+INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int seg_count) {
     int x, y, i, p, data_blocks, ecc_blocks, layers, total_bits;
     char bit_pattern[AZTEC_MAP_POSN_MAX + 1]; /* Note AZTEC_MAP_POSN_MAX > AZTEC_BIN_CAPACITY */
     /* To lessen stack usage, share binary_string buffer with bit_pattern, as accessed separately */
@@ -890,7 +878,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     int dim;
 
     if (gs1 && reader_init) {
-        return errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 501, "Cannot use Reader Initialisation in GS1 mode");
+        return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 501, "Cannot use Reader Initialisation in GS1 mode");
     }
 
     if (symbol->structapp.count) {
@@ -900,24 +888,24 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
         int id_len;
 
         if (symbol->structapp.count < 2 || symbol->structapp.count > 26) {
-            return errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 701,
+            return z_errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 701,
                             "Structured Append count '%d' out of range (2 to 26)", symbol->structapp.count);
         }
         if (symbol->structapp.index < 1 || symbol->structapp.index > symbol->structapp.count) {
-            return ZEXT errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 702,
-                                "Structured Append index '%1$d' out of range (1 to count %2$d)",
-                                symbol->structapp.index, symbol->structapp.count);
+            return ZEXT z_errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 702,
+                                    "Structured Append index '%1$d' out of range (1 to count %2$d)",
+                                    symbol->structapp.index, symbol->structapp.count);
         }
 
         for (id_len = 0; id_len < 32 && symbol->structapp.id[id_len]; id_len++);
 
-        if (id_len && chr_cnt((const unsigned char *) symbol->structapp.id, id_len, ' ')) {
+        if (id_len && z_chr_cnt(ZCUCP(symbol->structapp.id), id_len, ' ')) {
             /* Note ID can contain any old chars apart from space so don't print in error message */
-            return errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 703, "Structured Append ID cannot contain spaces");
+            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 703, "Structured Append ID cannot contain spaces");
         }
 
-        bp = bin_append_posn(29, 5, binary_string, bp); /* M/L */
-        bp = bin_append_posn(29, 5, binary_string, bp); /* U/L */
+        bp = z_bin_append_posn(29, 5, binary_string, bp); /* M/L */
+        bp = z_bin_append_posn(29, 5, binary_string, bp); /* U/L */
 
         sa_len = 0;
         if (id_len) { /* ID has a space on either side */
@@ -943,7 +931,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
                                                 debug_print))) {
         assert(error_number == ZINT_ERROR_TOO_LONG || error_number == ZINT_ERROR_MEMORY);
         if (error_number == ZINT_ERROR_TOO_LONG) {
-            return errtxt(error_number, symbol, 502,
+            return z_errtxt(error_number, symbol, 502,
                             "Input too long, requires too many codewords (maximum " AZ_BIN_CAP_CWDS_S ")");
         }
         return error_number;
@@ -951,11 +939,11 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     assert(data_length > 0); /* Suppress clang-tidy warning: clang-analyzer-core.UndefinedBinaryOperatorResult */
 
     if (symbol->option_1 < -1 || symbol->option_1 > 4) {
-        errtxtf(0, symbol, 503, "Error correction level '%d' out of range (1 to 4)", symbol->option_1);
+        z_errtxtf(0, symbol, 503, "Error correction level '%d' out of range (1 to 4)", symbol->option_1);
         if (symbol->warn_level == WARN_FAIL_ALL) {
             return ZINT_ERROR_INVALID_OPTION;
         }
-        error_number = errtxt_adj(ZINT_WARN_INVALID_OPTION, symbol, "%1$s%2$s", ", ignoring");
+        error_number = z_errtxt_adj(ZINT_WARN_INVALID_OPTION, symbol, "%1$s%2$s", ", ignoring");
         symbol->option_1 = -1; /* Feedback options */
     }
 
@@ -975,7 +963,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 
             /* For each level of error correction work out the smallest symbol which the data will fit in */
             for (i = compact_loop_start; i > 0; i--) {
-                if ((data_length + adjustment_size) <= AztecCompactDataSizes[ecc_level - 1][i - 1]) {
+                if (data_length + adjustment_size <= AztecCompactDataSizes[ecc_level - 1][i - 1]) {
                     layers = i;
                     compact = 1;
                     data_maxsize = AztecCompactDataSizes[ecc_level - 1][i - 1];
@@ -983,7 +971,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             }
             if (!compact) {
                 for (i = 32; i > 0; i--) {
-                    if ((data_length + adjustment_size) <= AztecDataSizes[ecc_level - 1][i - 1]) {
+                    if (data_length + adjustment_size <= AztecDataSizes[ecc_level - 1][i - 1]) {
                         layers = i;
                         compact = 0;
                         data_maxsize = AztecDataSizes[ecc_level - 1][i - 1];
@@ -993,14 +981,14 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 
             if (layers == 0) { /* Couldn't find a symbol which fits the data */
                 if (adjustment_size == 0) {
-                    return ZEXT errtxtf(ZINT_ERROR_TOO_LONG, symbol, 707,
+                    return ZEXT z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 707,
                                     "Input too long for ECC level %1$d, requires too many codewords (maximum %2$d)",
                                     ecc_level, AztecDataSizes[ecc_level - 1][31] / 12);
                 }
-                return ZEXT errtxtf(ZINT_ERROR_TOO_LONG, symbol, 504,
-                                    "Input too long for ECC level %1$d, requires %2$d codewords (maximum %3$d)",
-                                    ecc_level, (data_length + adjustment_size + 11) / 12,
-                                    AztecDataSizes[ecc_level - 1][31] / 12);
+                return ZEXT z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 504,
+                                        "Input too long for ECC level %1$d, requires %2$d codewords (maximum %3$d)",
+                                        ecc_level, (data_length + adjustment_size + 11) / 12,
+                                        AztecDataSizes[ecc_level - 1][31] / 12);
             }
 
             codeword_size = az_codeword_size(layers);
@@ -1008,7 +996,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             adjusted_length = az_bitrun_stuff(binary_string, data_length, codeword_size,
                                                 adjustment_size ? data_maxsize : AZTEC_BIN_CAPACITY, adjusted_string);
             if (adjusted_length == 0) {
-                return ZEXT errtxtf(ZINT_ERROR_TOO_LONG, symbol, 705,
+                return ZEXT z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 705,
                                     "Input too long for ECC level %1$d, requires too many codewords (maximum %2$d)",
                                     ecc_level, (adjustment_size ? data_maxsize : AZTEC_BIN_CAPACITY) / codeword_size);
             }
@@ -1037,9 +1025,9 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
         symbol->option_2 = compact ? layers : layers + 4; /* Feedback options */
 
     } else { /* The size of the symbol has been specified by the user */
-        if ((symbol->option_2 < 0) || (symbol->option_2 > 36)) {
-            return errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 510, "Version '%d' out of range (1 to 36)",
-                            symbol->option_2);
+        if (symbol->option_2 < 0 || symbol->option_2 > 36) {
+            return z_errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 510, "Version '%d' out of range (1 to 36)",
+                                symbol->option_2);
         }
         if (reader_init) {
             /* For back-compatibility, silently ignore compact 2-4 requests but error on layers > 22 */
@@ -1047,7 +1035,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
                 symbol->option_2 = 5;
             } else if (symbol->option_2 > 26) {
                 /* Caught below anyway but catch here also for better feedback */
-                return errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 709,
+                return z_errtxtf(ZINT_ERROR_INVALID_OPTION, symbol, 709,
                                 "Version '%d' out of range for Reader Initialisation symbols (maximum 26)",
                                 symbol->option_2);
             }
@@ -1069,9 +1057,9 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 
         adjusted_length = az_bitrun_stuff(binary_string, data_length, codeword_size, data_maxsize, adjusted_string);
         if (adjusted_length == 0) {
-            return ZEXT errtxtf(ZINT_ERROR_TOO_LONG, symbol, 704,
-                                "Input too long for Version %1$d, requires too many codewords (maximum %2$d)",
-                                symbol->option_2, data_maxsize / codeword_size);
+            return ZEXT z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 704,
+                                    "Input too long for Version %1$d, requires too many codewords (maximum %2$d)",
+                                    symbol->option_2, data_maxsize / codeword_size);
         }
 
         /* Add padding */
@@ -1086,10 +1074,10 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
         /* Check if the data actually fits into the selected symbol size */
 
         if (adjusted_length + padbits > data_maxsize) {
-            return ZEXT errtxtf(ZINT_ERROR_TOO_LONG, symbol, 505,
-                                "Input too long for Version %1$d, requires %2$d codewords (maximum %3$d)",
-                                symbol->option_2, (adjusted_length + padbits) / codeword_size,
-                                data_maxsize / codeword_size);
+            return ZEXT z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 505,
+                                    "Input too long for Version %1$d, requires %2$d codewords (maximum %3$d)",
+                                    symbol->option_2, (adjusted_length + padbits) / codeword_size,
+                                    data_maxsize / codeword_size);
         }
 
         adjusted_length = az_add_padding(padbits, codeword_size, adjusted_string, adjusted_length);
@@ -1105,8 +1093,8 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
         fputc('\n', stdout);
     }
 
-    if (reader_init && (layers > 22)) {
-        return errtxtf(ZINT_ERROR_TOO_LONG, symbol, 506,
+    if (reader_init && layers > 22) {
+        return z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 506,
                         "Input too long for Reader Initialisation, requires %d layers (maximum 22)", layers);
     }
 
@@ -1122,21 +1110,21 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
     }
     if (ecc_blocks == 3) {
         ecc_ratio = 0.0f;
-        error_number = ZEXT errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 706, "Number of ECC codewords 3 at minimum");
+        error_number = z_errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 706, "Number of ECC codewords 3 at minimum");
         symbol->option_1 = -1; /* Feedback options: indicate minimum 3 with -1 */
     } else {
-        ecc_ratio = (float) (ecc_blocks - 3) / (data_blocks + ecc_blocks);
+        ecc_ratio = z_stripf((float) (ecc_blocks - 3) / (data_blocks + ecc_blocks));
         if (ecc_ratio < 0.05f) {
-            error_number = ZEXT errtxtf(ZINT_WARN_NONCOMPLIANT, symbol, 708,
-                                        "Number of ECC codewords %1$d less than 5%% + 3 of data codewords %2$d",
-                                        ecc_blocks, data_blocks);
+            error_number = ZEXT z_errtxtf(ZINT_WARN_NONCOMPLIANT, symbol, 708,
+                                            "Number of ECC codewords %1$d less than 5%% + 3 of data codewords %2$d",
+                                            ecc_blocks, data_blocks);
             symbol->option_1 = 0; /* Feedback options: indicate < 5% + 3 with 0 */
         } else {
             /* Feedback options: 0.165 = (.1 + .23) / 2 etc */
             symbol->option_1 = ecc_ratio < 0.165f ? 1 : ecc_ratio < 0.295f ? 2 : ecc_ratio < 0.43f ? 3 : 4;
         }
         /* Feedback percentage in top byte */
-        symbol->option_1 |= ((int) (ecc_ratio * 100.0f)) << 8;
+        symbol->option_1 |= ((int) z_stripf(ecc_ratio * 100.0f)) << 8;
     }
 
     if (debug_print) {
@@ -1164,36 +1152,36 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 
     switch (codeword_size) {
         case 6:
-            rs_init_gf(&rs, 0x43);
-            rs_init_code(&rs, ecc_blocks, 1);
-            rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
+            zint_rs_init_gf(&rs, 0x43);
+            zint_rs_init_code(&rs, ecc_blocks, 1);
+            zint_rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
             break;
         case 8:
-            rs_init_gf(&rs, 0x12d);
-            rs_init_code(&rs, ecc_blocks, 1);
-            rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
+            zint_rs_init_gf(&rs, 0x12d);
+            zint_rs_init_code(&rs, ecc_blocks, 1);
+            zint_rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
             break;
         case 10:
-            if (!rs_uint_init_gf(&rs_uint, 0x409, 1023)) { /* Can fail on malloc() */
-                return errtxt(ZINT_ERROR_MEMORY, symbol, 500, "Insufficient memory for Reed-Solomon log tables");
+            if (!zint_rs_uint_init_gf(&rs_uint, 0x409, 1023)) { /* Can fail on malloc() */
+                return z_errtxt(ZINT_ERROR_MEMORY, symbol, 500, "Insufficient memory for Reed-Solomon log tables");
             }
-            rs_uint_init_code(&rs_uint, ecc_blocks, 1);
-            rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
-            rs_uint_free(&rs_uint);
+            zint_rs_uint_init_code(&rs_uint, ecc_blocks, 1);
+            zint_rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
+            zint_rs_uint_free(&rs_uint);
             break;
         case 12:
-            if (!rs_uint_init_gf(&rs_uint, 0x1069, 4095)) { /* Can fail on malloc() */
+            if (!zint_rs_uint_init_gf(&rs_uint, 0x1069, 4095)) { /* Can fail on malloc() */
                 /* Note using AUSPOST error nos range as out of 50x ones & 51x taken by CODEONE */
-                return errtxt(ZINT_ERROR_MEMORY, symbol, 700, "Insufficient memory for Reed-Solomon log tables");
+                return z_errtxt(ZINT_ERROR_MEMORY, symbol, 700, "Insufficient memory for Reed-Solomon log tables");
             }
-            rs_uint_init_code(&rs_uint, ecc_blocks, 1);
-            rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
-            rs_uint_free(&rs_uint);
+            zint_rs_uint_init_code(&rs_uint, ecc_blocks, 1);
+            zint_rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
+            zint_rs_uint_free(&rs_uint);
             break;
     }
 
     for (i = 0; i < ecc_blocks; i++) {
-        adjusted_length = bin_append_posn(ecc_part[i], codeword_size, adjusted_string, adjusted_length);
+        adjusted_length = z_bin_append_posn(ecc_part[i], codeword_size, adjusted_string, adjusted_length);
     }
 
     /* Invert the data so that actual data is on the outside and reed-solomon on the inside */
@@ -1242,10 +1230,10 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 
     /* Add Reed-Solomon error correction with Galois field GF(16) and prime modulus x^4 + x + 1 (section 7.2.3) */
 
-    rs_init_gf(&rs, 0x13);
+    zint_rs_init_gf(&rs, 0x13);
     if (compact) {
-        rs_init_code(&rs, 5, 1);
-        rs_encode(&rs, 2, desc_data, desc_ecc);
+        zint_rs_init_code(&rs, 5, 1);
+        zint_rs_encode(&rs, 2, desc_data, desc_ecc);
         for (i = 0; i < 5; i++) {
             descriptor[(i * 4) + 8] = (desc_ecc[i] & 0x08) ? '1' : '0';
             descriptor[(i * 4) + 9] = (desc_ecc[i] & 0x04) ? '1' : '0';
@@ -1253,8 +1241,8 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             descriptor[(i * 4) + 11] = (desc_ecc[i] & 0x01) ? '1' : '0';
         }
     } else {
-        rs_init_code(&rs, 6, 1);
-        rs_encode(&rs, 4, desc_data, desc_ecc);
+        zint_rs_init_code(&rs, 6, 1);
+        zint_rs_encode(&rs, 4, desc_data, desc_ecc);
         for (i = 0; i < 6; i++) {
             descriptor[(i * 4) + 16] = (desc_ecc[i] & 0x08) ? '1' : '0';
             descriptor[(i * 4) + 17] = (desc_ecc[i] & 0x04) ? '1' : '0';
@@ -1279,7 +1267,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             for (x = offset; x < end_offset; x++) {
                 const int map = AztecCompactMap[y_map + x];
                 if (map == 1 || (map >= 2 && bit_pattern[map - 2] == '1')) {
-                    set_module(symbol, y - offset, x - offset);
+                    z_set_module(symbol, y - offset, x - offset);
                 }
             }
             symbol->row_height[y - offset] = 1;
@@ -1294,7 +1282,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
             for (x = offset; x < end_offset; x++) {
                 const int map = AztecMap[y_map + x];
                 if (map == 1 || (map >= 2 && bit_pattern[map - 2] == '1')) {
-                    set_module(symbol, y - offset, x - offset);
+                    z_set_module(symbol, y - offset, x - offset);
                 }
             }
             symbol->row_height[y - offset] = 1;
@@ -1309,7 +1297,7 @@ INTERNAL int aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int
 }
 
 /* Encodes Aztec runes as specified in ISO/IEC 24778:2008 Annex A */
-INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int length) {
+INTERNAL int zint_azrune(struct zint_symbol *symbol, unsigned char source[], int length) {
     unsigned int input_value;
     int i, y, x, r;
     char binary_string[28];
@@ -1319,41 +1307,30 @@ INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int leng
     const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
     const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
 
-    input_value = 0;
     if (length > 3) {
-        return errtxtf(ZINT_ERROR_TOO_LONG, symbol, 507, "Input length %d too long (maximum 3)", length);
+        return z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 507, "Input length %d too long (maximum 3)", length);
     }
-    if ((i = not_sane(NEON_F, source, length))) {
-        return errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 508,
+    if ((i = z_not_sane(NEON_F, source, length))) {
+        return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 508,
                         "Invalid character at position %d in input (digits only)", i);
     }
-    switch (length) {
-        case 3:
-            input_value = 100 * ctoi(source[0]) + 10 * ctoi(source[1]) + ctoi(source[2]);
-            break;
-        case 2:
-            input_value = 10 * ctoi(source[0]) + ctoi(source[1]);
-            break;
-        case 1:
-            input_value = ctoi(source[0]);
-            break;
-    }
+    input_value = z_to_int(source, length);
 
     if (input_value > 255) {
-        return errtxt(ZINT_ERROR_INVALID_DATA, symbol, 509, "Input value out of range (0 to 255)");
+        return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 509, "Input value out of range (0 to 255)");
     }
 
-    bp = bin_append_posn(input_value, 8, binary_string, bp);
+    bp = z_bin_append_posn(input_value, 8, binary_string, bp);
 
     data_codewords[0] = (unsigned char) (input_value >> 4);
     data_codewords[1] = (unsigned char) (input_value & 0xF);
 
-    rs_init_gf(&rs, 0x13);
-    rs_init_code(&rs, 5, 1);
-    rs_encode(&rs, 2, data_codewords, ecc_codewords);
+    zint_rs_init_gf(&rs, 0x13);
+    zint_rs_init_code(&rs, 5, 1);
+    zint_rs_encode(&rs, 2, data_codewords, ecc_codewords);
 
     for (i = 0; i < 5; i++) {
-        bp = bin_append_posn(ecc_codewords[i], 4, binary_string, bp);
+        bp = z_bin_append_posn(ecc_codewords[i], 4, binary_string, bp);
     }
 
     for (i = 0; i < 28; i += 2) {
@@ -1368,9 +1345,9 @@ INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int leng
         r = y * 27;
         for (x = 8; x < 19; x++) {
             if (AztecCompactMap[r + x] == 1) {
-                set_module(symbol, y - 8, x - 8);
+                z_set_module(symbol, y - 8, x - 8);
             } else if (AztecCompactMap[r + x] && binary_string[AztecCompactMap[r + x] - 2000] == '1') {
-                set_module(symbol, y - 8, x - 8);
+                z_set_module(symbol, y - 8, x - 8);
             }
         }
         symbol->row_height[y - 8] = 1;
@@ -1379,8 +1356,8 @@ INTERNAL int azrune(struct zint_symbol *symbol, unsigned char source[], int leng
     symbol->rows = 11;
     symbol->width = 11;
 
-    if (raw_text && rt_printf_256(symbol, "%03d", input_value)) {
-        return ZINT_ERROR_MEMORY; /* `rt_printf_256()` only fails with OOM */
+    if (raw_text && z_rt_printf_256(symbol, "%03d", input_value)) {
+        return ZINT_ERROR_MEMORY; /* `z_rt_printf_256()` only fails with OOM */
     }
 
     return 0;

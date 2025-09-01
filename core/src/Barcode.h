@@ -14,7 +14,6 @@
 #include "Error.h"
 #include "ImageView.h"
 #include "Quadrilateral.h"
-#include "ResultMetadata.h"
 #include "StructuredAppend.h"
 
 #ifdef ZXING_EXPERIMENTAL_API

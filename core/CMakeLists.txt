@@ -152,8 +152,6 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
         src/GenericGFPoly.cpp
         src/HRI.h
         src/HRI.cpp
-        src/ResultMetadata.h
-        src/ResultMetadata.cpp
         src/TextUtfEncoding.h # [[deprecated]]
         src/TextUtfEncoding.cpp # [[deprecated]]
         src/Scope.h
@@ -254,7 +252,6 @@ if (ZXING_READERS)
         src/DecodeHints.h # [[deprecated]]
         src/Diagnostics.h
         src/Result.h # [[deprecated]]
-        src/ResultMetadata.h
     )
 endif()
 if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)

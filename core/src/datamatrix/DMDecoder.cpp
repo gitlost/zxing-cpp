@@ -387,7 +387,12 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
 			case 238: DecodeAnsiX12Segment(bits, result); break;
 			case 239: DecodeC40OrTextSegment(bits, result, Mode::TEXT); break;
 			case 240: DecodeEdifactSegment(bits, result); break;
-			case 241: result.switchEncoding(ParseECIValue(bits)); break;
+			case 241: {
+				const auto eci = ParseECIValue(bits);
+				Diagnostics::fmt("ECI(%d)", ToInt(eci));
+				result.switchEncoding(eci);
+				break;
+			}
 			default:
 				if (oneByte <= 128) { // ASCII data (ASCII value + 1)
 					result.push_back(upperShift(oneByte) - 1);

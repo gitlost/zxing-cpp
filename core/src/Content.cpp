@@ -56,8 +56,11 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 Content::Content() {}
 
-Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet, ECI eci)
-	: bytes(std::move(bytes)), symbology(si), defaultCharset(_defaultCharSet)
+Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet)
+	: bytes(std::move(bytes)), symbology(si), defaultCharset(_defaultCharSet) {}
+
+Content::Content(std::string&& utf8, ByteArray&& bytes, SymbologyIdentifier si, ECI eci)
+	: utf8Cache(std::move(utf8)), bytes(std::move(bytes)), symbology(si)
 {
 	if (eci != ECI::Unknown) {
 		encodings.push_back({eci, 0, true});
@@ -108,12 +111,6 @@ std::string Content::render(bool withECI) const
 	if (empty() || !canProcess())
 		return {};
 
-#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
-	std::string res;
-	res.reserve(bytes.size() * 2);
-	if (withECI)
-		res += symbology.toString(true);
-	ECI lastECI = ECI::Unknown;
 	CharacterSet fallbackCS = optionsCharset;
 	if (!hasECI && fallbackCS == CharacterSet::Unknown) {
 		if (defaultCharset != CharacterSet::Unknown) {
@@ -132,6 +129,13 @@ std::string Content::render(bool withECI) const
 			Diagnostics::fmt(p_diagnostics, "Fallback(%d,%d)", ToInt(ToECI(fallbackCS)), hasECI ? 1 : 0);
 		}
 	}
+
+#ifdef ZXING_READERS
+	std::string res;
+	res.reserve(bytes.size() * 2);
+	if (withECI)
+		res += symbology.toString(true);
+	ECI lastECI = ECI::Unknown;
 
 	ForEachECIBlock([&](ECI eci, int begin, int end) {
 		// basic idea: if IsText(eci), we transcode it to UTF8, otherwise we treat it as binary but
@@ -157,6 +161,27 @@ std::string Content::render(bool withECI) const
 			res += BytesToUtf8(bytes.asView(begin, end - begin), inEci);
 		}
 	});
+
+	return res;
+#elif defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+	assert(!utf8Cache.empty());
+	if (!withECI)
+		return utf8Cache;
+
+	std::string res;
+	res.reserve(3 + utf8Cache.size() * 2 + encodings.size() * 7);
+	res += symbology.toString(true);
+
+	auto eci = encodings.front().eci;
+	auto inEci = IsText(eci) ? eci : eci == ECI::Unknown ? ToECI(fallbackCS) : ECI::Binary;
+	auto outEci = IsText(inEci) ? ECI::UTF8 : eci;
+	res += ToString(outEci);
+
+	for (auto c : utf8Cache) {
+		res += c;
+		if (c == '\\') // in the ECI protocol a '\' (0x5c) has to be doubled, works only because 0x5c can only mean `\`
+			res += c;
+	}
 
 	return res;
 #else

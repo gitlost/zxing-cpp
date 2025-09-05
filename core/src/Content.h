@@ -45,6 +45,7 @@ class Content
 	void switchEncoding(ECI eci, bool isECI);
 	std::string render(bool withECI) const;
 
+	std::string utf8Cache;
 public:
 	struct Encoding
 	{
@@ -62,8 +63,8 @@ public:
 	std::list<std::string>* p_diagnostics = nullptr;
 
 	Content();
-	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown,
-			ECI eci = ECI::Unknown);
+	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
+	Content(std::string &&utf8, ByteArray&& bytes, SymbologyIdentifier si, ECI eci);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);

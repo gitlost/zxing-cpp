@@ -15,6 +15,7 @@
 
 namespace ZXing {
 
+#ifdef ZXING_READERS
 std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 {
 	constexpr unsigned int replacement = 0xFFFD;
@@ -39,6 +40,7 @@ std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 
 	return utf8;
 }
+#endif
 
 /**
 * @param bytes bytes encoding a string, whose encoding should be guessed

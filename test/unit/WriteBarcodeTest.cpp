@@ -1170,6 +1170,120 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 	}
 }
 
+TEST(WriteBarcodeTest, ZintBinary)
+{
+	{
+		// No ECI (not supported anyway for Code128)
+		BarcodeFormat format = BarcodeFormat::Code128;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
+		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
+		check(__LINE__, barcode, "]C0",
+			  std::string("\x00\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 12) /*TextMode::Plain - UTF-8*/,
+			  "00 5C 7E 7F 80 81 C0 FF" /*bytes() - binary*/, false,
+			  std::string("]C0\\000026\x00\x5C\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 23) /*TextMode::ECI - UTF-8*/,
+			  "5D 43 30 00 5C 7E 7F 80 81 C0 FF" /*bytesECI() - binary*/,
+			  "<NUL>\\~<DEL><U+80><U+81>Àÿ" /*TextMode::HRI - UTF-8*/,
+			  "Binary", "0x0 177x0 177x49 0x49");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x25 177x25 177x25 0x25");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		// With ECI (ignored as Code128 doesn't support ECI)
+		BarcodeFormat format = BarcodeFormat::Code128;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		cOpts.eci(ECI::Binary);
+		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
+		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
+		check(__LINE__, barcode, "]C0",
+			  std::string("\x00\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 12) /*TextMode::Plain - UTF-8*/,
+			  "00 5C 7E 7F 80 81 C0 FF" /*bytes() - binary*/, false,
+			  std::string("]C0\\000026\x00\x5C\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 23) /*TextMode::ECI - UTF-8*/,
+			  "5D 43 30 00 5C 7E 7F 80 81 C0 FF" /*bytesECI() - binary*/,
+			  "<NUL>\\~<DEL><U+80><U+81>Àÿ" /*TextMode::HRI - UTF-8*/,
+			  "Binary", "0x0 177x0 177x49 0x49");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x25 177x25 177x25 0x25");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		// No ECI
+		BarcodeFormat format = BarcodeFormat::QRCode;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
+		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
+		check(__LINE__, barcode, "]Q1",
+			  std::string("\x00\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 12) /*TextMode::Plain - UTF-8*/,
+			  "00 5C 7E 7F 80 81 C0 FF" /*bytes() - binary*/, false,
+			  std::string("]Q2\\000026\x00\x5C\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 23) /*TextMode::ECI - UTF-8*/,
+			  "5D 51 31 00 5C 7E 7F 80 81 C0 FF" /*bytesECI() - binary*/,
+			  "<NUL>\\~<DEL><U+80><U+81>Àÿ" /*TextMode::HRI - UTF-8*/,
+			  "Binary", "0x0 20x0 20x20 0x20", "Q", "1", 0 /*dataMask*/);
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		// With ECI::Binary
+		BarcodeFormat format = BarcodeFormat::QRCode;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		cOpts.eci(ECI::Binary);
+		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
+		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
+		check(__LINE__, barcode, "]Q2",
+			  std::string("\x00\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 12) /*TextMode::Plain - UTF-8*/,
+			  "00 5C 7E 7F 80 81 C0 FF" /*bytes() - binary*/, true,
+			  std::string("]Q2\\000899\x00\x5C\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 23) /*TextMode::ECI - UTF-8*/,
+			  "5D 51 32 5C 30 30 30 38 39 39 00 5C 5C 7E 7F 80 81 C0 FF" /*bytesECI() - binary*/,
+			  "<NUL>\\~<DEL><U+80><U+81>Àÿ" /*TextMode::HRI - UTF-8*/,
+			  "Binary", "0x0 20x0 20x20 0x20", "Q", "1", 3 /*dataMask*/);
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode);
+#endif
+	}
+}
+
+TEST(WriteBarcodeTest, ZintECI)
+{
+	{
+		// ECI automatically added by zint
+		BarcodeFormat format = BarcodeFormat::QRCode;
+
+		auto cOpts = CreatorOptions(format).withQuietZones(false);
+		Barcode barcode = CreateBarcodeFromText("AกC", cOpts); // Will add ECI 13 (ISO/IEC 8859-11 Thai)
+		check(__LINE__, barcode, "]Q2", "AกC", "41 A1 43", true,
+			  "]Q2\\000026AกC", "5D 51 32 5C 30 30 30 30 31 33 41 A1 43" /*ECI 13*/,
+			  "AกC", "Text", "0x0 20x0 20x20 0x20", "H", "1", 4 /*dataMask*/);
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().withQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode);
+#endif
+	}
+}
+
 TEST(WriteBarcodeTest, ZintGS1)
 {
 	{
@@ -1287,6 +1401,7 @@ TEST(WriteBarcodeTest, ZintGS1)
 	}
 }
 
+#ifdef ZXING_READERS
 TEST(WriteBarcodeTest, RandomDataBar)
 {
 	auto randomTest = [](BarcodeFormat format) {
@@ -1310,5 +1425,6 @@ TEST(WriteBarcodeTest, RandomDataBar)
 	randomTest(BarcodeFormat::DataBarLimited);
 	randomTest(BarcodeFormat::DataBarExpanded);
 }
+#endif
 
 #endif // #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_WRITERS) && defined(ZXING_USE_ZINT)

@@ -24,11 +24,16 @@ TEST(ContentTest, Base)
 {
 	{ // Null
 		Content c;
+#if defined(ZXING_READERS) || (defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT))
 		EXPECT_EQ(c.guessEncoding(), CharacterSet::Unknown);
+#else
+		EXPECT_EQ(c.guessEncoding(), CharacterSet::ISO8859_1);
+#endif
 		EXPECT_EQ(c.symbology.toString(), "");
 		EXPECT_TRUE(c.empty());
 	}
 
+#ifdef ZXING_READERS
 	{ // set latin1
 		Content c;
 		c.switchEncoding(CharacterSet::ISO8859_1);
@@ -52,8 +57,10 @@ TEST(ContentTest, Base)
 		c.append(ByteArray{'A', 0xE9, 'Z'});
 		EXPECT_EQ(c.utf8(), u8"A\u00E9ZA\u0449Z");
 	}
+#endif
 }
 
+#ifdef ZXING_READERS
 TEST(ContentTest, GuessEncoding)
 {
 	{ // guess latin1
@@ -71,7 +78,9 @@ TEST(ContentTest, GuessEncoding)
 		EXPECT_EQ(c.utf8(), u8"A\u30C6Z");
 	}
 }
+#endif
 
+#ifdef ZXING_READERS
 TEST(ContentTest, ECI)
 {
 	{ // switch to ECI::ISO8859_5
@@ -106,3 +115,4 @@ TEST(ContentTest, ECI)
 		EXPECT_EQ(c.bytesECI().asString(), std::string_view("]d4\\000003C:\\\\Test\\000026Täßt"));
 	}
 }
+#endif

@@ -116,6 +116,8 @@ set (COMMON_FILES
     src/Flags.h
     src/GTIN.h
     src/GTIN.cpp
+    src/HRI.h
+    src/HRI.cpp
     src/ImageView.h
     src/JSON.h
     src/JSON.cpp
@@ -141,7 +143,7 @@ set (COMMON_FILES
     $<$<BOOL:${ZXING_C_API}>:src/ZXingC.h>
     $<$<BOOL:${ZXING_C_API}>:src/ZXingC.cpp>
 )
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (COMMON_FILES ${COMMON_FILES}
         src/BitArray.h
         src/BitArray.cpp
@@ -150,8 +152,6 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
         src/GenericGF.cpp
         src/GenericGFPoly.h
         src/GenericGFPoly.cpp
-        src/HRI.h
-        src/HRI.cpp
         src/TextUtfEncoding.h # [[deprecated]]
         src/TextUtfEncoding.cpp # [[deprecated]]
         src/Scope.h
@@ -201,18 +201,18 @@ if (ZXING_READERS OR ZXING_WRITERS_NEW)
     )
 endif()
 
-if (ZXING_WRITERS)
+if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (COMMON_FILES ${COMMON_FILES}
+        src/TextEncoder.h
+        src/TextEncoder.cpp
     )
 endif()
 
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (COMMON_FILES ${COMMON_FILES}
         src/ByteMatrix.h
         src/ReedSolomonEncoder.h
         src/ReedSolomonEncoder.cpp
-        src/TextEncoder.h
-        src/TextEncoder.cpp
     )
 endif()
 if (ZXING_WRITERS_OLD)
@@ -281,7 +281,7 @@ if (ZXING_READERS)
         src/aztec/AZReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (AZTEC_FILES ${AZTEC_FILES}
         src/aztec/AZEncodingState.h
         src/aztec/AZEncoder.h
@@ -316,7 +316,7 @@ if (ZXING_READERS)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (DATAMATRIX_FILES
         src/datamatrix/DMBitLayout.h
         src/datamatrix/DMBitLayout.cpp
@@ -336,7 +336,7 @@ if (ZXING_READERS)
         src/datamatrix/DMReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (DATAMATRIX_FILES ${DATAMATRIX_FILES}
         src/datamatrix/DMECEncoder.h
         src/datamatrix/DMECEncoder.cpp
@@ -404,7 +404,7 @@ if (ZXING_READERS)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (ONED_FILES
         src/oned/ODUPCEANCommon.h
         src/oned/ODUPCEANCommon.cpp
@@ -444,7 +444,7 @@ if (ZXING_READERS)
         src/oned/ODRowReader.h
     )
 endif()
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (ONED_FILES ${ONED_FILES}
         src/oned/ODCodabarWriter.h
         src/oned/ODCodabarWriter.cpp
@@ -470,7 +470,7 @@ if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (PDF417_FILES
         src/pdf417/ZXBigInteger.h
         src/pdf417/ZXBigInteger.cpp
@@ -508,7 +508,7 @@ if (ZXING_READERS)
         src/pdf417/ZXNullable.h
     )
 endif()
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (PDF417_FILES ${PDF417_FILES}
         src/pdf417/PDFCompaction.h
         src/pdf417/PDFEncoder.h
@@ -521,7 +521,7 @@ if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
 endif()
 
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (QRCODE_FILES
         src/qrcode/QRCodecMode.h
         src/qrcode/QRCodecMode.cpp
@@ -549,7 +549,7 @@ if (ZXING_READERS)
         src/qrcode/QRReader.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (QRCODE_FILES ${QRCODE_FILES}
         src/qrcode/QREncoder.h
         src/qrcode/QREncoder.cpp
@@ -607,7 +607,7 @@ target_compile_features(ZXing PUBLIC cxx_std_17)
 
 target_link_libraries (ZXing PRIVATE Threads::Threads)
 
-if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_READERS OR ZXING_WRITERS_OLD)
     set (LIBZUECI_FILES
         src/libzueci/zueci.c
         src/libzueci/zueci.h

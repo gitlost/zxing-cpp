@@ -67,7 +67,7 @@ mod tests {
 		assert_eq!(res.is_valid(), true);
 		assert_eq!(res.format(), BarcodeFormat::QRCode);
 		assert_eq!(res.bytes(), data);
-		assert_eq!(res.has_eci(), true);
+		assert_eq!(res.has_eci(), false);
 		// assert_eq!(res.reader_init(), true); // TODO
 		assert_eq!(res.content_type(), ContentType::Binary);
 		assert!(matches!(res.error(), BarcodeError::None()));

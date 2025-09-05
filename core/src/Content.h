@@ -27,7 +27,8 @@ std::string ToString(ContentType type);
 
 struct SymbologyIdentifier
 {
-	char code = 0, modifier = 0, eciModifierOffset = 0;
+	char code = 0, modifier = 0;
+	signed char eciModifierOffset = 0;
 	AIFlag aiFlag = AIFlag::None;
 
 	std::string toString(bool hasECI = false) const

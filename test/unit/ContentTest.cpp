@@ -5,6 +5,7 @@
 
 #include "Content.h"
 #include "ECI.h"
+#include "Version.h"
 
 #include "gtest/gtest.h"
 

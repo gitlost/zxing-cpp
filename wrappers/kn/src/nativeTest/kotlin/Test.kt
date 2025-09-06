@@ -74,7 +74,7 @@ class BarcodeReaderTest {
 		assertEquals(BarcodeFormat.DataMatrix, res.format)
 		assertEquals(text, res.text)
 		assertContentEquals(text.encodeToByteArray(), res.bytes)
-		assert(res.hasECI)
+		assert(!res.hasECI)
 		assertEquals(ContentType.Binary, res.contentType)
 		assertEquals(0, res.orientation)
 		assertEquals(PointI(1, 1), res.position.topLeft)

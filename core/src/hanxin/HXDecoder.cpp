@@ -319,7 +319,8 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 	} else {
 		modifier = '0';
 	}
-	result.symbology = {'h', modifier, narrow_cast<char>('1' - modifier /*eciModifierOffset*/)}; // If ECI always '1'
+	signed char offset = '1' - modifier;
+	result.symbology = {'h', modifier, offset}; // If ECI always '1'
 
 	return DecoderResult(std::move(result))
 			.setEcLevel("L" + std::to_string(ecLevel));

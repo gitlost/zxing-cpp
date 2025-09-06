@@ -578,9 +578,10 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 {
 	auto zint = opts.zint();
 	const auto format = opts.format();
+	auto src = reinterpret_cast<const unsigned char *>(data);
 
 	zint->input_mode = mode == -1 || mode == UNICODE_MODE ? opts.gs1() && SupportsGS1(format) ? GS1_MODE : UNICODE_MODE : mode;
-	if ((zint->input_mode == UNICODE_MODE || zint->input_mode == GS1_MODE) && static_cast<const char*>(data)[0] != '[')
+	if ((zint->input_mode == UNICODE_MODE || zint->input_mode == GS1_MODE) && *src != '[')
 		zint->input_mode |= GS1PARENS_MODE;
 
 	zint->show_hrt = 0;
@@ -593,7 +594,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (opts.debug())
 		zint->debug = 1;
 
-	auto src = reinterpret_cast<const unsigned char *>(data);
 	int warning;
 	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, opts.rotate()), warning);
 

@@ -7,6 +7,7 @@
 
 #include "TextDecoder.h"
 
+#include "Version.h"
 #include "ZXAlgorithms.h"
 #include "libzueci/zueci.h"
 
@@ -15,9 +16,9 @@
 
 namespace ZXing {
 
-#ifdef ZXING_READERS
 std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 {
+#ifdef ZXING_READERS
 	constexpr unsigned int replacement = 0xFFFD;
 	const unsigned int flags = ZUECI_FLAG_SB_STRAIGHT_THRU | (sjisASCII ? ZUECI_FLAG_SJIS_STRAIGHT_THRU : 0);
 	int utf8_len;
@@ -39,8 +40,11 @@ std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 	assert(Size(utf8) == utf8_len);
 
 	return utf8;
-}
+#else
+	throw std::runtime_error("This build of zxing-cpp does not support BytesToUtf8().");
+	return {};
 #endif
+}
 
 /**
 * @param bytes bytes encoding a string, whose encoding should be guessed

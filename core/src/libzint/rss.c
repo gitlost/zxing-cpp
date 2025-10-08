@@ -288,6 +288,8 @@ INTERNAL int zint_dbar_omnstk_set_height(struct zint_symbol *symbol, const int f
     const int second_row = first_row + 2; /* 2 row separator */
     int i;
 
+    assert(first_row >= 0); /* Suppress clang-tidy-21 clang-analyzer-security.ArrayBound */
+
     for (i = 0; i < symbol->rows; i++) {
         if (i != first_row && i != second_row) {
             fixed_height += symbol->row_height[i];
@@ -1226,7 +1228,7 @@ INTERNAL int zint_dbar_exp_cc(struct zint_symbol *symbol, unsigned char source[]
     const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
     const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
 
-    error_number = zint_gs1_verify(symbol, source, &length, reduced, &reduced_length);
+    error_number = zint_gs1_verify(symbol, source, length, reduced, &reduced_length);
     if (error_number >= ZINT_ERROR) {
         return error_number;
     }

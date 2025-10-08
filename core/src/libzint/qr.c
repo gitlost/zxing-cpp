@@ -1794,7 +1794,7 @@ INTERNAL int zint_qrcode(struct zint_symbol *symbol, struct zint_seg segs[], con
         }
     }
 
-    /* Ensure maxium error correction capacity unless user-specified */
+    /* Ensure maximum error correction capacity unless user-specified */
     if (symbol->option_1 == -1 || symbol->option_1 - 1 != ecc_level) {
         if (est_binlen <= qr_data_codewords[QR_LEVEL_H][version - 1] * 8) {
             ecc_level = QR_LEVEL_H;
@@ -1828,6 +1828,8 @@ INTERNAL int zint_qrcode(struct zint_symbol *symbol, struct zint_seg segs[], con
 
     size = qr_sizes[version - 1];
     size_squared = size * size;
+
+    assert(size >= 21); /* Suppress clang-tidy-21 clang-analyzer-security.ArrayBound */
 
     grid = (unsigned char *) z_alloca(size_squared);
     memset(grid, 0, size_squared);
@@ -2530,7 +2532,7 @@ static void rmqr_setup_grid(unsigned char *grid, const int h_size, const int v_s
     grid[(h_size * 2) - 2] = 0x10;
     grid[(h_size * 2) - 1] = 0x11;
 
-    /* Add seperator */
+    /* Add separator */
     for (i = 0; i < 7; i++) {
         grid[(i * h_size) + 7] = 0x20;
     }
@@ -2735,6 +2737,8 @@ INTERNAL int zint_rmqr(struct zint_symbol *symbol, struct zint_seg segs[], const
 
     h_size = rmqr_width[version];
     v_size = rmqr_height[version];
+
+    assert(h_size >= 27 && v_size >= 7); /* Suppress clang-tidy-21 clang-analyzer-security.ArrayBound */
 
     grid = (unsigned char *) z_alloca(h_size * v_size);
     memset(grid, 0, h_size * v_size);

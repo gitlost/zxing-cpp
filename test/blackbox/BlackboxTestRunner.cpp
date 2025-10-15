@@ -347,7 +347,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		auto startTime = std::chrono::steady_clock::now();
 
 		// clang-format off
-
+#ifdef ZXING_WITH_AZTEC
 		// Expected failures:
 		// abc-inverted.png (fast) - fast does not try inverted
 		// az-thick.png (pure)
@@ -367,7 +367,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 21, 21, 180 },
 			{ 21, 21, 270 },
 		});
-
+#endif
+#ifdef ZXING_WITH_DATAMATRIX
 		runTests("datamatrix-1", "DataMatrix", 29, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 29, 29, 0   },
@@ -401,7 +402,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 19, 0, pure },
 		});
-
+#endif
+#ifdef ZXING_WITH_1D
 		runTests("dxfilmedge-1", "DXFilmEdge", 3, {
 			{ 1, 3, 0 },
 			{ 0, 3, 180 },
@@ -498,14 +500,6 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		runTests("itf-2", "ITF", 6, {
 			{ 6, 6, 0   },
 			{ 6, 6, 180 },
-		});
-
-		runTests("maxicode-1", "MaxiCode", 9, {
-			{ 9, 9, 0 },
-		});
-
-		runTests("maxicode-2", "MaxiCode", 4, {
-			{ 0, 0, 0 },
 		});
 
 		runTests("upca-1", "UPC-A", 12, {
@@ -612,7 +606,17 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 2, 2, 180 },
 			{ 2, 0, pure },
 		});
+#endif
+#ifdef ZXING_WITH_MAXICODE
+		runTests("maxicode-1", "MaxiCode", 9, {
+			{ 9, 9, 0 },
+		});
 
+		runTests("maxicode-2", "MaxiCode", 4, {
+			{ 0, 0, 0 },
+		});
+#endif
+#ifdef ZXING_WITH_QRCODE
 		runTests("qrcode-1", "QRCode", 16, {
 			{ 16, 16, 0   },
 			{ 16, 16, 90  },
@@ -682,7 +686,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{  2,  3, 270 },
 			{  2,  2, pure },
 		});
-
+#endif
+#ifdef ZXING_WITH_PDF417
 		runTests("pdf417-1", "PDF417", 17, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 16, 17, 0   },
@@ -713,7 +718,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		runStructuredAppendTest("pdf417-4", "PDF417", 3, {
 			{ 3, 3, 0   },
 		});
-
+#endif
 		runTests("falsepositives-1", "None", 27, {
 			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
 			{ 0, 0, 0, 0, 0   },

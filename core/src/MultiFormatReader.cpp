@@ -15,17 +15,29 @@
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
 #include "ZXAlgorithms.h"
+#ifdef ZXING_WITH_AZTEC
 #include "aztec/AZReader.h"
+#endif
 #include "codablockf/CBFReader.h"
 #include "code16k/C16KReader.h"
+#ifdef ZXING_WITH_DATAMATRIX
 #include "datamatrix/DMReader.h"
+#endif
 #include "dotcode/DCReader.h"
 #include "hanxin/HXReader.h"
+#ifdef ZXING_WITH_MAXICODE
 #include "maxicode/MCReader.h"
+#endif
+#ifdef ZXING_WITH_1D
 #include "oned/ODReader.h"
+#endif
 #include "pdf417/MicroPDFReader.h"
+#ifdef ZXING_WITH_PDF417
 #include "pdf417/PDFReader.h"
+#endif
+#ifdef ZXING_WITH_QRCODE
 #include "qrcode/QRReader.h"
+#endif
 
 #include <memory>
 
@@ -36,19 +48,31 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 	auto formats = opts.formats().empty() ? BarcodeFormat::Any : opts.formats();
 
 	// Put linear readers upfront in "normal" mode
+#ifdef ZXING_WITH_1D
 	if (formats.testFlags(BarcodeFormat::LinearCodes) && !opts.tryHarder())
 		_readers.emplace_back(new OneD::Reader(opts));
+#endif
 
+#ifdef ZXING_WITH_QRCODE
 	if (formats.testFlags(BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode | BarcodeFormat::RMQRCode))
 		_readers.emplace_back(new QRCode::Reader(opts, true));
+#endif
+#ifdef ZXING_WITH_DATAMATRIX
 	if (formats.testFlag(BarcodeFormat::DataMatrix))
 		_readers.emplace_back(new DataMatrix::Reader(opts, true));
+#endif
+#ifdef ZXING_WITH_AZTEC
 	if (formats.testFlag(BarcodeFormat::Aztec))
 		_readers.emplace_back(new Aztec::Reader(opts, true));
+#endif
+#ifdef ZXING_WITH_PDF417
 	if (formats.testFlag(BarcodeFormat::PDF417))
 		_readers.emplace_back(new Pdf417::Reader(opts));
+#endif
+#ifdef ZXING_WITH_MAXICODE
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(opts));
+<<<<<<< HEAD
 	#if 1
 	if (formats.testFlag(BarcodeFormat::CodablockF))
 		_readers.emplace_back(new CodablockF::Reader(opts));
@@ -61,12 +85,20 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 	if (formats.testFlag(BarcodeFormat::MicroPDF417))
 		_readers.emplace_back(new MicroPdf417::Reader(opts));
 	#endif
+=======
+#endif
+>>>>>>> master
 
 	// At end in "try harder" mode
+#ifdef ZXING_WITH_1D
 	if (formats.testFlags(BarcodeFormat::LinearCodes) && opts.tryHarder())
 		_readers.emplace_back(new OneD::Reader(opts));
+<<<<<<< HEAD
 
 	Diagnostics::setEnabled(opts.enableDiagnostics());
+=======
+#endif
+>>>>>>> master
 }
 
 MultiFormatReader::~MultiFormatReader() = default;

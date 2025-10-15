@@ -72,7 +72,7 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 #ifdef ZXING_WITH_MAXICODE
 	if (formats.testFlag(BarcodeFormat::MaxiCode))
 		_readers.emplace_back(new MaxiCode::Reader(opts));
-<<<<<<< HEAD
+#endif
 	#if 1
 	if (formats.testFlag(BarcodeFormat::CodablockF))
 		_readers.emplace_back(new CodablockF::Reader(opts));
@@ -85,20 +85,14 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 	if (formats.testFlag(BarcodeFormat::MicroPDF417))
 		_readers.emplace_back(new MicroPdf417::Reader(opts));
 	#endif
-=======
-#endif
->>>>>>> master
 
 	// At end in "try harder" mode
 #ifdef ZXING_WITH_1D
 	if (formats.testFlags(BarcodeFormat::LinearCodes) && opts.tryHarder())
 		_readers.emplace_back(new OneD::Reader(opts));
-<<<<<<< HEAD
+#endif
 
 	Diagnostics::setEnabled(opts.enableDiagnostics());
-=======
-#endif
->>>>>>> master
 }
 
 MultiFormatReader::~MultiFormatReader() = default;

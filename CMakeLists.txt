@@ -92,6 +92,10 @@ if(NOT ZXING_DEPENDENCIES IN_LIST ZXING_DEPENDENCIES_LIST)
     message(FATAL_ERROR "ZXING_DEPENDENCIES must be one of ${ZXING_DEPENDENCIES_LIST}")
 endif()
 
+if (ZXING_WRITERS MATCHES "NEW" AND NOT ZXING_EXPERIMENTAL_API)
+    message(FATAL_ERROR "Must have ZXING_EXPERIMENTAL_API if only using new ZXING_WRITERS")
+endif()
+
 if (NOT DEFINED CMAKE_CXX_STANDARD)
     set (CMAKE_CXX_STANDARD 20)
     # Allow the fallback to earlier versions if the compiler does not support it.

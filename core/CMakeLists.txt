@@ -124,8 +124,6 @@ set (COMMON_FILES
     src/Flags.h
     src/GTIN.h
     src/GTIN.cpp
-    src/HRI.h
-    src/HRI.cpp
     src/ImageView.h
     src/JSON.h
     src/JSON.cpp
@@ -165,6 +163,12 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
         src/Scope.h
     )
 endif()
+if (ZXING_READERS OR ZXING_WRITERS_NEW)
+    set (COMMON_FILES ${COMMON_FILES}
+        src/HRI.h
+        src/HRI.cpp
+    )
+endif()
 if (ZXING_READERS)
     set (COMMON_FILES ${COMMON_FILES}
         src/BinaryBitmap.h
@@ -196,20 +200,16 @@ if (ZXING_READERS)
         src/ResultPoint.h
         src/ResultPoint.cpp
         src/StructuredAppend.h
+        src/TextDecoder.h
+        src/TextDecoder.cpp
         src/ThresholdBinarizer.h
         src/TritMatrix.h # QRCode
         src/WhiteRectDetector.h
         src/WhiteRectDetector.cpp
     )
 endif()
-if (ZXING_READERS OR ZXING_WRITERS_NEW)
-    set (COMMON_FILES ${COMMON_FILES}
-        src/TextDecoder.h
-        src/TextDecoder.cpp
-    )
-endif()
 
-if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
+if (ZXING_WRITERS)
     set (COMMON_FILES ${COMMON_FILES}
         src/TextEncoder.h
         src/TextEncoder.cpp

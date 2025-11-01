@@ -28,7 +28,6 @@ add_executable (UnitTest
 
 if (ZXING_READERS)
 target_sources (UnitTest PRIVATE
-    GS1Test.cpp
     PatternTest.cpp
     TextDecoderTest.cpp
     $<$<BOOL:${ZXING_ENABLE_1D}>:ThresholdBinarizerTest.cpp>
@@ -59,7 +58,7 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
+if (ZXING_WRITERS)
 target_sources (UnitTest PRIVATE
     $<$<BOOL:${ZXING_ENABLE_AZTEC}>:aztec/AZEncoderTest.cpp>
     $<$<BOOL:${ZXING_ENABLE_DATAMATRIX}>:datamatrix/DMHighLevelEncodeTest.cpp>
@@ -79,10 +78,9 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_READERS AND ZXING_WRITERS MATCHES "ON|OLD|NEW|BOTH")
+if (ZXING_READERS AND ZXING_WRITERS)
 target_sources (UnitTest PRIVATE
     ReedSolomonTest.cpp
-    TextEncoderTest.cpp
     $<$<BOOL:${ZXING_ENABLE_AZTEC}>:aztec/AZEncodeDecodeTest.cpp>
     $<$<BOOL:${ZXING_ENABLE_AZTEC}>:aztec/AZHighLevelEncoderTest.cpp>
     $<$<BOOL:${ZXING_ENABLE_DATAMATRIX}>:datamatrix/DMEncodeDecodeTest.cpp>
@@ -92,7 +90,14 @@ target_sources (UnitTest PRIVATE
 )
 endif()
 
-if (ZXING_WRITERS MATCHES "ON|NEW|BOTH")
+if (ZXING_READERS OR ZXING_WRITERS MATCHES "NEW|BOTH")
+target_sources (UnitTest PRIVATE
+    GS1Test.cpp
+    TextEncoderTest.cpp
+)
+endif()
+
+if (ZXING_WRITERS MATCHES "NEW|BOTH")
 target_sources (UnitTest PRIVATE
     WriteBarcodeTest.cpp
 )

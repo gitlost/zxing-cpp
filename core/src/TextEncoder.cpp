@@ -10,7 +10,7 @@
 #include "Utf.h"
 #include "ZXAlgorithms.h"
 #ifdef ZXING_USE_ZINT
-#include "libzint/zint.h"
+#include <zint.h>
 #else
 #include "libzueci/zueci.h"
 #endif
@@ -56,7 +56,7 @@ void TextEncoder::GetBytes(const std::string& str, CharacterSet charset, std::st
 		bytes.clear();
 		throw std::invalid_argument("Unexpected charcode");
 	}
-#endif // #ifdef ZXING_USE_ZINT
+#endif // ZXING_USE_ZINT
 
 	bytes.resize(eci_len); // Actual length
 }

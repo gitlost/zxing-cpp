@@ -45,8 +45,6 @@ class Content
 
 	void switchEncoding(ECI eci, bool isECI);
 	std::string render(bool withECI) const;
-
-	std::string utf8Cache;
 public:
 	struct Encoding
 	{
@@ -57,6 +55,9 @@ public:
 
 	ByteArray bytes;
 	std::vector<Encoding> encodings;
+#if !defined(ZXING_READERS) && defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+	std::vector<std::string> utf8Cache;
+#endif
 	SymbologyIdentifier symbology;
 	CharacterSet defaultCharset = CharacterSet::Unknown;
 	CharacterSet optionsCharset = CharacterSet::Unknown;
@@ -65,7 +66,6 @@ public:
 
 	Content();
 	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
-	Content(std::string &&utf8, ByteArray&& bytes, SymbologyIdentifier si, ECI eci);
 
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);

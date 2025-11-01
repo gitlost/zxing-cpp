@@ -125,15 +125,6 @@ WriterOptions::~WriterOptions() = default;
 WriterOptions::WriterOptions(WriterOptions&&) = default;
 WriterOptions& WriterOptions::operator=(WriterOptions&&) = default;
 
-#ifdef ZXING_USE_ZINT
-static bool SupportsGS1(BarcodeFormat format)
-{
-	return (BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::Code16K | BarcodeFormat::DataBarExpanded
-			| BarcodeFormat::DataMatrix | BarcodeFormat::DotCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode)
-		.testFlag(format);
-}
-#endif
-
 static std::string ToSVG(ImageView iv)
 {
 	if (!iv.data())
@@ -186,6 +177,13 @@ static Image ToImage(BitMatrix bits, bool isLinearCode, const WriterOptions& opt
 #include <zint.h>
 
 namespace ZXing {
+
+static bool SupportsGS1(BarcodeFormat format)
+{
+	return (BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::Code16K | BarcodeFormat::DataBarExpanded
+			| BarcodeFormat::DataMatrix | BarcodeFormat::DotCode | BarcodeFormat::QRCode | BarcodeFormat::RMQRCode)
+		.testFlag(format);
+}
 
 struct BarcodeFormatZXing2Zint
 {
@@ -313,7 +311,7 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::UPCE, {'E', '0'}},
 };
 
-static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, std::string_view utf8, std::string_view &eanAddOn)
+static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, const ByteArray& ba, std::string_view &eanAddOn)
 {
 	const BarcodeFormat format = opts.format();
 
@@ -322,12 +320,12 @@ static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& o
 	SymbologyIdentifier ret = i->si;
 
 	if ((BarcodeFormat::EAN8 | BarcodeFormat::EAN13 | BarcodeFormat::UPCA | BarcodeFormat::UPCE).testFlag(format)) {
-		if (utf8.size() > 13) { // Have EAN-2/5 add-on?
+		if (ba.size() > 13) { // Have EAN-2/5 add-on?
 			ret.modifier = '3'; // Combined packet, EAN-13, UPC-A, UPC-E, with add-on
-			eanAddOn = utf8.substr(std::size_t(13));
+			eanAddOn = ba.asString(13);
 		}
 	} else if (format == BarcodeFormat::Code39) {
-		if (FindIf(utf8, zx_iscntrl) != utf8.end()) // Extended Code 39?
+		if (FindIf(ba, zx_iscntrl) != ba.end()) // Extended Code 39?
 			ret.modifier = static_cast<char>(ret.modifier + 4);
 	} else if (opts.gs1() && SupportsGS1(format)) {
 		if ((BarcodeFormat::Aztec | BarcodeFormat::Code128 | BarcodeFormat::Code16K | BarcodeFormat::DotCode).testFlag(format))
@@ -502,8 +500,12 @@ static int DataMaskZint2ZXing(const zint_symbol* zint)
 	return -1;
 }
 
-static void BinaryToUtf8(ByteView ba, std::string& utf8)
+#ifndef ZXING_READERS
+// Convert bytes to UTF-8 code points 0-255
+static std::string BinaryToUtf8(ByteView ba)
 {
+	std::string utf8;
+	utf8.reserve(ba.size() * 2);
 	for (auto c : ba)
 		if (c < 0x80) {
 			utf8.push_back(c);
@@ -514,7 +516,9 @@ static void BinaryToUtf8(ByteView ba, std::string& utf8)
 			utf8.push_back(0xC3);
 			utf8.push_back(c - 0x40);
 		}
+	return utf8;
 }
+#endif
 
 zint_symbol* CreatorOptions::zint() const
 {
@@ -604,33 +608,34 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-	std::string utf8;
-	ByteArray ba;
+	assert(zint->raw_seg_count == 1);
+	const auto& raw_seg = zint->raw_segs[0];
+	const size_t raw_seg_len = static_cast<size_t>(raw_seg.length - (opts.format() == BarcodeFormat::Code93 && raw_seg.length >= 2 ? 2 : 0));
 
-	if ((zint->input_mode & 0x07) == DATA_MODE) {
-		auto source = reinterpret_cast<const uint8_t *>(zint->raw_segs[0].source);
-		ba.insert(ba.begin(), source, source + zint->raw_segs[0].length);
-		if (format == BarcodeFormat::Code93) {
-			// Remove checksum digits
-			if (ba.size() > 2)
-				ba.erase(ba.end() - 2, ba.end());
-		}
-		BinaryToUtf8(ba, utf8);
+	Content content;
+
+	if (eci != ECI::Unknown)
+		content.switchEncoding(eci);
+	else
+		content.switchEncoding(ToCharacterSet(eci));
+
+	if ((zint->input_mode & 0x07) == UNICODE_MODE) {
+		// `raw_segs` returned as UTF-8
+		std::string utf8(reinterpret_cast<const char *>(raw_seg.source), raw_seg_len);
+		content.append(TextEncoder::FromUnicode(utf8, ToCharacterSet(ECI(raw_seg.eci))));
+#ifndef ZXING_READERS
+		content.utf8Cache.push_back(std::move(utf8));
+#endif
 	} else {
-		utf8 = std::string(reinterpret_cast<const char *>(zint->raw_segs[0].source), zint->raw_segs[0].length);
-		if (format == BarcodeFormat::Code93) {
-			// Remove checksum digits
-			if (utf8.size() > 2)
-				utf8.erase(utf8.end() - 2, utf8.end());
-		}
-		ba = ByteArray(TextEncoder::FromUnicode(utf8, ToCharacterSet(ECI(zint->raw_segs[0].eci))));
+		content.append({raw_seg.source, raw_seg_len});
+#ifndef ZXING_READERS
+		content.utf8Cache.push_back(BinaryToUtf8(content.bytes));
+#endif
 	}
 
 	std::string_view eanAddOn;
-	SymbologyIdentifier si = SymbologyIdentifierZint2ZXing(opts, utf8, eanAddOn);
-	Content content(std::move(utf8), std::move(ba), si, eci);
-	if (eci == ECI::Unknown)
-		content.switchEncoding(CharacterSetFromString(std::to_string(zint->raw_segs[0].eci)));
+	content.symbology = SymbologyIdentifierZint2ZXing(opts, content.bytes, eanAddOn);
+
 	if (opts.encoding() != CharacterSet::Unknown)
 		content.optionsCharset = opts.encoding();
 
@@ -657,7 +662,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 				text = text.substr(0, pos);
 			json += JsonProp(BarcodeExtra::UPCE, text);
 		}
-		if (si.modifier == '3') // Have EAN-2/5 add-on?
+		if (content.symbology.modifier == '3') // Have EAN-2/5 add-on?
 			json += JsonProp(BarcodeExtra::EanAddOn, eanAddOn);
 	}
 

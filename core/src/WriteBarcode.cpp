@@ -589,7 +589,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 		zint->input_mode |= GS1PARENS_MODE;
 
 	zint->show_hrt = 0;
-	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_RAW_TEXT;
+	zint->output_options |= OUT_BUFFER_INTERMEDIATE | BARCODE_CONTENT_SEGS;
 
 	ECI eci = ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI) ? opts.eci() : ECI::Unknown;
 	if (eci != ECI::Unknown)
@@ -602,15 +602,15 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, opts.rotate()), warning);
 
 	if (eci == ECI::Unknown && warning == ZINT_WARN_USES_ECI)
-		eci = ECI(zint->raw_segs[0].eci);
+		eci = ECI(zint->content_segs[0].eci);
 
 #ifdef PRINT_DEBUG
 	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
 #endif
 
-	assert(zint->raw_seg_count == 1);
-	const auto& raw_seg = zint->raw_segs[0];
-	const size_t raw_seg_len = static_cast<size_t>(raw_seg.length - (opts.format() == BarcodeFormat::Code93 && raw_seg.length >= 2 ? 2 : 0));
+	assert(zint->content_seg_count == 1);
+	const auto& content_seg = zint->content_segs[0];
+	const size_t content_seg_len = static_cast<size_t>(content_seg.length - (opts.format() == BarcodeFormat::Code93 && content_seg.length >= 2 ? 2 : 0));
 
 	Content content;
 
@@ -620,14 +620,14 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 		content.switchEncoding(ToCharacterSet(eci));
 
 	if ((zint->input_mode & 0x07) == UNICODE_MODE) {
-		// `raw_segs` returned as UTF-8
-		std::string utf8(reinterpret_cast<const char *>(raw_seg.source), raw_seg_len);
-		content.append(TextEncoder::FromUnicode(utf8, ToCharacterSet(ECI(raw_seg.eci))));
+		// `content_segs` returned as UTF-8
+		std::string utf8(reinterpret_cast<const char *>(content_seg.source), content_seg_len);
+		content.append(TextEncoder::FromUnicode(utf8, ToCharacterSet(ECI(content_seg.eci))));
 #ifndef ZXING_READERS
 		content.utf8Cache.push_back(std::move(utf8));
 #endif
 	} else {
-		content.append({raw_seg.source, raw_seg_len});
+		content.append({content_seg.source, content_seg_len});
 #ifndef ZXING_READERS
 		content.utf8Cache.push_back(BinaryToUtf8(content.bytes));
 #endif
@@ -682,7 +682,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 
 	// Reset zint for writing
 	zint->show_hrt = 1;
-	zint->output_options &= ~(OUT_BUFFER_INTERMEDIATE | BARCODE_RAW_TEXT);
+	zint->output_options &= ~(OUT_BUFFER_INTERMEDIATE | BARCODE_CONTENT_SEGS);
 	ZBarcode_Clear(zint);
 	CHECK(ZBarcode_Encode(zint, src, size));
 

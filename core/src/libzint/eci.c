@@ -211,7 +211,7 @@ static int u_utf32le(const unsigned int u, unsigned char *dest) {
 
 /* NOLINTEND(clang-analyzer-security.ArrayBound) */
 
-/* ECI 899 Binary, included for libzueci compatibility - assumes valid Unicode */
+/* ECI 899 Binary - assumes valid Unicode */
 static int u_binary(const unsigned int u, unsigned char *dest) {
     if (u <= 0xFF) {
         *dest = (unsigned char) u;
@@ -681,8 +681,8 @@ static int chr_range_cnt(const unsigned char string[], const int length, const u
 
 /* Is ECI convertible from UTF-8? */
 INTERNAL int zint_is_eci_convertible(const int eci) {
-    if (eci == 26 || (eci > 35 && eci != 170)) { /* Exclude ECI 170 - ASCII Invariant */
-        /* UTF-8 (26) or 8-bit binary data (899) or undefined (> 35 and < 899) or not character set (> 899) */
+    if (eci == 26 || (eci > 35 && eci != 170 && eci != 899)) { /* Exclude ECI 170 ASCII Invariant & ECI 899 Binary */
+        /* UTF-8 (26) or undefined (> 35 and < 899) or not character set (> 899) */
         return 0;
     }
     return 1;
@@ -779,7 +779,7 @@ INTERNAL int zint_utf8_to_eci(const int eci, const unsigned char source[], unsig
 
     if (eci == 170) { /* ASCII Invariant (archaic subset) */
         eci_func = u_ascii_inv;
-    } else if (eci == 899) { /* Binary, for libzueci compatibility */
+    } else if (eci == 899) { /* Binary */
         eci_func = u_binary;
     } else {
         eci_func = eci_funcs[eci];
@@ -1027,13 +1027,13 @@ INTERNAL void zint_gb2312_cpy_segs(struct zint_symbol *symbol, struct zint_seg s
                 unsigned int *ddata, const int full_multibyte) {
     int i;
     unsigned int *dd = ddata;
-    const int raw_text = symbol->output_options & BARCODE_RAW_TEXT;
+    const int content_segs = symbol->output_options & BARCODE_CONTENT_SEGS;
 
     for (i = 0; i < seg_count; i++) {
         gb2312_cpy(segs[i].source, &segs[i].length, dd, full_multibyte);
-        if (raw_text) {
-            /* Need to set as `z_rt_cpy_segs()` defaults to 3 */
-            z_rt_set_seg_eci(symbol, i, segs[i].eci ? segs[i].eci : 29);
+        if (content_segs) {
+            /* Need to set as `z_ct_cpy_segs()` defaults to 3 */
+            z_ct_set_seg_eci(symbol, i, segs[i].eci ? segs[i].eci : 29);
         }
         dd += segs[i].length;
     }

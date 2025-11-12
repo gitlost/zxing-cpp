@@ -194,7 +194,7 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 						r.setReaderOptions(opts);
 						r.setIsInverted(bitmap->inverted());
 #ifdef ZXING_EXPERIMENTAL_API
-						r.symbol(std::move(bitmap->getBitMatrix()->copy()));
+						r.symbol(bitmap->getBitMatrix()->copy());
 #endif
 						res.push_back(std::move(r));
 						--maxSymbols;

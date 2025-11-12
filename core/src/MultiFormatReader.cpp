@@ -104,7 +104,7 @@ Barcode MultiFormatReader::read(const BinaryBitmap& image) const
 		r = reader->decode(image);
 		if (r.isValid()) {
 #ifdef ZXING_EXPERIMENTAL_API
-			r.symbol(std::move(image.getBitMatrix()->copy()));
+			r.symbol(image.getBitMatrix()->copy());
 #endif
 			return r;
 		}

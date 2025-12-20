@@ -6,6 +6,7 @@
 
 #include "BitMatrixIO.h"
 #if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
+#include "JSON.h"
 #include "WriteBarcode.h"
 #else
 #include "MultiFormatWriter.h"
@@ -169,14 +170,14 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 	{
 		// Following similar to `GenerateQRCode()` in "cui/source/dialogs/QrCodeGenDialog.cxx" at
 		//   https://github.com/LibreOffice/core
-		std::string bqrEcc = "ecLevel:1";
+		int bqrEcc = 1;
 		int aQRBorder = 1;
 		// Shortened version of "samples/qrcode-2/29.png"
 		// "MEBKM:TITLE:hypeモバイル;URL:http\://live.fdgm.jp/u/event/hype/hype_top.html;;"
 		std::string QRText("MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		BarcodeFormat format = BarcodeFormat::QRCode;
 #if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
-		auto cOpts = CreatorOptions(format).margin(aQRBorder).addQuietZones(false).options(bqrEcc).eci(ECI::UTF8);
+		auto cOpts = CreatorOptions(format).margin(aQRBorder).addQuietZones(false).options(JsonProp("ecLevel", 1)).eci(ECI::UTF8);
 		auto barcode = CreateBarcodeFromText(QRText, cOpts);
 		auto actual = ToString(barcode.bits(), ' ', 'X', true); // Bits inverted
 		EXPECT_EQ(actual, // Different encodation than non-Zint

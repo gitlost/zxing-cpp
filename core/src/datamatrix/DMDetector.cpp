@@ -980,12 +980,9 @@ static DetectorResult DetectPure(const BitMatrix& image)
 		return {};
 	}
 
-	int right  = left + width - 1;
-	int bottom = top + height - 1;
-
 	// Now just read off the bits (this is a crop + subsample)
 	return {Deflate(image, dimT, dimR, top + modSizeY / 2, left + modSizeX / 2, modSize),
-			{{left, top}, {right, top}, {right, bottom}, {left, bottom}}};
+			Rectangle<PointI>(left, top, width, height)};
 }
 
 DetectorResults Detect(const BitMatrix& image, bool tryHarder, bool tryRotate, bool isPure)

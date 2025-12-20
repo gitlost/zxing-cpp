@@ -295,8 +295,6 @@ static Barcode DecodePure(const BinaryBitmap& image_)
 	int left, top, width, height;
 	if (!image.findBoundingBox(left, top, width, height, 9) || (width < 3 * 17 && height < 3 * 17))
 		return {};
-	int right  = left + width - 1;
-	int bottom = top + height - 1;
 
 	// counter intuitively, using a floating point cursor is about twice as fast an integer one (on an AVX architecture)
 	BitMatrixCursorF cur(image, centered(PointI{left, top}), PointF{1, 0});
@@ -320,7 +318,7 @@ static Barcode DecodePure(const BinaryBitmap& image_)
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", info.nRows, info.nCols);
 	auto res = DecodeCodewords(codeWords, NumECCodeWords(info.ecLevel));
 
-	return Barcode(std::move(res), {{}, {{left, top}, {right, top}, {right, bottom}, {left, bottom}}}, BarcodeFormat::PDF417);
+	return Barcode(std::move(res), {{}, Rectangle<PointI>(left, top, width, height)}, BarcodeFormat::PDF417);
 }
 
 Barcode

@@ -40,7 +40,6 @@ struct CreatorOptions::Data
 #ifdef ZXING_USE_ZINT
 	bool addQuietZones = true;
 	int margin = 0;
-	CharacterSet encoding = CharacterSet::Unknown;
 	int rotate = 0;
 	ECI eci = ECI::Unknown;
 	float height = 0.0f;
@@ -66,7 +65,6 @@ ZX_PROPERTY(BarcodeFormat, format)
 #ifdef ZXING_USE_ZINT
 ZX_PROPERTY(bool, addQuietZones)
 ZX_PROPERTY(int, margin)
-ZX_PROPERTY(CharacterSet, encoding)
 ZX_PROPERTY(int, rotate)
 ZX_PROPERTY(ECI, eci)
 ZX_PROPERTY(float, height)
@@ -633,9 +631,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 
 	std::string_view eanAddOn;
 	content.symbology = SymbologyIdentifierZint2ZXing(opts, content.bytes, eanAddOn);
-
-	if (opts.encoding() != CharacterSet::Unknown)
-		content.optionsCharset = opts.encoding();
 
 	DecoderResult decRes(std::move(content));
 	decRes.setEcLevel(ECLevelZint2ZXing(zint));

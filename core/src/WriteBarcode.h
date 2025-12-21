@@ -45,7 +45,6 @@ public:
 	ZX_PROPERTY(bool, addQuietZones)
 #ifdef ZXING_USE_ZINT
 	ZX_PROPERTY(int, margin)
-	ZX_PROPERTY(CharacterSet, encoding)
 	ZX_PROPERTY(int, rotate)
 	ZX_PROPERTY(ECI, eci)
 	ZX_PROPERTY(float, height)

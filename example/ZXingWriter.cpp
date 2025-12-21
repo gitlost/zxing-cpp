@@ -42,7 +42,7 @@ static void PrintUsage(const char* exePath)
 #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
 			  << "    -scale      Set X-dimension of generated image\n"
 			  << "    -margin     Margin around barcode\n"
-			  << "    -encoding   Encoding used to encode input text\n"
+			  << "    -bytes      Encode input text as-is\n"
 			  << "    -eci        Set ECI\n"
 			  << "    -height     Set height in X-dimensions of linear symbol\n"
 			  << "    -readerinit Reader Initialisation/Programming\n"
@@ -79,7 +79,7 @@ struct CLI
 	bool verbose = false;
 #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
 	int scale = 0;
-	CharacterSet encoding = CharacterSet::Unknown;
+	bool bytes = false;
 	int margin = 0;
 	ECI eci = ECI::Unknown;
 	float height = 0.0f;
@@ -106,13 +106,8 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.margin = std::stoi(argv[i]);
-		} else if (is("-encoding")) {
-			if (++i == argc)
-				return false;
-			if ((cli.encoding = CharacterSetFromString(argv[i])) == CharacterSet::Unknown) {
-				std::cerr << "Unrecognized encoding: " << argv[i] << std::endl;
-				return false;
-			}
+		} else if (is("-bytes")) {
+			cli.bytes = true;
 		} else if (is("-eci")) {
 			if (++i == argc)
 				return false;
@@ -217,13 +212,12 @@ int main(int argc, char* argv[])
 #ifdef ZXING_EXPERIMENTAL_API
 		auto cOpts = CreatorOptions(cli.format).options(cli.options);
 #ifdef ZXING_USE_ZINT
-		cOpts.addQuietZones(cli.addQZs).encoding(cli.encoding).margin(cli.margin)
+		cOpts.addQuietZones(cli.addQZs).margin(cli.margin)
 			 .eci(cli.eci).height(cli.height)
 			 .debug(cli.debug).rotate(cli.rotate);
 #endif
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
-					   : cli.encoding != CharacterSet::Unknown && cli.encoding != CharacterSet::UTF8 ? CreateBarcodeFromBytes(cli.input, cOpts)
-					   : CreateBarcodeFromText(cli.input, cOpts);
+					   : cli.bytes ? CreateBarcodeFromBytes(cli.input, cOpts) : CreateBarcodeFromText(cli.input, cOpts);
 
 		auto wOpts = WriterOptions().sizeHint(cli.sizeHint).addQuietZones(cli.addQZs).addHRT(cli.addHRT).rotate(cli.rotate);
 #ifdef ZXING_USE_ZINT

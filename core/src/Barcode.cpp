@@ -71,8 +71,6 @@ Result::Result(DecoderResult&& decodeResult, DetectorResult&& detectorResult, Ba
 		snprintf(_version, 4, "%d", decodeResult.versionNumber());
 	snprintf(_ecLevel, 4, "%s", decodeResult.ecLevel().data());
 
-	// TODO: add type opaque and code specific 'extra data'? (see DecoderResult::extra())
-
 	if (Diagnostics::enabled()) {
 		Diagnostics::moveTo(_diagnostics);
 	}

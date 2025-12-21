@@ -221,7 +221,9 @@ int main(int argc, char* argv[])
 			 .eci(cli.eci).height(cli.height)
 			 .debug(cli.debug).rotate(cli.rotate);
 #endif
-		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts) : CreateBarcodeFromText(cli.input, cOpts);
+		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
+					   : cli.encoding != CharacterSet::Unknown && cli.encoding != CharacterSet::UTF8 ? CreateBarcodeFromBytes(cli.input, cOpts)
+					   : CreateBarcodeFromText(cli.input, cOpts);
 
 		auto wOpts = WriterOptions().sizeHint(cli.sizeHint).addQuietZones(cli.addQZs).addHRT(cli.addHRT).rotate(cli.rotate);
 #ifdef ZXING_USE_ZINT

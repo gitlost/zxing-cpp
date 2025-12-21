@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "Range.h"
+
 #include <string>
 #include <string_view>
 
@@ -22,5 +24,7 @@ int Utf8Next(std::string_view str, const int start, int& cnt);
 
 // Encode Unicode codepoint `utf32` as UTF-8
 std::string Utf8Encode(const char32_t utf32);
+
+bool ValidUtf8(ByteView bytes);
 
 } // namespace ZXing

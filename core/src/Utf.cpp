@@ -266,4 +266,16 @@ std::string EscapeNonGraphical(std::string_view utf8)
 	return oss.str();
 }
 
+bool ValidUtf8(ByteView bytes)
+{
+	state_t state = kAccepted;
+	char32_t codepoint = 0;
+	for (int value : bytes) {
+		Utf8Decode(value, state, codepoint);
+		if (state == kRejected)
+			return false;
+	}
+	return state == kAccepted;
+}
+
 } // namespace ZXing

@@ -768,8 +768,8 @@ static Barcode CreateBarcode(BitMatrix&& bits, std::string_view contents, const 
 Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& opts)
 {
 	auto writer = MultiFormatWriter(opts.format()).setMargin(0);
-	if (auto val = opts.ecLevel(); val)
-		writer.setEccLevel(std::stoi(*val));
+	if (auto ecLevel = opts.ecLevel(); ecLevel)
+		writer.setEccLevel(std::stoi(*ecLevel));
 	writer.setEncoding(CharacterSet::UTF8); // write UTF8 (ECI value 26) for maximum compatibility
 
 	return CreateBarcode(writer.encode(std::string(contents), 0, IsLinearBarcode(opts.format()) ? 50 : 0), contents, opts);
@@ -789,8 +789,8 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 		bytes.push_back(c);
 
 	auto writer = MultiFormatWriter(opts.format()).setMargin(0);
-	if (auto val = opts.ecLevel(); val)
-		writer.setEccLevel(std::stoi(*val));
+	if (auto ecLevel = opts.ecLevel(); ecLevel)
+		writer.setEccLevel(std::stoi(*ecLevel));
 	writer.setEncoding(CharacterSet::BINARY);
 
 	return CreateBarcode(writer.encode(bytes, 0, IsLinearBarcode(opts.format()) ? 50 : 0), std::string_view(reinterpret_cast<const char*>(data), size), opts);

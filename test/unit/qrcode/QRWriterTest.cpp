@@ -177,7 +177,8 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		std::string QRText("MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		BarcodeFormat format = BarcodeFormat::QRCode;
 #if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
-		auto cOpts = CreatorOptions(format).margin(aQRBorder).addQuietZones(false).options(JsonProp("ecLevel", 1)).eci(ECI::UTF8);
+		std::string options = JsonProp("eci", "UTF8") + JsonProp("ecLevel", 1);
+		auto cOpts = CreatorOptions(format, options).margin(aQRBorder).addQuietZones(false);
 		auto barcode = CreateBarcodeFromText(QRText, cOpts);
 		auto actual = ToString(barcode.bits(), ' ', 'X', true); // Bits inverted
 		EXPECT_EQ(actual, // Different encodation than non-Zint

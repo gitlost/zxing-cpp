@@ -43,7 +43,6 @@ static void PrintUsage(const char* exePath)
 			  << "    -scale      Set X-dimension of generated image\n"
 			  << "    -margin     Margin around barcode\n"
 			  << "    -bytes      Encode input text as-is\n"
-			  << "    -eci        Set ECI\n"
 			  << "    -height     Set height in X-dimensions of linear symbol\n"
 			  << "    -readerinit Reader Initialisation/Programming\n"
 			  << "    -rotate     Rotate 0, 90, 180, 270 degrees\n"
@@ -81,7 +80,6 @@ struct CLI
 	int scale = 0;
 	bool bytes = false;
 	int margin = 0;
-	ECI eci = ECI::Unknown;
 	float height = 0.0f;
 	bool debug = false;
 #endif
@@ -108,13 +106,6 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			cli.margin = std::stoi(argv[i]);
 		} else if (is("-bytes")) {
 			cli.bytes = true;
-		} else if (is("-eci")) {
-			if (++i == argc)
-				return false;
-			if ((cli.eci = ToECI(CharacterSetFromString(argv[i]))) == ECI::Unknown) {
-				std::cerr << "Unrecognized ECI: " << argv[i] << std::endl;
-				return false;
-			}
 		} else if (is("-height")) {
 			if (++i == argc)
 				return false;
@@ -213,8 +204,7 @@ int main(int argc, char* argv[])
 		auto cOpts = CreatorOptions(cli.format).options(cli.options);
 #ifdef ZXING_USE_ZINT
 		cOpts.addQuietZones(cli.addQZs).margin(cli.margin)
-			 .eci(cli.eci).height(cli.height)
-			 .debug(cli.debug).rotate(cli.rotate);
+			 .height(cli.height).debug(cli.debug).rotate(cli.rotate);
 #endif
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
 					   : cli.bytes ? CreateBarcodeFromBytes(cli.input, cOpts) : CreateBarcodeFromText(cli.input, cOpts);
@@ -226,6 +216,7 @@ int main(int argc, char* argv[])
 		auto bitmap = WriteBarcodeToImage(barcode, wOpts);
 
 		if (cli.verbose) {
+			std::cout.setf(std::ios::boolalpha);
 			std::string text = EscapeNonGraphical(barcode.text(TextMode::Plain));
 			std::cout << "Text:       \"" << EscapeNonGraphical(barcode.text(TextMode::Plain)) << "\"\n";
 			if (text != barcode.text(TextMode::HRI))

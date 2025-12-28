@@ -1001,8 +1001,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::Aztec;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=ISO8859_1").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]z3", "1234é", "31 32 33 34 E9", true, "]z3\\0000261234é",
 			  "5D 7A 33 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "17%", "1");
@@ -1032,8 +1031,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::DataMatrix;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=3").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]d4", "1234é", "31 32 33 34 E9", true, "]d4\\0000261234é",
 			  "5D 64 34 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "" /*ecLevel*/, "3");
@@ -1063,8 +1061,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::MaxiCode;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=ISO8859_1").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]U2", "1234é", "31 32 33 34 E9", true, "]U2\\0000261234é",
 			  "5D 55 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "4" /*ecLevel*/);
@@ -1094,8 +1091,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::PDF417;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=ISO8859_1").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]L1", "1234é", "31 32 33 34 E9", true, "]L1\\0000261234é",
 			  "5D 4C 31 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "50%");
@@ -1125,8 +1121,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::QRCode;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=ISO8859_1").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é",
 			  "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 1 /*dataMask*/);
@@ -1156,8 +1151,7 @@ TEST(WriteBarcodeTest, ZintISO8859_1)
 		// With ECI
 		BarcodeFormat format = BarcodeFormat::RMQRCode;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::ISO8859_1);
+		auto cOpts = CreatorOptions(format, "eci=ISO8859_1").addQuietZones(false);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]Q2", "1234é", "31 32 33 34 E9", true, "]Q2\\0000261234é",
 			  "5D 51 32 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "0x0 26x0 26x10 0x10", "M", "11", 4 /*dataMask*/);
@@ -1199,8 +1193,7 @@ TEST(WriteBarcodeTest, ZintBinary)
 		// With ECI (ignored as Code128 doesn't support ECI)
 		BarcodeFormat format = BarcodeFormat::Code128;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::Binary);
+		auto cOpts = CreatorOptions(format, "eci=BINARY").addQuietZones(false);
 		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
 		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
 		check(__LINE__, barcode, "]C0",
@@ -1244,8 +1237,7 @@ TEST(WriteBarcodeTest, ZintBinary)
 		// With ECI::Binary
 		BarcodeFormat format = BarcodeFormat::QRCode;
 
-		auto cOpts = CreatorOptions(format).addQuietZones(false);
-		cOpts.eci(ECI::Binary);
+		auto cOpts = CreatorOptions(format, "eci=BINARY").addQuietZones(false);
 		std::string data("\x00\x5C\x7E\x7F\x80\x81\xC0\xFF", 8);
 		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
 		check(__LINE__, barcode, "]Q2",
@@ -1425,6 +1417,6 @@ TEST(WriteBarcodeTest, RandomDataBar)
 	randomTest(BarcodeFormat::DataBarLimited);
 	randomTest(BarcodeFormat::DataBarExpanded);
 }
-#endif
+#endif // ZXING_READERS
 
-#endif // #if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_WRITERS) && defined(ZXING_USE_ZINT)
+#endif // ZXING_EXPERIMENTAL_API

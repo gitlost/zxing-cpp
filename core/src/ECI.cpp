@@ -79,4 +79,12 @@ ECI ToECI(CharacterSet cs)
 	return ECI::Unknown;
 }
 
+ECI ToECI(int eciInt)
+{
+	if (eciInt < 2 || eciInt == 14 || eciInt == 19 || (eciInt > 35 && eciInt < 170) || (eciInt > 170 && eciInt < 899) || eciInt > 899)
+		return ECI::Unknown;
+
+	return ECI(eciInt);
+}
+
 } // namespace ZXing

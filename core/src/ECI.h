@@ -76,4 +76,6 @@ CharacterSet ToCharacterSet(ECI eci);
 
 ECI ToECI(CharacterSet cs);
 
+ECI ToECI(int eciInt);
+
 } // namespace ZXing

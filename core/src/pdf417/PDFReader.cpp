@@ -99,7 +99,6 @@ static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotat
 					return p;
 				}
 			};
-#ifdef ZXING_EXPERIMENTAL_API
 			decoderResult
 				.addExtra("Sender", customData->sender)
 				.addExtra("Addressee", customData->addressee)
@@ -109,7 +108,6 @@ static Barcodes DoDecode(const BinaryBitmap& image, bool multiple, bool tryRotat
 				.addExtra("Timestamp", customData->timestamp, int64_t(-1))
 				.addExtra("Checksum", customData->checksum, -1)
 			;
-#endif
 			res.emplace_back(std::move(decoderResult), DetectorResult{{}, {point(0), point(2), point(3), point(1)}},
 							 BarcodeFormat::PDF417);
 			if (!multiple)

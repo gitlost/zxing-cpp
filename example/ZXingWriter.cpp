@@ -3,12 +3,15 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-#ifdef ZXING_EXPERIMENTAL_API
+// #define USE_OLD_WRITER_API
+
+#ifndef USE_OLD_WRITER_API
 #ifdef ZXING_USE_ZINT
 #include "ECI.h"
 #endif
 #include "JSON.h"
 #include "Utf.h"
+#include "CreateBarcode.h"
 #include "WriteBarcode.h"
 #else
 #include "BitMatrixIO.h"
@@ -53,7 +56,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -version    Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n";
-#ifdef ZXING_EXPERIMENTAL_API
+#ifdef ZXING_USE_ZINT
 	for (auto f : BarcodeFormats::all())
 #else
 	for (auto f : BarcodeFormatsFromString("Aztec Codabar Code39 Code93 Code128 DataMatrix EAN8 EAN13 ITF PDF417 QRCode UPCA UPCE"))
@@ -247,7 +250,7 @@ int main(int argc, char* argv[])
 			if (!barcode.version().empty()) {
 				std::string azType;
 				if (barcode.format() == BarcodeFormat::Aztec) {
-					if (int version = std::stoi(barcode.version()), height = barcode.bits().height();
+					if (int version = std::stoi(barcode.version()), height = barcode.symbolMatrix().height();
 							(version == 1 && height % 15 == 0) || (version == 2 && height % 19 == 0)
 							 || (version == 3 && height % 23 == 0) || (version == 4 && height % 27 == 0))
 						azType = " (Compact)";
@@ -262,7 +265,7 @@ int main(int argc, char* argv[])
 				std::cout << "Reader Initialisation/Programming\n";
 			std::cout << WriteBarcodeToUtf8(barcode);
 		}
-#else
+#else // 'old' writer API (non zint based)
 		auto writer = MultiFormatWriter(cli.format).setMargin(cli.addQZs ? 10 : 0);
 
 		BitMatrix matrix;
@@ -287,7 +290,7 @@ int main(int argc, char* argv[])
 		} else if (ext == "jpg" || ext == "jpeg") {
 			success = stbi_write_jpg(cli.outPath.c_str(), bitmap.width(), bitmap.height(), 1, bitmap.data(), 0);
 		} else if (ext == "svg") {
-#ifdef ZXING_EXPERIMENTAL_API
+#ifndef USE_OLD_WRITER_API
 			success = (std::ofstream(cli.outPath) << WriteBarcodeToSVG(barcode, wOpts)).good();
 #else
 			success = (std::ofstream(cli.outPath) << ToSVG(matrix)).good();

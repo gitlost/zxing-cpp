@@ -22,7 +22,6 @@ add_executable (UnitTest
     JSONTest.cpp
     PseudoRandom.h
     SanitizerSupport.cpp
-    TextUtfEncodingTest.cpp
     ZXAlgorithmsTest.cpp
 )
 

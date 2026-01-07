@@ -1053,12 +1053,16 @@ int ZBarcode_Encode_Segs(struct zint_symbol *symbol, const struct zint_seg segs[
         z_debug_print_escape(local_segs[0].source, len > 30 ? 30 : len, source);
         z_debug_print_escape(ZCUCP(symbol->primary), primary_len > 30 ? 30 : primary_len, primary);
         printf("\nZBarcode_Encode_Segs: %s (%d), input_mode: 0x%X, ECI: %d, option_1/2/3: (%d, %d, %d)\n"
-                "                      scale: %g, output_options: 0x%X, fg: %s, bg: %s, seg_count: %d,\n"
-                "                      %ssource%s (%d): \"%s\",\n"
+                "                      height %g, scale: %g, whitespace: (%d, %d), border_width %d\n"
+                "                      output_options: 0x%X, fg: %s, bg: %s, seg_count: %d\n"
+                "                      %ssource%s (%d): \"%s\"\n"
                 "                      %sprimary (%d): \"%s\"\n",
                 name, symbol->symbology, symbol->input_mode, symbol->eci, symbol->option_1, symbol->option_2,
-                symbol->option_3, symbol->scale, symbol->output_options, symbol->fgcolour, symbol->bgcolour,
-                seg_count, len > 30 ? "first 30 " : "", seg_count > 1 ? "[0]" : "", len, source,
+                    symbol->option_3,
+                symbol->height, symbol->scale, symbol->whitespace_width, symbol->whitespace_height,
+                    symbol->border_width,
+                symbol->output_options, symbol->fgcolour, symbol->bgcolour, seg_count,
+                len > 30 ? "first 30 " : "", seg_count > 1 ? "[0]" : "", len, source,
                 primary_len > 30 ? "first 30 " : "", primary_len, primary);
         fflush(stdout);
     }

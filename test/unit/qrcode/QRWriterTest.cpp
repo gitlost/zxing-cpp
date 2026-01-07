@@ -7,6 +7,7 @@
 #include "BitMatrixIO.h"
 #if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
 #include "JSON.h"
+#include "CreateBarcode.h"
 #include "WriteBarcode.h"
 #else
 #include "MultiFormatWriter.h"
@@ -180,7 +181,7 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		std::string options = JsonProp("eci", "UTF8") + JsonProp("ecLevel", 1);
 		auto cOpts = CreatorOptions(format, options).margin(aQRBorder).addQuietZones(false);
 		auto barcode = CreateBarcodeFromText(QRText, cOpts);
-		auto actual = ToString(barcode.bits(), ' ', 'X', true); // Bits inverted
+		auto actual = ToString(barcode.symbolMatrix(), ' ', 'X', true); // Bits inverted
 		EXPECT_EQ(actual, // Different encodation than non-Zint
 "                                                                              \n"
 "  X X X X X X X   X   X   X X X X   X X X           X   X X   X X X X X X X   \n"

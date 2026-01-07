@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ODRowReader.h"
+#include "SymbologyIdentifier.h"
 
 namespace ZXing::OneD {
 

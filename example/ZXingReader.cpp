@@ -10,15 +10,14 @@
 #include "Diagnostics.h"
 #endif
 #include "GTIN.h"
+#ifdef ZXING_EXPERIMENTAL_API
+#include "JSON.h"
+#endif
 #include "ReadBarcode.h"
 #include "TextDecoder.h"
 #include "Utf.h"
 #include "Version.h"
-
-#ifdef ZXING_EXPERIMENTAL_API
-#include "JSON.h"
 #include "WriteBarcode.h"
-#endif
 
 #include <chrono>
 #include <cstring>
@@ -412,7 +411,7 @@ int main(int argc, char* argv[])
 			std::string azType;
 #ifdef ZXING_EXPERIMENTAL_API
 			if (barcode.format() == BarcodeFormat::Aztec) {
-				if (int version = std::stoi(barcode.version()), height = barcode.bits().height();
+				if (int version = std::stoi(barcode.version()), height = barcode.symbolMatrix().height();
 						(version == 1 && height % 15 == 0) || (version == 2 && height % 19 == 0)
 						 || (version == 3 && height % 23 == 0) || (version == 4 && height % 27 == 0))
 					azType = " (Compact)";
@@ -459,8 +458,8 @@ int main(int argc, char* argv[])
 #ifdef ZXING_EXPERIMENTAL_API
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
-#endif
 		}
+#endif
 
 		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())
 			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(), image.rowStride());

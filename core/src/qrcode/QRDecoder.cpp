@@ -6,9 +6,7 @@
 
 #include "QRDecoder.h"
 
-#ifdef ZXING_EXPERIMENTAL_API
 #include "Barcode.h"
-#endif
 #include "BitMatrix.h"
 #include "BitSource.h"
 #include "DecoderResult.h"
@@ -418,10 +416,8 @@ DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 	Diagnostics::put("  Decode:     ");
 	auto ret = DecodeBitStream(std::move(resultBytes), version, formatInfo.ecLevel, optionsCharset)
 		.setIsMirrored(formatInfo.isMirrored)
-#ifdef ZXING_EXPERIMENTAL_API
 		.addExtra(BarcodeExtra::DataMask, formatInfo.dataMask, uint8_t(255))
 		.addExtra(BarcodeExtra::Version, versionStr)
-#endif
 		;
 	if (error)
 		ret.setError(error);

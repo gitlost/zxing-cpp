@@ -9,14 +9,13 @@
 
 #include <iomanip>
 
-#if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_WRITERS) && defined(ZXING_USE_ZINT)
-
 #include "BitMatrix.h"
 #include "BitMatrixIO.h"
 #include "JSON.h"
 #ifdef ZXING_READERS
 #include "ReadBarcode.h"
 #endif
+#include "CreateBarcode.h"
 #include "WriteBarcode.h"
 
 #include "gtest/gtest.h"
@@ -72,8 +71,8 @@ namespace {
 		EXPECT_EQ(b1.isInverted(), b2.isInverted()) << "line:" << line;
 		EXPECT_EQ(b1.readerInit(), b2.readerInit()) << "line:" << line;
 		if (cmpBits) {
-			std::string b1BitsStr = ToString(b1.bits(), ' ', 'X', false /*addSpace*/); // Bits inverted
-			std::string b2BitsStr = ToString(b2.bits(), ' ', 'X', false /*addSpace*/);
+			std::string b1BitsStr = ToString(b1.symbolMatrix(), ' ', 'X', false /*addSpace*/); // Bits inverted
+			std::string b2BitsStr = ToString(b2.symbolMatrix(), ' ', 'X', false /*addSpace*/);
 			EXPECT_EQ(b1BitsStr, b2BitsStr) << "line:" << line;
 		}
 	}
@@ -110,7 +109,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 		check(__LINE__, barcode, "]z0", "1234", "31 32 33 34", false, "]z3\\0000261234", "5D 7A 30 31 32 33 34",
 			  "1234", "Text", "0x0 15x0 15x15 0x15", "58%", "1" /*version*/);
 
-		std::string bitsStr = ToString(barcode.bits(), ' ', 'X', false /*addSpace*/); // Bits inverted
+		std::string bitsStr = ToString(barcode.symbolMatrix(), ' ', 'X', false /*addSpace*/); // Bits inverted
 		std::string expected_bitsStr =
 "   XXX XXX XX  \n"
 "XX  X XX   XXX \n"
@@ -164,7 +163,7 @@ TEST(WriteBarcodeTest, ZintASCII)
 		check(__LINE__, barcode, "]F0", "A12B", "41 31 32 42", false, "]F0\\000026A12B", "5D 46 30 41 31 32 42",
 			  "A12B", "Text", "0x0 40x0 40x49 0x49");
 
-		std::string bitsStr = ToString(barcode.bits(), ' ', 'X', false /*addSpace*/); // Bits inverted
+		std::string bitsStr = ToString(barcode.symbolMatrix(), ' ', 'X', false /*addSpace*/); // Bits inverted
 		std::string expected_bitsStr =
 "X XX  X  X X X XX  X X X  X XX X  X  X XX \n"
 "X XX  X  X X X XX  X X X  X XX X  X  X XX \n"
@@ -1418,5 +1417,3 @@ TEST(WriteBarcodeTest, RandomDataBar)
 	randomTest(BarcodeFormat::DataBarExpanded);
 }
 #endif // ZXING_READERS
-
-#endif // ZXING_EXPERIMENTAL_API

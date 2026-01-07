@@ -20,7 +20,7 @@ class Reader : public ZXing::Reader
 
 public:
 	explicit Reader(const ReaderOptions& options);
-	Result decode(const BinaryBitmap& image) const override;
+	Barcode decode(const BinaryBitmap& image) const override;
 };
 
 } // MicroPdf417

@@ -9,6 +9,8 @@
 #include "Diagnostics.h"
 #include "ODCode128Patterns.h"
 #include "Barcode.h"
+#include "JSON.h"
+#include "SymbologyIdentifier.h"
 #include "ZXAlgorithms.h"
 
 #include <array>
@@ -277,7 +279,7 @@ Barcode Code128Reader::decodePattern(int rowNumber, PatternView& next, std::uniq
 
 	int xStop = next.pixelsTillEnd();
 	return Barcode(raw2txt.text(), rowNumber, xStart, xStop, BarcodeFormat::Code128, raw2txt.symbologyIdentifier(), error,
-				  readerInit);
+				   JsonProp(BarcodeExtra::ReaderInit, readerInit));
 }
 
 } // namespace ZXing::OneD

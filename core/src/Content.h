@@ -53,6 +53,12 @@ public:
 	Content();
 	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
 
+	// make movable but not copyable
+	Content(const Content& other) = delete;
+	Content& operator=(const Content& other) = delete;
+	Content(Content&& other) = default;
+	Content& operator=(Content&& other) = default;
+
 	void switchEncoding(ECI eci) { switchEncoding(eci, true); }
 	void switchEncoding(CharacterSet cs);
 

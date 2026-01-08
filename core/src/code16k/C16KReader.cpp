@@ -334,7 +334,7 @@ static int DecodeDigit(const C& c)
 	return OneD::RowReader::DecodeDigit(c, CODE_PATTERNS, MAX_AVG_VARIANCE, MAX_INDIVIDUAL_VARIANCE, false);
 }
 
-Barcode DetectSymbol(const BinaryBitmap& image)
+BarcodeData DetectSymbol(const BinaryBitmap& image)
 {
 	PointI tl, tr, br, bl;
 	std::vector<std::vector <int>> rows;
@@ -365,12 +365,12 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 		for (;;) {
 			if (!next.skipSymbol()) {
 				if (next.size() != CHAR_LEN) {
-					return Barcode(DecoderResult(FormatError("Skip fail")), DetectorResult{}, BarcodeFormat::Code16K);
+					return MatrixBarcode(DecoderResult(FormatError("Skip fail")), DetectorResult{}, BarcodeFormat::Code16K);
 				}
 				next = next.subView(0, START_STOP_CHAR_LEN);
 				if (!DetectRowStopCode(next, Size(rows))) {
 					if (Size(rawCodes) == 5) {
-						return Barcode(DecoderResult(FormatError("DetectRowStopCode fail")), DetectorResult{}, BarcodeFormat::Code16K);
+						return MatrixBarcode(DecoderResult(FormatError("DetectRowStopCode fail")), DetectorResult{}, BarcodeFormat::Code16K);
 					}
 					rawCodes.clear();
 				} else {
@@ -388,7 +388,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 				next = next.subView(0, START_STOP_CHAR_LEN);
 				if (!DetectRowStopCode(next, Size(rows))) {
 					if (Size(rawCodes) == 5) {
-						return Barcode(DecoderResult(FormatError("DetectRowStopCode fail")), DetectorResult{}, BarcodeFormat::Code16K);
+						return MatrixBarcode(DecoderResult(FormatError("DetectRowStopCode fail")), DetectorResult{}, BarcodeFormat::Code16K);
 					}
 					rawCodes.clear();
 				} else {
@@ -426,7 +426,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 #endif
 
 	if (Size(rows) < 2) {
-		return Barcode(DecoderResult(FormatError("< 2 rows")), DetectorResult{}, BarcodeFormat::Code16K);
+		return MatrixBarcode(DecoderResult(FormatError("< 2 rows")), DetectorResult{}, BarcodeFormat::Code16K);
 	}
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)", Size(rows), Size(rows.front()));
@@ -435,7 +435,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 	int numberRows = (rows[0][0] - mode) / 7 + 2;
 	//fprintf(stderr, "mode %d, numberRows %d\n", mode, numberRows);
 	if (numberRows != Size(rows)) {
-		return Barcode(DecoderResult(FormatError("number of rows mismatch")), DetectorResult{}, BarcodeFormat::Code16K);
+		return MatrixBarcode(DecoderResult(FormatError("number of rows mismatch")), DetectorResult{}, BarcodeFormat::Code16K);
 	}
 
 	int codeSet = CODE_CODE_A;
@@ -490,7 +490,7 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 		const std::vector<int>& row = rows[i];
 		for (int j = rowStart; j < Size(row) - (i + 1 == Size(rows) ? 2 : 0); j++) {
 			if (!decoder.decode(row[j])) {
-				return Barcode(DecoderResult(FormatError("Decode")), DetectorResult{}, BarcodeFormat::Code16K);
+				return MatrixBarcode(DecoderResult(FormatError("Decode")), DetectorResult{}, BarcodeFormat::Code16K);
 			}
 		}
 		rowStart = 0;
@@ -509,29 +509,36 @@ Barcode DetectSymbol(const BinaryBitmap& image)
 	DecoderResult decoderResult(Content(ByteArray(decoder.text()), si, CharacterSet::ISO8859_1));
 	decoderResult.setReaderInit(decoder.readerInit());
 
-	return Barcode(std::move(decoderResult), DetectorResult({}, Position(tl, tr, br, bl)), BarcodeFormat::Code16K);
+	return MatrixBarcode(std::move(decoderResult), DetectorResult({}, Position(tl, tr, br, bl)), BarcodeFormat::Code16K);
 }
 
-static Barcode DecodePure(const BinaryBitmap& image)
+static BarcodeData DecodePure(const BinaryBitmap& image)
 {
-	Barcode res = DetectSymbol(image);
+	BarcodeData res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		fprintf(stderr, "ERROR: %s\n", ToString(res.error()).c_str());
+		fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
 		return {};
 	}
 
 	return res;
 }
 
-Barcode
-Reader::decode(const BinaryBitmap& image) const
+BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 {
 	if (!_formatSpecified) {
-		(void)image;
 		return {};
 	}
-	return DecodePure(image);
+	(void)maxSymbols; // Only every return 1
+
+	BarcodesData res;
+	BarcodeData data = DecodePure(image);
+	if (!data.isValid()) {
+		return {};
+	}
+	res.emplace_back(std::move(data));
+
+	return res;
 }
 
 } // namespace ZXing::Code16K

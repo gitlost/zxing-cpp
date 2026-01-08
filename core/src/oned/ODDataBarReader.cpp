@@ -13,7 +13,7 @@
 #include "Diagnostics.h"
 #include "GTIN.h"
 #include "ODDataBarCommon.h"
-#include "Barcode.h"
+#include "BarcodeData.h"
 
 #include <cmath>
 #include <unordered_set>
@@ -153,7 +153,7 @@ struct State : public RowReader::DecodingState
 	std::unordered_set<Pair, PairHash> rightPairs;
 };
 
-Barcode DataBarReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>& state) const
+BarcodeData DataBarReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>& state) const
 {
 #if 0 // non-stacked version
 	next = next.subView(-1, FULL_PAIR_SIZE + 1); // +1 reflects the guard pattern on the right, see IsRightPair());
@@ -198,10 +198,10 @@ Barcode DataBarReader::decodePattern(int rowNumber, PatternView& next, std::uniq
 			if (ChecksumIsValid(leftPair, rightPair)) {
 				Diagnostics::put("  Decode:");
 				// Symbology identifier ISO/IEC 24724:2011 Section 9 and GS1 General Specifications 5.1.3 Figure 5.1.3-2
-				Barcode res{DecoderResult(Content(ByteArray(ConstructText(leftPair, rightPair)), {'e', '0', 0, AIFlag::GS1}))
-								.setLineCount(EstimateLineCount(leftPair, rightPair)),
-							{{}, EstimatePosition(leftPair, rightPair)},
-							BarcodeFormat::DataBar};
+				auto res = BarcodeData{.content = Content(ByteArray{ConstructText(leftPair, rightPair)}, {'e', '0', 0, AIFlag::GS1}),
+									   .position = EstimatePosition(leftPair, rightPair),
+									   .format = BarcodeFormat::DataBar,
+									   .lineCount = EstimateLineCount(leftPair, rightPair)};
 
 				prevState->leftPairs.erase(leftPair);
 				prevState->rightPairs.erase(rightPair);

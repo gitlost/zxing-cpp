@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstdio>
 #include <cstring>
 #include <initializer_list>
 #include <iterator>
@@ -16,6 +17,7 @@
 #include <string>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace ZXing {
 
@@ -138,6 +140,38 @@ std::string ToString(T val, int len)
 	return result;
 }
 
+template <typename P, typename = std::enable_if_t<std::is_pointer_v<P> && sizeof(std::remove_pointer_t<P>) == 1>>
+inline std::string ToHex(P data, size_t size)
+{
+	std::string res(size * 3, ' ');
+
+	for (size_t i = 0; i < size; ++i) {
+		// TODO c++20 std::format
+#ifdef _MSC_VER
+		sprintf_s(&res[i * 3], 4, "%02X ", data[i]);
+#else
+		snprintf(&res[i * 3], 4, "%02X ", data[i]);
+#endif
+	}
+
+	return res.substr(0, res.size()-1);
+}
+
+template <typename Container>
+inline std::string ToHex(const Container& c)
+{
+	return ToHex(c.data(), c.size());
+}
+
+template <typename T>
+std::vector<T> ToVector(T&& v)
+{
+	// simply construcing a vector via initializer_list does not work with move-only types
+	std::vector<T> res;
+	res.emplace_back(std::move(v));
+	return res;
+}
+
 template <class T>
 constexpr std::string_view TypeName()
 {
@@ -180,10 +214,10 @@ inline void ForEachToken(std::string_view str, std::string_view delimiters, FUNC
 {
 	std::size_t pos = 0;
 	while (pos < str.size()) {
-        auto const next_pos = str.find_first_of(delimiters, pos);
-        callback(str.substr(pos, next_pos - pos));
-        pos = next_pos == std::string_view::npos ? str.size() : next_pos + 1;
-    }
+		auto const next_pos = str.find_first_of(delimiters, pos);
+		callback(str.substr(pos, next_pos - pos));
+		pos = next_pos == std::string_view::npos ? str.size() : next_pos + 1;
+	}
 }
 
 inline bool IsEqualIgnoreCase(std::string_view a, std::string_view b)

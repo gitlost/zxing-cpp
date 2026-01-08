@@ -9,6 +9,8 @@
 #include "Barcode.h"
 #include "BitMatrix.h"
 #include "BitSource.h"
+#include "ByteArray.h"
+#include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "GenericGF.h"

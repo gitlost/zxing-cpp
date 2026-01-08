@@ -4,7 +4,7 @@
 
 ZXing-C++ ("zebra crossing") is an open-source, multi-format linear/matrix barcode image processing library implemented in C++.
 
-It was originally ported from the Java [ZXing Library](https://github.com/zxing/zxing) but has been developed further and now includes many improvements in terms of runtime and detection performance. It can both read and write barcodes in a number of formats.
+It was originally ported from the Java [ZXing Library](https://github.com/zxing/zxing) but has been developed further and now includes many improvements in terms of runtime and detection performance. It can both read and write barcodes in a number of formats. Since version 3.0 the default writing backend is provided by the [zint library](https://github.com/zint/zint).
 
 ## Sponsors
 
@@ -19,7 +19,7 @@ Thanks a lot for your contribution!
 
 ## Features
 
-* Written in pure C++20 (/C++17), no third-party dependencies (for the library itself)
+* Written in pure C++20 (public API is C++17 compatible), no third-party dependencies (for the library itself)
 * Thread safe
 * Wrappers/Bindings for:
   * [Android](wrappers/android/README.md)
@@ -48,7 +48,6 @@ Thanks a lot for your contribution!
 [Note:]
  * DataBar used to be called RSS.
  * DataBar, DX Film Edge, MaxiCode, Micro QR Code and rMQR Code are not supported for writing (unless the library is configured `ZXING_WRITERS=NEW`).
- * Building with only C++17 (see [CMakeLists.txt](https://github.com/zxing-cpp/zxing-cpp/blob/d4b0f502775857f257d13efd25fb840ece1bca3e/CMakeLists.txt#L45)) changes the behavior of the library: it then lacks support for DataBarLimited and multi-symbol and position independent detection for DataMatrix.
 
 ## Getting Started
 
@@ -68,7 +67,7 @@ int main(int argc, char** argv)
     // load your image data from somewhere. ImageFormat::Lum assumes grey scale image data.
 
     auto image = ZXing::ImageView(data, width, height, ZXing::ImageFormat::Lum);
-    auto options = ZXing::ReaderOptions().setFormats(ZXing::BarcodeFormat::Any);
+    auto options = ZXing::ReaderOptions().formats(ZXing::BarcodeFormat::Any);
     auto barcodes = ZXing::ReadBarcodes(image, options);
 
     for (const auto& b : barcodes)
@@ -83,7 +82,7 @@ To see the full capability of the API, have a look at [`ZXingReader.cpp`](exampl
 
 ### To write barcodes:
 1. Create a `Barcode` object with `CreateBarcode()` from [`CreateBarcode.h`](core/src/CreateBarcode.h).
-2. The `Barcode::symbol()` can be used to get access to the bit matrix (1 module == 1 pixel, no quiet zone())
+2. The `Barcode::symbol()` can be used to get access to the bit matrix (1 module == 1 pixel, no quiet zone)
 3. Alternatively the 3 `WriteBarcodeTo...()` functions from [`WriteBarcode.h`](core/src/WriteBarcode.h) can be used to create an `Image`, a SVG string or a UTF-8 string representation.
 
 A very simple example looks like this:

@@ -23,10 +23,10 @@ endif()
 
 set (ZXING_WRITERS_NEW OFF)
 set (ZXING_WRITERS_OLD OFF)
-if (ZXING_WRITERS MATCHES "OLD|ON")
+if (ZXING_WRITERS MATCHES "OLD")
     set (ZXING_WRITERS ON)
     set (ZXING_WRITERS_OLD ON)
-elseif (ZXING_WRITERS MATCHES "NEW")
+elseif (ZXING_WRITERS MATCHES "NEW|ON")
     set (ZXING_WRITERS ON)
     set (ZXING_WRITERS_NEW ON)
 elseif (ZXING_WRITERS MATCHES "BOTH")
@@ -91,6 +91,7 @@ endif()
 set (COMMON_FILES
     src/Barcode.h
     src/Barcode.cpp
+    src/BarcodeData.h
     src/BarcodeFormat.h
     src/BarcodeFormat.cpp
     src/BitHacks.h
@@ -99,7 +100,6 @@ set (COMMON_FILES
     src/BitMatrixIO.h
     src/BitMatrixIO.cpp
     src/ByteArray.h
-    src/ByteMatrix.h
     src/CharacterSet.h
     src/CharacterSet.cpp
     src/CreateBarcode.h
@@ -207,7 +207,6 @@ endif()
 
 if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (COMMON_FILES ${COMMON_FILES}
-        src/ByteMatrix.h
         src/ReedSolomonEncoder.h
         src/ReedSolomonEncoder.cpp
     )
@@ -224,7 +223,6 @@ set (PUBLIC_HEADERS
     src/Barcode.h
     src/BarcodeFormat.h
     src/BitHacks.h
-    src/ByteArray.h
     src/CharacterSet.h
     src/ContentType.h
     src/CreateBarcode.h
@@ -234,7 +232,6 @@ set (PUBLIC_HEADERS
     src/ImageView.h
     src/Point.h
     src/Quadrilateral.h
-    src/Range.h # re-evaluate for 3.0
     src/ReadBarcode.h
     src/ReaderOptions.h
     src/StructuredAppend.h
@@ -625,7 +622,7 @@ if (ZXING_WRITERS_NEW)
     else()
         include(../zxing.cmake)
         zxing_add_package(zint zint https://github.com/zint/zint.git HEAD)
-        target_link_libraries (ZXing PRIVATE zint)
+        target_link_libraries (ZXing PRIVATE $<IF:$<BOOL:${ZINT_STATIC}>,zint-static,zint>)
     endif()
 endif()
 

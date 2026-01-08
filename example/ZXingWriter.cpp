@@ -6,9 +6,7 @@
 // #define USE_OLD_WRITER_API
 
 #ifndef USE_OLD_WRITER_API
-#ifdef ZXING_USE_ZINT
 #include "ECI.h"
-#endif
 #include "JSON.h"
 #include "Utf.h"
 #include "CreateBarcode.h"
@@ -42,7 +40,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -noqz       Print barcode without quiet zone\n"
 			  << "    -hrt        Print human readable text below the barcode (if supported)\n"
 			  << "    -verbose    Print barcode information\n"
-#if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+#ifndef USE_OLD_WRITER_API
 			  << "    -scale      Set X-dimension of generated image\n"
 			  << "    -margin     Margin around barcode\n"
 			  << "    -bytes      Encode input text as-is\n"
@@ -56,7 +54,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -version    Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n";
-#ifdef ZXING_USE_ZINT
+#ifndef USE_OLD_WRITER_API
 	for (auto f : BarcodeFormats::all())
 #else
 	for (auto f : BarcodeFormatsFromString("Aztec Codabar Code39 Code93 Code128 DataMatrix EAN8 EAN13 ITF PDF417 QRCode UPCA UPCE"))
@@ -79,7 +77,7 @@ struct CLI
 	bool addHRT = false;
 	bool addQZs = true;
 	bool verbose = false;
-#if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+#ifndef USE_OLD_WRITER_API
 	int scale = 0;
 	bool bytes = false;
 	int margin = 0;
@@ -98,7 +96,7 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.sizeHint = std::stoi(argv[i]);
-#if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+#ifndef USE_OLD_WRITER_API
 		} else if (is("-scale")) {
 			if (++i == argc)
 				return false;
@@ -180,7 +178,7 @@ std::vector<T> ReadFile(const std::string& fn)
 	return ifs ? std::vector(std::istreambuf_iterator<T>(ifs), std::istreambuf_iterator<T>()) : std::vector<T>();
 };
 
-#if defined(ZXING_EXPERIMENTAL_API) && defined(ZXING_USE_ZINT)
+#ifndef USE_OLD_WRITER_API
 std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
 	bool not_first = false;
 	for (const auto& e : ecis) {
@@ -203,19 +201,15 @@ int main(int argc, char* argv[])
 	}
 
 	try {
-#ifdef ZXING_EXPERIMENTAL_API
+#ifndef USE_OLD_WRITER_API
 		auto cOpts = CreatorOptions(cli.format).options(cli.options);
-#ifdef ZXING_USE_ZINT
 		cOpts.addQuietZones(cli.addQZs).margin(cli.margin)
 			 .height(cli.height).debug(cli.debug).rotate(cli.rotate);
-#endif
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
 					   : cli.bytes ? CreateBarcodeFromBytes(cli.input, cOpts) : CreateBarcodeFromText(cli.input, cOpts);
 
 		auto wOpts = WriterOptions().sizeHint(cli.sizeHint).addQuietZones(cli.addQZs).addHRT(cli.addHRT).rotate(cli.rotate);
-#ifdef ZXING_USE_ZINT
 		wOpts.scale(cli.scale);
-#endif
 		auto bitmap = WriteBarcodeToImage(barcode, wOpts);
 
 		if (cli.verbose) {
@@ -225,19 +219,15 @@ int main(int argc, char* argv[])
 			if (text != barcode.text(TextMode::HRI))
 				std::cout << "Text HRI:   \"" << barcode.text(TextMode::HRI) << "\"\n";
 			std::cout << "Bytes:      " << ToHex(barcode.bytes()) << "\n";
-#ifdef ZXING_USE_ZINT
 			std::cout << "Text ECI:   \"" << barcode.text(TextMode::ECI) << "\"\n"
 					  << "Bytes ECI:  " << ToHex(barcode.bytesECI()) << "\n";
-#endif
 			std::cout << "Format:     " << ToString(barcode.format()) << "\n"
 					  << "Identifier: " << barcode.symbologyIdentifier() << "\n"
 					  << "Content:    " << ToString(barcode.contentType()) << "\n";
 			if (barcode.hasECI())
 				std::cout << "HasECI:     " << (barcode.hasECI() ? "Y" : "N") << "\n";
-#ifdef ZXING_USE_ZINT
 			if (barcode.hasECI())
 				std::cout << "ECIs:       " << barcode.ECIs() << "\n";
-#endif
 			std::cout << "Position:   " << ToString(barcode.position()) << "\n";
 			if (barcode.orientation())
 				std::cout << "Rotation:   " << barcode.orientation() << " deg\n";

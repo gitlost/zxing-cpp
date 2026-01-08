@@ -33,13 +33,13 @@ Reader::Reader(const ReaderOptions& options)
 	_formatSpecified = options.hasFormat(BarcodeFormat::HanXin);
 }
 
-Barcode
-Reader::decode(const BinaryBitmap& image) const
+BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 {
 	if (!_formatSpecified) {
-		(void)image;
 		return {};
 	}
+	(void)maxSymbols; // Only every return 1
+
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
 		return {};
@@ -49,7 +49,13 @@ Reader::decode(const BinaryBitmap& image) const
 
 	//printf(" HXReader: detectorResult.isValid() %d\n", (int)detectorResult.isValid());
 	if (detectorResult.isValid()) {
-		return Barcode(Decoder::Decode(detectorResult.bits(), _opts.characterSet()), DetectorResult{}, BarcodeFormat::HanXin);
+		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
+		if (decoderResult.isValid()) {
+			BarcodesData res;
+			BarcodeData data = MatrixBarcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::HanXin);
+			res.emplace_back(std::move(data));
+			return res;
+		}
 	}
 	return {};
 }

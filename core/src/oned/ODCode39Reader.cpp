@@ -7,7 +7,7 @@
 #include "ODCode39Reader.h"
 
 #include "ReaderOptions.h"
-#include "Barcode.h"
+#include "BarcodeData.h"
 #include "SymbologyIdentifier.h"
 #include "ZXAlgorithms.h"
 
@@ -74,7 +74,7 @@ std::string DecodeCode39AndCode93FullASCII(std::string encoded, const char ctrl[
 	return encoded;
 }
 
-Barcode Code39Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
+BarcodeData Code39Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
 {
 	// minimal number of characters that must be present (including start, stop and checksum characters)
 	int minCharCount = _opts.validateCode39CheckSum() ? 4 : 3;
@@ -142,7 +142,7 @@ Barcode Code39Reader::decodePattern(int rowNumber, PatternView& next, std::uniqu
 	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)_opts.validateCode39CheckSum() + 2 * (int)hasFullASCII]};
 
 	int xStop = next.pixelsTillEnd();
-	return {std::move(txt), rowNumber, xStart, xStop, BarcodeFormat::Code39, symbologyIdentifier, error};
+	return LinearBarcode(BarcodeFormat::Code39, std::move(txt), rowNumber, xStart, xStop, symbologyIdentifier, error);
 }
 
 } // namespace ZXing::OneD

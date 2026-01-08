@@ -6,6 +6,8 @@
 #include "Content.h"
 
 #include "Diagnostics.h"
+#include "ByteArray.h"
+#include "CharacterSet.h"
 #include "ECI.h"
 #include "HRI.h"
 #include "TextDecoder.h"

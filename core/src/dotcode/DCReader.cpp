@@ -34,13 +34,13 @@ Reader::Reader(const ReaderOptions& options)
 	_formatSpecified = options.hasFormat(BarcodeFormat::DotCode);
 }
 
-Barcode
-Reader::decode(const BinaryBitmap& image) const
+BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 {
 	if (!_formatSpecified) {
-		(void)image;
 		return {};
 	}
+	(void)maxSymbols; // Only every return 1
+
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
 		return {};
@@ -53,7 +53,10 @@ Reader::decode(const BinaryBitmap& image) const
 		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
 		//if (decoderResult.error()) fprintf(stderr, "DecoderResult error %s\n", decoderResult.error().msg().c_str());
 		if (decoderResult.isValid()) {
-			return Barcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::DotCode);
+			BarcodesData res;
+			BarcodeData data = MatrixBarcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::DotCode);
+			res.emplace_back(std::move(data));
+			return res;
 		}
 	}
 	return {};

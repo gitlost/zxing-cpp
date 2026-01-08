@@ -8,9 +8,9 @@
 #pragma once
 
 #include "BarcodeFormat.h"
-#include "ByteArray.h"
+#include "BitMatrix.h"
 #include "ContentType.h"
-#include "ReaderOptions.h"
+#include "ReaderOptions.h" // for TextMode
 #include "Error.h"
 #include "ImageView.h"
 #include "Quadrilateral.h"
@@ -22,11 +22,6 @@
 
 #ifdef ZXING_USE_ZINT
 extern "C" struct zint_symbol;
-struct zint_symbol_deleter
-{
-	void operator()(zint_symbol* p) const noexcept;
-};
-using unique_zint_symbol = std::unique_ptr<zint_symbol, zint_symbol_deleter>;
 #endif
 
 #include <list>
@@ -35,28 +30,20 @@ using unique_zint_symbol = std::unique_ptr<zint_symbol, zint_symbol_deleter>;
 
 namespace ZXing {
 
-struct SymbologyIdentifier;
-class DecoderResult;
-class DetectorResult;
 class CreatorOptions;
+class ReaderOptions;
 class WriterOptions;
 class Barcode;
 
 using Position = QuadrilateralI;
 using Barcodes = std::vector<Barcode>;
 
-class BitMatrix;
-class BinaryBitmap;
-namespace OneD {
-class RowReader;
-Barcodes DoDecode(const std::vector<std::unique_ptr<RowReader>>&, const BinaryBitmap&, bool, bool, bool, int, int, bool);
-}
-
 namespace BarcodeExtra {
 	#define ZX_EXTRA(NAME) static constexpr auto NAME = #NAME
 	ZX_EXTRA(DataMask); // QRCodes
 	ZX_EXTRA(Version);
 	ZX_EXTRA(EanAddOn); // EAN/UPC
+	ZX_EXTRA(ECLevel);
 	ZX_EXTRA(UPCE);
 	ZX_EXTRA(ReaderInit);
 	#undef ZX_EXTRA
@@ -67,7 +54,7 @@ namespace BarcodeExtra {
  */
 class Barcode
 {
-	struct Data;
+	using Data = struct BarcodeData;
 
 	std::shared_ptr<Data> d;
 
@@ -76,25 +63,16 @@ class Barcode
 	void setIsInverted(bool v);
 	void incrementLineCount();
 	Barcode& setReaderOptions(const ReaderOptions& opts);
-#ifdef ZXING_USE_ZINT
-	void zint(unique_zint_symbol&& z);
-#endif
 
 	friend Barcode MergeStructuredAppendSequence(const Barcodes&);
 	friend Barcodes ReadBarcodes(const ImageView&, const ReaderOptions&);
 	friend Barcode CreateBarcode(const void*, int, int, const CreatorOptions&);
 	friend Image WriteBarcodeToImage(const Barcode&, const WriterOptions&);
-	friend Barcodes OneD::DoDecode(const std::vector<std::unique_ptr<OneD::RowReader>>&, const BinaryBitmap&, bool, bool, bool, int,
-								   int, bool);
+	friend std::string WriteBarcodeToSVG(const Barcode&, const WriterOptions&);
 
 public:
 	Barcode();
-
-	// linear symbology convenience constructor
-	Barcode(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error = {},
-			std::string extra = {});
-
-	Barcode(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format);
+	Barcode(Barcode::Data&& data);
 
 	bool isValid() const;
 
@@ -105,12 +83,12 @@ public:
 	/**
 	 * @brief bytes is the raw / standard content without any modifications like character set conversions
 	 */
-	const ByteArray& bytes() const; // TODO 3.0: replace ByteArray with std::vector<uint8_t>
+	const std::vector<uint8_t>& bytes() const;
 
 	/**
 	 * @brief bytesECI is the raw / standard content following the ECI protocol
 	 */
-	ByteArray bytesECI() const;
+	std::vector<uint8_t> bytesECI() const;
 
 	/**
 	 * @brief text returns the bytes() content rendered to unicode/utf8 text accoring to specified TextMode
@@ -121,11 +99,6 @@ public:
 	 * @brief text returns the bytes() content rendered to unicode/utf8 text accoring to the TextMode set in the ReaderOptions
 	 */
 	std::string text() const;
-
-	/**
-	 * @brief ecLevel returns the error correction level of the symbol (empty string if not applicable)
-	 */
-	std::string ecLevel() const;
 
 	/**
 	 * @brief contentType gives a hint to the type of content found (Text/Binary/GS1/etc.)
@@ -188,10 +161,14 @@ public:
 	bool isPartOfSequence() const { return sequenceSize() > -1 && sequenceIndex() > -1; }
 
 	/**
-	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
+	 * @brief Retrieve supplementary metadata associated with this barcode.
+	 *
+	 * Returns a string containing additional and symbology specific information. In form of a JSON object
+	 * serialization. The optional parameter @p key can be used to retrieve a specific item only.
+	 * Key values are case insensitive. See BarcodeExtra namespace for valid keys.
+	 * If the key is not found or there is no info available, an empty string is returned.
 	 */
-	// [[deprecated]]
-	bool readerInit() const { return !extra(BarcodeExtra::ReaderInit).empty(); }
+	std::string extra(std::string_view key = "") const;
 
 	/**
 	 * @brief lineCount How many lines have been detected with this code (applies only to linear symbologies)
@@ -199,9 +176,22 @@ public:
 	int lineCount() const;
 
 	/**
+	 * @brief ecLevel returns the error correction level of the symbol (empty string if not applicable)
+	 */
+	// [[deprecated ("use extra(BarcodeExtra::ECLevel) instead")]]
+	std::string ecLevel() const { return extra(BarcodeExtra::ECLevel); }
+
+	/**
+	 * @brief readerInit Set if Reader Initialisation/Programming symbol.
+	 */
+	// [[deprecated]]
+	bool readerInit() const { return !extra(BarcodeExtra::ReaderInit).empty(); }
+
+	/**
 	 * @brief version QRCode / DataMatrix / Aztec version or size.
 	 */
-	std::string version() const;
+	// [[deprecated ("use extra(BarcodeExtra::Version) instead")]]
+	std::string version() const { return extra(BarcodeExtra::Version); }
 
 	const std::list<std::string>& diagnostics() const;
 	void setContentDiagnostics();
@@ -209,10 +199,9 @@ public:
 	void symbol(BitMatrix&& bits);
 	const BitMatrix& symbolMatrix() const;
 	ImageView symbol() const;
-#ifdef ZXING_USE_ZINT
+#if defined(ZXING_USE_ZINT) && defined(ZXING_EXPERIMENTAL_API)
 	zint_symbol* zint() const;
 #endif
-	std::string extra(std::string_view key = "") const;
 
 	bool operator==(const Barcode& o) const;
 };

@@ -20,7 +20,7 @@ class Reader : public ZXing::Reader
 
 public:
 	explicit Reader(const ReaderOptions& options);
-	Barcode decode(const BinaryBitmap& image) const override;
+	BarcodesData read(const BinaryBitmap& image, int maxSymbols) const override;
 };
 
 } // Code16K

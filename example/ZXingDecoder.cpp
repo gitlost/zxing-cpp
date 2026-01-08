@@ -15,8 +15,6 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
-#define ZX_USE_UTF8 1 // see Result.h
-
 #include "BitMatrixIO.h"
 #include "CharacterSet.h"
 #ifdef ZX_DIAGNOSTICS
@@ -340,7 +338,7 @@ int main(int argc, char* argv[])
 	std::vector<uint8_t> buf;
 	bool angleEscape = false;
 	int ret = 0;
-	Result result;
+	BarcodesData data;
 #ifdef ZX_DIAGNOSTICS
 	std::list<std::string> diagnostics;
 #endif
@@ -382,29 +380,29 @@ int main(int argc, char* argv[])
 
 	if (opts.formats() == BarcodeFormat::Aztec) {
 		Aztec::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::CodablockF) {
 		CodablockF::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::Code16K) {
 		Code16K::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::DataMatrix) {
 		DataMatrix::Reader reader(opts);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
 		//fprintf(stderr, "ivbits width %d, height %d\n", ivbits.width(), ivbits.height());
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::HanXin) {
 		HanXin::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::DotCode) {
 		DotCode::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::MaxiCode) {
 		MaxiCode::Reader reader(opts);
@@ -414,7 +412,7 @@ int main(int argc, char* argv[])
 				ivbits.set(c * 2 + offset, r, bits.get(c, r));
 			}
 		}
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::PDF417) {
 		Pdf417::Reader reader(opts);
@@ -425,27 +423,34 @@ int main(int argc, char* argv[])
 			}
 		}
 		auto ivbits = InflateXY(bits.copy(), bits.width(), height);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::MicroPDF417) {
 		MicroPdf417::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::DXFilmEdge) {
 		OneD::Reader reader(opts);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 6, bits.height() * 6, 7, 0);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, ivbits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
 	} else if (opts.formats().testFlags(BarcodeFormat::LinearCodes)) {
 		opts.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (opts.formats() == BarcodeFormat::QRCode || opts.formats() == BarcodeFormat::MicroQRCode
 			|| opts.formats() == BarcodeFormat::RMQRCode) {
 		QRCode::Reader reader(opts);
-		result = reader.decode(ThresholdBinarizer(getImageView(buf, bits), 127));
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 	}
+
+	if (data.empty()) {
+		std::cerr << "Failed to decode\n";
+		return -1;
+	}
+
+	Barcode result(std::move(data.front()));
 
 	if (!result.isValid()) {
 		ret = 1;

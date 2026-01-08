@@ -6,7 +6,9 @@
 
 #include "CreateBarcode.h"
 
+#include "BarcodeData.h"
 #include "BitMatrix.h"
+#include "ByteArray.h"
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "JSON.h"
@@ -27,8 +29,6 @@
 #include <zint.h>
 #else
 #include "MultiFormatWriter.h"
-struct zint_symbol {};
-using unique_zint_symbol = std::unique_ptr<zint_symbol>;
 #endif // ZXING_USE_ZINT
 
 #include <charconv>
@@ -54,10 +54,6 @@ struct CreatorOptions::Data
 	// structured_append (idx, cnt, ID)
 
 	mutable unique_zint_symbol zint;
-
-#ifndef __cpp_aggregate_paren_init // MSVC 17.14
-	Data(BarcodeFormat f, std::string o) : format(f), options(std::move(o)) {}
-#endif
 };
 
 #define ZX_PROPERTY(TYPE, NAME) \
@@ -314,12 +310,12 @@ static std::string ECLevelZint2ZXing(const zint_symbol* zint)
 	return {};
 }
 
-static Position PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& bits)
+static QuadrilateralI PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& bits)
 {
 	const BarcodeFormat format = opts.format();
 	const int rotate = opts.rotate();
 
-	Position pos;
+	QuadrilateralI pos;
 	int left, top, width, height;
 	if (bits.findBoundingBox(left, top, width, height)) {
 
@@ -348,13 +344,13 @@ static Position PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& 
 		}
 
 		if (rotate == 90)
-			pos = Position(PointI{left + width, top}, PointI{left + width, top + height}, PointI{left, top + height}, PointI{left, top});
+			pos = QuadrilateralI(PointI{left + width, top}, PointI{left + width, top + height}, PointI{left, top + height}, PointI{left, top});
 		else if (rotate == 180)
-			pos = Position(PointI{left + width, top + height}, PointI{left, top + height}, PointI{left, top}, PointI{left + width, top});
+			pos = QuadrilateralI(PointI{left + width, top + height}, PointI{left, top + height}, PointI{left, top}, PointI{left + width, top});
 		else if (rotate == 270)
-			pos = Position(PointI{left, top + height}, PointI{left, top}, PointI{left + width, top}, PointI{left + width, top + height});
+			pos = QuadrilateralI(PointI{left, top + height}, PointI{left, top}, PointI{left + width, top}, PointI{left + width, top + height});
 		else
-			pos = Position(PointI{left, top}, PointI{left + width, top}, PointI{left + width, top + height}, PointI{left, top + height});
+			pos = QuadrilateralI(PointI{left, top}, PointI{left + width, top}, PointI{left + width, top + height}, PointI{left, top + height});
 	}
 	return pos;
 }
@@ -602,11 +598,11 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 				   [](unsigned char v) { return (v == '1') * BitMatrix::SET_V; });
 
 	Position pos = PositionZint2ZXing(opts, bits);
-	DetectorResult detRes(BitMatrix(1, 1).copy(), std::move(pos)); // Bits gets properly set below
+	DetectorResult detRes(std::move(bits), std::move(pos));
 
-	auto res = Barcode(std::move(decRes), std::move(detRes), format);
-	res.symbol(std::move(bits)); // Bits gets inverted in `symbol()`
-	res.zint(std::move(opts.d->zint));
+	auto res = MatrixBarcode(std::move(decRes), std::move(detRes), opts.format());
+
+	res.zint = std::move(opts.d->zint);
 
 	// Reset zint for writing
 	zint->show_hrt = 1;
@@ -645,14 +641,14 @@ static Barcode CreateBarcode(BitMatrix&& bits, std::string_view contents, const 
 #ifdef ZXING_READERS
 	(void)contents; // unused
 	return ReadBarcode({img.data(), img.width(), img.height(), ImageFormat::Lum},
-					   ReaderOptions().setFormats(opts.format()).setIsPure(true).setBinarizer(Binarizer::BoolCast));
+					   ReaderOptions().formats(opts.format()).isPure(true).binarizer(Binarizer::BoolCast));
 #else
 	Content content;
 	content.append(contents);
 
 	DecoderResult decRes(std::move(content));
 	DetectorResult detRes(std::move(bits), Rectangle<PointI>(0, 0, bits.width(), bits.height()));
-	return Barcode(std::move(decRes), std::move(detRes), opts.format());
+	return MatrixBarcode(std::move(decRes), std::move(detRes), opts.format());
 #endif
 }
 

@@ -14,9 +14,9 @@ using namespace ZXing;
 
 uint64_t Expand(uint8_t b)
 {
-    uint64_t shift = 0x0000040810204081ul; // bits set: 0, 7, 14, 21, 28, 35, 42
-    uint64_t mask = 0x0001010101010101ul; // bits set: 0, 8, 16, 24, 32, 40, 48
-    return ((uint64_t)(b & 127) * shift & mask) | (uint64_t)(b & 128) << 49;
+	uint64_t shift = 0x0000040810204081ul; // bits set: 0, 7, 14, 21, 28, 35, 42
+	uint64_t mask = 0x0001010101010101ul;  // bits set: 0, 8, 16, 24, 32, 40, 48
+	return ((uint64_t)(b & 127) * shift & mask) | (uint64_t)(b & 128) << 49;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
@@ -25,12 +25,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 		return 0;
 
 	static auto opts = ReaderOptions()
-						   .setFormats(BarcodeFormat::MatrixCodes)
-						   .setBinarizer(Binarizer::BoolCast)
-						   .setReturnErrors(true)
-						   .setTryInvert(false)
-						   .setTryRotate(false);
-
+						   .formats(BarcodeFormat::MatrixCodes)
+						   .binarizer(Binarizer::BoolCast)
+						   .returnErrors(true)
+						   .tryInvert(false)
+						   .tryRotate(false);
 	int ratio = data[0] + 1;
 	int nBits = (size - 1) * 8;
 	int width = std::clamp(nBits * ratio / 256, 1, nBits);
@@ -38,7 +37,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
 	assert(width * height <= nBits);
 
-	ByteArray buffer(nBits);
+	std::vector<uint8_t> buffer(nBits);
 	for (size_t i = 1; i < size; ++i)
 		*reinterpret_cast<uint64_t*>(&buffer[(i - 1) * 8]) = Expand(data[i]);
 

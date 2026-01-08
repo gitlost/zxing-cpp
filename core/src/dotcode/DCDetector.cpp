@@ -19,7 +19,6 @@
 #include "BinaryBitmap.h"
 #include "BitMatrix.h"
 #include "BitMatrixCursor.h"
-#include "ByteMatrix.h"
 #include "DetectorResult.h"
 #include "Diagnostics.h"
 #include "Pattern.h"

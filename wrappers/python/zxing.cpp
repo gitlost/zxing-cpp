@@ -12,7 +12,7 @@
 #include "ZXAlgorithms.h"
 
 // Writer
-#ifdef ZXING_EXPERIMENTAL_API
+#ifdef ZXING_USE_ZINT
 #include "CreateBarcode.h"
 #include "WriteBarcode.h"
 #include <bit>
@@ -46,15 +46,15 @@ auto read_barcodes_impl(py::object _image, const BarcodeFormats& formats, bool t
 						uint8_t max_number_of_symbols = 0xff)
 {
 	const auto opts = ReaderOptions()
-		.setFormats(formats)
-		.setTryRotate(try_rotate)
-		.setTryDownscale(try_downscale)
-		.setTextMode(text_mode)
-		.setBinarizer(binarizer)
-		.setIsPure(is_pure)
-		.setMaxNumberOfSymbols(max_number_of_symbols)
-		.setEanAddOnSymbol(ean_add_on_symbol)
-		.setReturnErrors(return_errors);
+		.formats(formats)
+		.tryRotate(try_rotate)
+		.tryDownscale(try_downscale)
+		.textMode(text_mode)
+		.binarizer(binarizer)
+		.isPure(is_pure)
+		.maxNumberOfSymbols(max_number_of_symbols)
+		.eanAddOnSymbol(ean_add_on_symbol)
+		.returnErrors(return_errors);
 
 	if (py::isinstance<ImageView>(_image)) {
 		// Disables the GIL during zxing processing (restored automatically upon completion)
@@ -195,8 +195,6 @@ Barcodes read_barcodes(py::object _image, const BarcodeFormats& formats, bool tr
 							  return_errors);
 }
 
-#ifdef ZXING_EXPERIMENTAL_API
-
 auto image_view(py::buffer buffer, int width, int height, ImageFormat format, int rowStride, int pixStride)
 {
 	const auto _type = std::string(py::str(py::type::of(buffer)));
@@ -231,11 +229,10 @@ std::string write_barcode_to_svg(Barcode barcode, int size_hint, bool add_hrt, b
 {
 	return WriteBarcodeToSVG(barcode, WriterOptions().sizeHint(size_hint).addHRT(add_hrt).addQuietZones(add_quiet_zones));
 }
-#endif
 
 Image write_barcode(BarcodeFormat format, py::object content, int width, int height, int quiet_zone, int ec_level)
 {
-#ifdef ZXING_EXPERIMENTAL_API
+#ifdef ZXING_USE_ZINT
 	auto barcode = create_barcode(content, format, py::dict("ec_level"_a = ec_level / 2));
 	return write_barcode_to_image(barcode, std::max(width, height), false, quiet_zone != 0);
 #else
@@ -382,7 +379,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		.def_property_readonly("text", [](const Barcode& res) { return res.text(); },
 			":return: text of the decoded symbol (see also TextMode parameter)\n"
 			":rtype: str")
-		.def_property_readonly("bytes", [](const Barcode& res) { return py::bytes(res.bytes().asString()); },
+		.def_property_readonly("bytes", [](const Barcode& res) { return py::bytes((char*)res.bytes().data(), res.bytes().size()); },
 			":return: uninterpreted bytes of the decoded symbol\n"
 			":rtype: bytes")
 		.def_property_readonly("format", &Barcode::format,

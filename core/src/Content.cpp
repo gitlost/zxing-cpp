@@ -58,8 +58,8 @@ void Content::switchEncoding(ECI eci, bool isECI)
 
 Content::Content() {}
 
-Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet)
-	: bytes(std::move(bytes)), symbology(si), defaultCharset(_defaultCharSet) {}
+Content::Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet defaultCharset)
+	: bytes(std::move(bytes)), symbology(si), defaultCharset(defaultCharset) {}
 
 void Content::switchEncoding(CharacterSet cs)
 {

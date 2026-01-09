@@ -51,7 +51,7 @@ public:
 	std::list<std::string>* p_diagnostics = nullptr;
 
 	Content();
-	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet _defaultCharSet = CharacterSet::Unknown);
+	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet defaultCharset = CharacterSet::Unknown);
 
 	// make movable but not copyable
 	Content(const Content& other) = delete;

@@ -5,9 +5,16 @@ set (ZXING_SONAME 3) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
 #add_definitions(-DPRINT_DEBUG=1)
 
+option (ZXING_USE_BUNDLED_ZINT "Use the bundled libzint for barcode creation/writing" ON)
 foreach(format 1D AZTEC DATAMATRIX MAXICODE PDF417 QRCODE)
     option ("ZXING_ENABLE_${format}" "Enable support for ${format} barcodes" ON)
 endforeach()
+
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set (CMAKE_CXX_STANDARD 20)
+    set (CMAKE_CXX_STANDARD_REQUIRED ON)
+    set (CMAKE_CXX_EXTENSIONS OFF)
+endif()
 
 if (BUILD_SHARED_LIBS)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -644,7 +651,10 @@ set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
 list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${ZXING_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>")
-target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})
+list(APPEND PRECOMPILE_HEADERS "src/BarcodeData.h" "src/Content.h" "src/Range.h")
+if (NOT ZXING_DISABLE_PCH)
+    target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})
+endif()
 
 if(CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo")
     # The following is a list of translation units that fulfill two criteria regarding the use of -Os vs -O3:
@@ -657,6 +667,7 @@ if(CMAKE_BUILD_TYPE MATCHES "Release|RelWithDebInfo")
         src/Barcode.cpp
         src/BarcodeFormat.cpp
         src/BitMatrixIO.cpp
+        src/CreateBarcode.cpp
         src/Error.cpp
         src/GTIN.cpp
         src/HRI.cpp

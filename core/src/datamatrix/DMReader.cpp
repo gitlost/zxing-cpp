@@ -27,8 +27,6 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 		//fprintf(stderr, " binImg NULL\n");
 		return {};
 	}
-	if (binImg == nullptr)
-		return {};
 
 	BarcodesData res;
 	for (auto&& detRes : Detect(*binImg, _opts.tryHarder(), _opts.tryRotate(), _opts.isPure())) {

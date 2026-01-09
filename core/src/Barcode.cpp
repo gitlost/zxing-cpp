@@ -10,7 +10,6 @@
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "Diagnostics.h"
-#include "ECI.h"
 #include "JSON.h"
 #include "ZXAlgorithms.h"
 
@@ -32,39 +31,6 @@ void zint_symbol_deleter::operator()(zint_symbol* p) const noexcept
 namespace ZXing {
 
 Barcode::Barcode() : d(std::make_shared<Data>()) {}
-
-#if 0
-Barcode::Barcode(const std::string& text, int y, int xStart, int xStop, BarcodeFormat format, SymbologyIdentifier si, Error error,
-				 std::string extra)
-	: d(std::make_shared<Data>(Content({ByteArray(text)}, si), std::move(error), Position(Line(y, xStart, xStop)), format, std::move(extra)))
-{
-	if (Diagnostics::enabled()) {
-		Diagnostics::moveTo(_diagnostics);
-	}
-}
-
-Barcode::Barcode(DecoderResult&& decodeResult, DetectorResult&& detectorResult, BarcodeFormat format)
-	: d(std::make_shared<Data>(std::move(decodeResult).content(), std::move(decodeResult).error(),
-							   std::move(detectorResult).position(), format, std::move(decodeResult).json()))
-{
-	d->sai = decodeResult.structuredAppend();
-	d->symbol = std::move(detectorResult).bits();
-	d->lineCount = decodeResult.lineCount();
-	d->isMirrored = decodeResult.isMirrored();
-
-	// the BitMatrix stores 'black'/foreground as 0xFF and 'white'/background as 0, but we
-	// want the ImageView returned by symbol() to be a standard luminance image (black == 0)
-	d->symbol.flipAll();
-
-	if (decodeResult.versionNumber())
-		snprintf(d->version, 4, "%d", decodeResult.versionNumber());
-	snprintf(d->ecLevel, 4, "%s", decodeResult.ecLevel().data());
-
-	if (Diagnostics::enabled()) {
-		Diagnostics::moveTo(_diagnostics);
-	}
-}
-#endif
 
 Barcode::Barcode(Data&& data) : d(std::make_shared<Data>(std::move(data)))
 {
@@ -180,16 +146,6 @@ Barcode& Barcode::setReaderOptions(const ReaderOptions& opts)
 		d->content.optionsCharset = opts.characterSet();
 	d->readerOpts = opts;
 	return *this;
-}
-
-void Barcode::setIsInverted(bool v)
-{
-	d->isInverted = v;
-}
-
-void Barcode::incrementLineCount()
-{
-	++d->lineCount;
 }
 
 const BitMatrix& Barcode::symbolMatrix() const

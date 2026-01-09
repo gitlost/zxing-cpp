@@ -53,7 +53,7 @@ using namespace ZXing;
 #endif
 
 static const char *readerOpts[] = {
-	"tryCode39ExtendedMode", "validateCode39CheckSum", "validateITFCheckSum"
+	"tryCode39ExtendedMode", "validateCode39CheckSum"
 };
 
 static const char *charsets[] = {
@@ -242,8 +242,6 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 						opts.setTryCode39ExtendedMode(true);
 					} else if (token == "validatecode39checksum" || token == "code39checksum") {
 						opts.setValidateCode39CheckSum(true);
-					} else if (token == "validateitfchecksum" || token == "itfchecksum") {
-						opts.setValidateITFCheckSum(true);
 					} else {
 						std::cerr << "Unknown opts '" << token << "'\n";
 						return false;

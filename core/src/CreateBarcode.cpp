@@ -42,13 +42,6 @@ struct CreatorOptions::Data
 {
 	BarcodeFormat format;
 	std::string options;
-#ifdef ZXING_USE_ZINT
-	bool addQuietZones;
-	int margin;
-	int rotate;
-	float height;
-	bool debug;
-#endif
 
 	// symbol size (qrcode, datamatrix, etc), map from I, 'WxH'
 	// structured_append (idx, cnt, ID)
@@ -64,11 +57,6 @@ struct CreatorOptions::Data
 ZX_PROPERTY(BarcodeFormat, format)
 ZX_PROPERTY(std::string, options)
 #ifdef ZXING_USE_ZINT
-ZX_PROPERTY(bool, addQuietZones);
-ZX_PROPERTY(int, margin);
-ZX_PROPERTY(int, rotate);
-ZX_PROPERTY(float, height);
-ZX_PROPERTY(bool, debug);
 #endif
 
 #undef ZX_PROPERTY
@@ -82,8 +70,15 @@ ZX_RO_PROPERTY(bool, gs1);
 ZX_RO_PROPERTY(bool, readerInit);
 ZX_RO_PROPERTY(bool, stacked);
 ZX_RO_PROPERTY(bool, forceSquare);
+ZX_RO_PROPERTY(bool, addQuietZones);
+ZX_RO_PROPERTY(bool, debug);
+ZX_RO_PROPERTY(int, columns);
+ZX_RO_PROPERTY(int, rows);
 ZX_RO_PROPERTY(int, version);
 ZX_RO_PROPERTY(int, dataMask);
+ZX_RO_PROPERTY(int, margin);
+ZX_RO_PROPERTY(int, rotate);
+ZX_RO_PROPERTY(float, height);
 
 #undef ZX_RO_PROPERTY
 
@@ -313,7 +308,9 @@ static std::string ECLevelZint2ZXing(const zint_symbol* zint)
 static QuadrilateralI PositionZint2ZXing(const CreatorOptions& opts, const BitMatrix& bits)
 {
 	const BarcodeFormat format = opts.format();
-	const int rotate = opts.rotate();
+	int rotate = 0;
+	if (auto val = opts.rotate(); val)
+		rotate = *val;
 
 	QuadrilateralI pos;
 	int left, top, width, height;
@@ -471,6 +468,12 @@ zint_symbol* CreatorOptions::zint() const
 		if (auto val = version(); val && !IsLinearBarcode(format()))
 			zint->option_2 = *val;
 
+		if (auto val = columns(); val && (BarcodeFormat::DataBarExpanded | BarcodeFormat::PDF417).testFlag(format()))
+			zint->option_2 = *val;
+
+		if (auto val = rows(); val && (BarcodeFormat::DataBarExpanded | BarcodeFormat::PDF417).testFlag(format()))
+			zint->option_3 = *val;
+
 		if (auto val = dataMask(); val && (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode).testFlag(format()))
 			zint->option_3 = (zint->option_3 & 0xFF) | (*val + 1) << 8;
 
@@ -478,14 +481,16 @@ zint_symbol* CreatorOptions::zint() const
 			zint->option_3 = (forceSquare() ? DM_SQUARE : DM_DMRE) | DM_ISO_144;
 
 		zint->output_options |= addQuietZones() ? BARCODE_QUIET_ZONES : BARCODE_NO_QUIET_ZONES;
-		if (height() && IsLinearBarcode(format()))
-			zint->height = height();
+		if (auto val = height(); val && IsLinearBarcode(format()))
+			zint->height = *val;
 		else
 			zint->output_options |= COMPLIANT_HEIGHT;
 		if (readerInit())
 			zint->output_options |= READER_INIT;
 
-		zint->whitespace_width = zint->whitespace_height = margin();
+		if (auto val = margin(); val) {
+			zint->whitespace_width = zint->whitespace_height = *val;
+		}
 	}
 
 	return zint.get();
@@ -525,8 +530,12 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (opts.debug())
 		zint->debug = 1;
 
+	int rotate = 0;
+	if (auto val = opts.rotate(); val)
+		rotate = *val;
+
 	int warning;
-	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, opts.rotate()), warning);
+	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, rotate), warning);
 
 	if (eci == ECI::Unknown && warning == ZINT_WARN_USES_ECI)
 		eci = ToECI(zint->content_segs[0].eci);
@@ -618,7 +627,7 @@ Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& o
 	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, opts);
 }
 
-#if __cplusplus > 201703L
+#if __cplusplus > 201703L && __cpp_concepts > 201703L
 Barcode CreateBarcodeFromText(std::u8string_view contents, const CreatorOptions& opts)
 {
 	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, opts);

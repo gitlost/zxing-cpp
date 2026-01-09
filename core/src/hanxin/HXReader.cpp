@@ -51,10 +51,7 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 	if (detectorResult.isValid()) {
 		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
 		if (decoderResult.isValid()) {
-			BarcodesData res;
-			BarcodeData data = MatrixBarcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::HanXin);
-			res.emplace_back(std::move(data));
-			return res;
+			return ToVector(MatrixBarcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::HanXin));
 		}
 	}
 	return {};

@@ -80,6 +80,10 @@ public:
 	ReaderOptions(ReaderOptions&&);
 	ReaderOptions& operator=(ReaderOptions&&);
 
+	// Silence deprecated-declarations warnings, only happending here for deprecated inline functions and only with GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #define ZX_PROPERTY(TYPE, NAME, SETTER, ...) \
 	TYPE NAME() const noexcept; \
 	__VA_ARGS__ ReaderOptions& NAME(TYPE v) &; \
@@ -131,8 +135,8 @@ public:
 	/// Assume Code-39 codes employ a check digit and validate it.
 	ZX_PROPERTY(bool, validateCode39CheckSum, setValidateCode39CheckSum)
 
-	/// Assume ITF codes employ a GS1 check digit and validate it.
-	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum)
+	/// Deprecated / does nothing. The ITF symbol has a valid checksum iff symbologyIdentifier()[2] == '1'.
+	ZX_PROPERTY(bool, validateITFCheckSum, setValidateITFCheckSum, [[deprecated]])
 
 	/// If true, return the barcodes with errors as well (e.g. checksum errors, see @Barcode::error())
 	ZX_PROPERTY(bool, returnErrors, setReturnErrors)
@@ -154,6 +158,9 @@ public:
 	ZX_PROPERTY(bool, enableDiagnostics, setEnableDiagnostics)
 
 #undef ZX_PROPERTY
+
+
+#pragma GCC diagnostic pop
 
 	bool hasFormat(BarcodeFormats f) const noexcept;
 };

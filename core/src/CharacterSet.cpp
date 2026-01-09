@@ -6,11 +6,9 @@
 
 #include "CharacterSet.h"
 
-#include "Diagnostics.h"
 #include "ZXAlgorithms.h"
 
 #include <algorithm>
-#include <cctype>
 
 namespace ZXing {
 

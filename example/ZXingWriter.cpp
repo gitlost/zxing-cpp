@@ -34,24 +34,21 @@ using namespace ZXing;
 static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath
-			  << " [-size <width/height>] [-noqz] [-hrt] <format> <text> <output>\n"
-			  << "    -size       Size of generated image\n"
-			  << "    -binary     Interpret <text> as a file name containing binary data\n"
-			  << "    -noqz       Print barcode without quiet zone\n"
-			  << "    -hrt        Print human readable text below the barcode (if supported)\n"
-			  << "    -verbose    Print barcode information\n"
+			  << " [-options <creator-options>] [-scale <factor>] [-binary] [-noqz] [-hrt] [-invert] <format> <text> <output>\n"
+			  << "    -options   Comma separated list of symbology specific options and flags\n"
+			  << "    -scale     module size of generated image / negative numbers mean 'target size in pixels'\n"
+//			  << "    -encoding  Encoding used to encode input text\n"
+			  << "    -binary    Interpret <text> as a file name containing binary data\n"
+			  << "    -noqz      Print barcode without quiet zone\n"
+			  << "    -hrt       Print human readable text below the barcode (if supported)\n"
+			  << "    -invert    Invert colors (switch black and white)\n"
 #ifndef USE_OLD_WRITER_API
-			  << "    -scale      Set X-dimension of generated image\n"
-			  << "    -margin     Margin around barcode\n"
-			  << "    -bytes      Encode input text as-is\n"
-			  << "    -height     Set height in X-dimensions of linear symbol\n"
-			  << "    -readerinit Reader Initialisation/Programming\n"
-			  << "    -rotate     Rotate 0, 90, 180, 270 degrees\n"
-			  << "    -debug      Print debug information\n"
+			  << "    -verbose   Print barcode information\n"
+			  << "    -bytes     Encode input text as-is\n"
+			  << "    -rotate    Rotate 0, 90, 180, 270 degrees\n"
 #endif
-			  << "    -options    Comma separated list of symbology specific options and flags\n"
-			  << "    -help       Print usage information\n"
-			  << "    -version    Print version information\n"
+			  << "    -help      Print usage information\n"
+			  << "    -version   Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n";
 #ifndef USE_OLD_WRITER_API
@@ -68,7 +65,7 @@ static void PrintUsage(const char* exePath)
 struct CLI
 {
 	BarcodeFormat format;
-	int sizeHint = 0;
+	int scale = 0;
 	std::string input;
 	std::string outPath;
 	std::string options;
@@ -77,12 +74,9 @@ struct CLI
 	bool addHRT = false;
 	bool addQZs = true;
 	bool verbose = false;
+//	CharacterSet encoding = CharacterSet::Unknown;
 #ifndef USE_OLD_WRITER_API
-	int scale = 0;
 	bool bytes = false;
-	int margin = 0;
-	float height = 0.0f;
-	bool debug = false;
 #endif
 	int rotate = 0;
 };
@@ -92,27 +86,17 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 	int nonOptArgCount = 0;
 	for (int i = 1; i < argc; ++i) {
 		auto is = [&](const char* str) { return strlen(argv[i]) >= 3 && strncmp(argv[i], str, strlen(argv[i])) == 0; };
-		if (is("-size")) {
-			if (++i == argc)
-				return false;
-			cli.sizeHint = std::stoi(argv[i]);
-#ifndef USE_OLD_WRITER_API
-		} else if (is("-scale")) {
+		if (is("-scale")) {
 			if (++i == argc)
 				return false;
 			cli.scale = std::stoi(argv[i]);
-		} else if (is("-margin")) {
-			if (++i == argc)
-				return false;
-			cli.margin = std::stoi(argv[i]);
+		// } else if (is("-encoding")) {
+		// 	if (++i == argc)
+		// 		return false;
+		// 	cli.encoding = CharacterSetFromString(argv[i]);
+#ifndef USE_OLD_WRITER_API
 		} else if (is("-bytes")) {
 			cli.bytes = true;
-		} else if (is("-height")) {
-			if (++i == argc)
-				return false;
-			cli.height = std::stof(argv[i]);
-		} else if (is("-debug")) {
-			cli.debug = true;
 		} else if (is("-rotate")) {
 			if (++i == argc)
 				return false;
@@ -202,14 +186,11 @@ int main(int argc, char* argv[])
 
 	try {
 #ifndef USE_OLD_WRITER_API
-		auto cOpts = CreatorOptions(cli.format).options(cli.options);
-		cOpts.addQuietZones(cli.addQZs).margin(cli.margin)
-			 .height(cli.height).debug(cli.debug).rotate(cli.rotate);
+		auto cOpts = CreatorOptions(cli.format, cli.options);
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
 					   : cli.bytes ? CreateBarcodeFromBytes(cli.input, cOpts) : CreateBarcodeFromText(cli.input, cOpts);
 
-		auto wOpts = WriterOptions().sizeHint(cli.sizeHint).addQuietZones(cli.addQZs).addHRT(cli.addHRT).rotate(cli.rotate);
-		wOpts.scale(cli.scale);
+		auto wOpts = WriterOptions().scale(cli.scale).addQuietZones(cli.addQZs).addHRT(cli.addHRT).invert(cli.invert).rotate(cli.rotate);
 		auto bitmap = WriteBarcodeToImage(barcode, wOpts);
 
 		if (cli.verbose) {
@@ -250,7 +231,7 @@ int main(int argc, char* argv[])
 				std::cout << "Version:    " << barcode.version() << azType << "\n";
 			}
 			if (barcode.format() == BarcodeFormat::QRCode || barcode.format() == BarcodeFormat::MicroQRCode)
-				std::cout << "Data Mask:  " << JsonGetStr(barcode.extra(), "DataMask") << "\n";
+				std::cout << "Data Mask:  " << barcode.extra("DataMask") << "\n";
 			if (barcode.readerInit())
 				std::cout << "Reader Initialisation/Programming\n";
 			std::cout << WriteBarcodeToUtf8(barcode);
@@ -265,10 +246,10 @@ int main(int argc, char* argv[])
 			for (uint8_t c : file)
 				bytes.push_back(c);
 			writer.setEncoding(CharacterSet::BINARY);
-			matrix = writer.encode(bytes, cli.sizeHint, std::clamp(cli.sizeHint / 2, 50, 300));
+			matrix = writer.encode(bytes, cli.scale, std::clamp(cli.scale / 2, 50, 300));
 		} else {
 			writer.setEncoding(CharacterSet::UTF8);
-			matrix = writer.encode(cli.input, cli.sizeHint, std::clamp(cli.sizeHint / 2, 50, 300));
+			matrix = writer.encode(cli.input, cli.scale, std::clamp(cli.scale / 2, 50, 300));
 		}
 		auto bitmap = ToMatrix<uint8_t>(matrix);
 #endif

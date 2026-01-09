@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "Barcode.h"
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
 #include "BarcodeData.h"

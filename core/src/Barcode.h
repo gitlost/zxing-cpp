@@ -60,8 +60,6 @@ class Barcode
 
 	std::list<std::string> _diagnostics;
 
-	void setIsInverted(bool v);
-	void incrementLineCount();
 	Barcode& setReaderOptions(const ReaderOptions& opts);
 
 	friend Barcode MergeStructuredAppendSequence(const Barcodes&);

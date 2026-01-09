@@ -531,14 +531,11 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 	}
 	(void)maxSymbols; // Only every return 1
 
-	BarcodesData res;
 	BarcodeData data = DecodePure(image);
 	if (!data.isValid()) {
 		return {};
 	}
-	res.emplace_back(std::move(data));
-
-	return res;
+	return ToVector(std::move(data));
 }
 
 } // namespace ZXing::Code16K

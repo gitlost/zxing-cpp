@@ -39,16 +39,4 @@ public:
 	}
 };
 
-inline std::string ToHex(ByteView bytes)
-{
-	std::string res(bytes.size() * 3, ' ');
-
-	for (size_t i = 0; i < bytes.size(); ++i)
-	{
-		snprintf(&res[i * 3], 4, "%02X ", bytes[i]);
-	}
-
-	return res.substr(0, res.size()-1);
-}
-
 } // ZXing

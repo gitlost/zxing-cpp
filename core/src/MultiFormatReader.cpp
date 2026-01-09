@@ -6,7 +6,6 @@
 
 #include "MultiFormatReader.h"
 
-#include "Barcode.h"
 #include "BarcodeFormat.h"
 #include "BinaryBitmap.h"
 #ifdef ZXING_EXPERIMENTAL_API
@@ -14,7 +13,6 @@
 #endif
 #include "Diagnostics.h"
 #include "ReaderOptions.h"
-#include "ZXAlgorithms.h"
 #ifdef ZXING_WITH_AZTEC
 #include "aztec/AZReader.h"
 #endif

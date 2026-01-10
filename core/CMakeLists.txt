@@ -101,7 +101,6 @@ set (COMMON_FILES
     src/BarcodeData.h
     src/BarcodeFormat.h
     src/BarcodeFormat.cpp
-    src/BitHacks.h
     src/BitMatrix.h
     src/BitMatrix.cpp
     src/BitMatrixIO.h
@@ -154,12 +153,10 @@ if (ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (COMMON_FILES ${COMMON_FILES}
         src/BitArray.h
         src/BitArray.cpp
-        src/Generator.h
         src/GenericGF.h
         src/GenericGF.cpp
         src/GenericGFPoly.h
         src/GenericGFPoly.cpp
-        src/Scope.h
     )
 endif()
 if (ZXING_READERS OR ZXING_WRITERS_NEW)
@@ -196,6 +193,9 @@ if (ZXING_READERS)
         src/ResultPoint.h
         src/ResultPoint.cpp
         src/StructuredAppend.h
+        src/StdGenerator.h
+        src/StdPrint.h
+        src/StdScope.h
         src/TextDecoder.h
         src/TextDecoder.cpp
         src/ThresholdBinarizer.h
@@ -229,7 +229,6 @@ endif()
 set (PUBLIC_HEADERS
     src/Barcode.h
     src/BarcodeFormat.h
-    src/BitHacks.h
     src/CharacterSet.h
     src/ContentType.h
     src/CreateBarcode.h
@@ -241,7 +240,6 @@ set (PUBLIC_HEADERS
     src/Quadrilateral.h
     src/ReadBarcode.h
     src/ReaderOptions.h
-    src/StructuredAppend.h
     src/WriteBarcode.h
     src/ZXingCpp.h
     src/ZXAlgorithms.h

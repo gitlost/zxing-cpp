@@ -11,12 +11,11 @@
 #include "ReadBarcode.h"
 #include "Utf.h"
 #include "ZXAlgorithms.h"
-
-#include <fmt/core.h>
-#include <fmt/ostream.h>
+#include "StdPrint.h"
 
 #include <chrono>
 #include <exception>
+#include <format>
 #include <fstream>
 #include <map>
 #include <optional>
@@ -26,11 +25,15 @@
 #include <string_view>
 #include <vector>
 
+#ifdef __GNUC__
+// turns out that libstdc++ is depending on TBB without even linking against it, so this fails to link :-/
+#undef __cpp_lib_execution
+#endif
+
 #ifdef __cpp_lib_execution
 #include <execution>
 #else
 #include <future>
-#include <thread>
 #endif
 
 namespace ZXing::Test {
@@ -93,7 +96,7 @@ static std::string getBarcodeValue(const Barcode& barcode, const std::string& ke
 	if (key == "readerInit")
 		return barcode.readerInit() ? "true" : "false";
 
-	return fmt::format("***Unknown key '{}'***", key);
+	return std::format("***Unknown key '{}'***", key);
 }
 
 // Read ".result.txt" file contents `expected` with lines "key=value" and compare to `actual`
@@ -129,7 +132,7 @@ static bool compareResult(const Barcode& barcode, const std::string& expected, s
 static std::string checkResult(const fs::path& imgPath, std::string_view expectedFormat, const Barcode& barcode)
 {
 	if (auto format = ToString(barcode.format()); expectedFormat != format)
-		return fmt::format("Format mismatch: expected '{}' but got '{}'", expectedFormat, format);
+		return std::format("Format mismatch: expected '{}' but got '{}'", expectedFormat, format);
 
 	auto readFile = [imgPath](const char* ending) {
 		std::ifstream ifs(fs::path(imgPath).replace_extension(ending), std::ios::binary);
@@ -139,19 +142,19 @@ static std::string checkResult(const fs::path& imgPath, std::string_view expecte
 	if (auto expected = readFile(".result.txt")) {
 		std::string actual;
 		if (!compareResult(barcode, *expected, actual))
-			return fmt::format("Result mismatch: expected\n{} but got\n{}", *expected, actual);
+			return std::format("Result mismatch: expected\n{} but got\n{}", *expected, actual);
 	}
 
 	if (auto expected = readFile(".txt")) {
 		expected = EscapeNonGraphical(*expected);
 		auto utf8Result = barcode.text(TextMode::Escaped);
-		return utf8Result != *expected ? fmt::format("Content mismatch: expected '{}' but got '{}'", *expected, utf8Result) : "";
+		return utf8Result != *expected ? std::format("Content mismatch: expected '{}' but got '{}'", *expected, utf8Result) : "";
 	}
 
 	if (auto expected = readFile(".bin")) {
 		ByteArray binaryExpected(*expected);
 		return barcode.bytes() != binaryExpected
-				   ? fmt::format("Content mismatch: expected '{}' but got '{}'", ToHex(binaryExpected), ToHex(barcode.bytes()))
+				   ? std::format("Content mismatch: expected '{}' but got '{}'", ToHex(binaryExpected), ToHex(barcode.bytes()))
 				   : "";
 	}
 
@@ -182,7 +185,7 @@ static std::string printPositiveTestStats(int imageCount, const TestCase::TC& tc
 {
 	int passCount = imageCount - Size(tc.misReadFiles) - Size(tc.notDetectedFiles);
 
-	fmt::print(" | {}: {:3} of {:3}, misread {} of {}", tc.name, passCount, tc.minPassCount, Size(tc.misReadFiles), tc.maxMisreads);
+	std::print(" | {}: {:3} of {:3}, misread {} of {}", tc.name, passCount, tc.minPassCount, Size(tc.misReadFiles), tc.maxMisreads);
 	#if 0
 	if (!tc.notDetectedFiles.empty()) {
 		fmt::print(", nd {}", Size(tc.notDetectedFiles));
@@ -198,21 +201,21 @@ static std::string printPositiveTestStats(int imageCount, const TestCase::TC& tc
 
 	std::string failures;
 	if (passCount < tc.minPassCount && !tc.notDetectedFiles.empty()) {
-		failures += fmt::format("    Not detected ({}):", tc.name);
+		failures += std::format("    Not detected ({}):", tc.name);
 		for (const auto& f : tc.notDetectedFiles)
-			failures += fmt::format(" {}", f.filename().string());
+			failures += std::format(" {}", f.filename().string());
 		failures += "\n";
 		failed += tc.minPassCount - passCount;
 	}
 
 	extra += std::max(0, passCount - tc.minPassCount);
 	if (passCount > tc.minPassCount)
-		failures += fmt::format("    Unexpected detections ({}): {}\n", tc.name, passCount - tc.minPassCount);
+		failures += std::format("    Unexpected detections ({}): {}\n", tc.name, passCount - tc.minPassCount);
 
 	if (Size(tc.misReadFiles) > tc.maxMisreads) {
-		failures += fmt::format("    Read error ({}):", tc.name);
+		failures += std::format("    Read error ({}):", tc.name);
 		for (const auto& [path, error] : tc.misReadFiles)
-			failures += fmt::format("      {}: {}\n", path.filename().string(), error);
+			failures += std::format("      {}: {}\n", path.filename().string(), error);
 		failed += Size(tc.misReadFiles) - tc.maxMisreads;
 	}
 	return failures;
@@ -238,10 +241,10 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 	auto folderName = directory.stem();
 
 	if (Size(imgPaths) != totalTests)
-		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName.string(), totalTests, imgPaths.size());
+		std::println("TEST {} => Expected number of tests: {}, got: {} => FAILED", folderName.string(), totalTests, imgPaths.size());
 
 	for (auto& test : tests) {
-		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
+		std::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
 		fflush(stdout);
 		std::vector<int> times;
 		std::string failures;
@@ -293,9 +296,9 @@ static void doRunTests(const fs::path& directory, std::string_view format, int t
 			times.push_back(timeSince(startTime));
 			failures += printPositiveTestStats(Size(imgPaths), tc);
 		}
-		fmt::print(" | time: {:3} vs {:3} ms\n", times.front(), times.back());
+		std::println(" | time: {:3} vs {:3} ms", times.front(), times.back());
 		if (!failures.empty())
-			fmt::print("\n{}\n", failures);
+			std::println("\n{}", failures);
 	}
 }
 
@@ -325,11 +328,11 @@ static void doRunStructuredAppendTest(const fs::path& directory, std::string_vie
 	}
 
 	if (Size(imageGroups) != totalTests)
-		fmt::print("TEST {} => Expected number of tests: {}, got: {} => FAILED\n", folderName.string(), totalTests,
-				   imageGroups.size());
+		std::println("TEST {} => Expected number of tests: {}, got: {} => FAILED", folderName.string(), totalTests,
+					 imageGroups.size());
 
 	for (auto& test : tests) {
-		fmt::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
+		std::print("{:20} @ {:3}, {:3}", folderName.string(), test.rotation, Size(imgPaths));
 		auto tc = test.tc[0];
 		auto startTime = std::chrono::steady_clock::now();
 
@@ -345,9 +348,9 @@ static void doRunStructuredAppendTest(const fs::path& directory, std::string_vie
 		}
 
 		auto failures = printPositiveTestStats(Size(imageGroups), tc);
-		fmt::print(" | time: {:3} ms\n", timeSince(startTime));
+		std::println(" | time: {:3} ms", timeSince(startTime));
 		if (!failures.empty())
-			fmt::print("\n{}\n", failures);
+			std::println("\n{}", failures);
 	}
 }
 
@@ -771,21 +774,21 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		int totalTime = timeSince(startTime);
 		int decodeTime = totalTime - totalImageLoadTime;
-		fmt::print("load time:   {} ms.\n", totalImageLoadTime);
-		fmt::print("decode time: {} ms.\n", decodeTime);
-		fmt::print("total time:  {} ms.\n", totalTime);
+		std::println("load time:   {} ms.", totalImageLoadTime);
+		std::println("decode time: {} ms.", decodeTime);
+		std::println("total time:  {} ms.", totalTime);
 		if (failed)
-			fmt::print("WARNING: {} tests failed.\n", failed);
+			std::println("WARNING: {} tests failed.", failed);
 		if (extra)
-			fmt::print("INFO: {} tests succeeded unexpectedly.\n", extra);
+			std::println("INFO: {} tests succeeded unexpectedly.", extra);
 
 		return failed;
 	}
 	catch (const std::exception& e) {
-		fmt::print("{}\n", e.what());
+		std::println("{}", e.what());
 	}
 	catch (...) {
-		fmt::print("Internal error\n");
+		std::println("Internal error");
 	}
 	return -1;
 }

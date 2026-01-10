@@ -8,9 +8,7 @@
 
 #include "ZXAlgorithms.h"
 
-#include <algorithm>
 #include <iterator>
-#include <sstream>
 #include <stdexcept>
 
 namespace ZXing {

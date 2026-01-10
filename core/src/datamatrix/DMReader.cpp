@@ -21,7 +21,6 @@ namespace ZXing::DataMatrix {
 BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 {
 	//fprintf(stderr, "Reader::decode\n");
-#ifdef __cpp_impl_coroutine
 	auto binImg = image.getBitMatrix();
 	if (binImg == nullptr) {
 		//fprintf(stderr, " binImg NULL\n");
@@ -40,17 +39,6 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 	}
 
 	return res;
-#else
-	auto binImg = image.getBitMatrix();
-	if (binImg == nullptr)
-		return {};
-
-	auto detectorResult = Detect(*binImg, _opts.tryHarder(), _opts.tryRotate(), _opts.isPure());
-	if (!detectorResult.isValid())
-		return {};
-
-	return ToVector(MatrixBarcode(Decode(detectorResult.bits()), std::move(detectorResult), BarcodeFormat::DataMatrix));
-#endif
 }
 
 } // namespace ZXing::DataMatrix

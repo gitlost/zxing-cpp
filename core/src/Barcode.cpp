@@ -7,8 +7,6 @@
 #include "Barcode.h"
 
 #include "BarcodeData.h"
-#include "DecoderResult.h"
-#include "DetectorResult.h"
 #include "Diagnostics.h"
 #include "JSON.h"
 #include "ZXAlgorithms.h"
@@ -18,6 +16,7 @@
 #include <cmath>
 #include <list>
 #include <map>
+#include <numbers>
 #include <utility>
 
 #ifdef ZXING_USE_ZINT
@@ -101,8 +100,7 @@ std::vector<std::pair<int,int>> Barcode::ECIs() const
 
 int Barcode::orientation() const
 {
-	constexpr auto std_numbers_pi_v = 3.14159265358979323846; // TODO: c++20 <numbers>
-	return narrow_cast<int>(std::lround(d->position.orientation() * 180 / std_numbers_pi_v));
+	return narrow_cast<int>(std::lround(d->position.orientation() * 180 / std::numbers::pi));
 }
 
 bool Barcode::isMirrored() const

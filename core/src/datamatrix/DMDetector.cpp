@@ -16,7 +16,7 @@
 #include "Point.h"
 #include "RegressionLine.h"
 #include "ResultPoint.h"
-#include "Scope.h"
+#include "StdScope.h"
 #include "WhiteRectDetector.h"
 
 #include <algorithm>
@@ -204,7 +204,7 @@ static DetectorResult SampleGrid(const BitMatrix& image, const ResultPoint& topL
 								 const ResultPoint& bottomRight, const ResultPoint& topRight, int width, int height)
 {
 	return SampleGrid(image, width, height,
-					  {Rectangle(width, height, 0.5), {topLeft, topRight, bottomRight, bottomLeft}});
+					  {Rectangle(width, height, 0), {topLeft, topRight, bottomRight, bottomLeft}});
 }
 
 /**
@@ -890,11 +890,6 @@ static DetectorResults DetectNew(const BitMatrix& image, bool tryHarder, bool tr
 //	tryRotate = tryHarder = false;
 #endif
 
-	// disable expensive multi-line scan to detect off-center symbols for now
-#ifndef __cpp_impl_coroutine
-	tryHarder = false;
-#endif
-
 	// a history log to remember where the tracing already passed by to prevent a later trace from doing the same work twice
 	EdgeTracer::StateMatrix history;
 	if (tryHarder)
@@ -920,14 +915,9 @@ static DetectorResults DetectNew(const BitMatrix& image, bool tryHarder, bool tr
 			if (!tracer.isIn())
 				break;
 
-#ifdef __cpp_impl_coroutine
 			DetectorResult res;
 			while (res = Scan(tracer, lines), res.isValid())
 				co_yield std::move(res);
-#else
-			if (auto res = Scan(tracer, lines); res.isValid())
-				return res;
-#endif
 
 			if (!tryHarder)
 				break; // only test center lines
@@ -936,10 +926,6 @@ static DetectorResults DetectNew(const BitMatrix& image, bool tryHarder, bool tr
 		if (!tryRotate)
 			break; // only test left direction
 	}
-
-#ifndef __cpp_impl_coroutine
-	return {};
-#endif
 }
 
 /**
@@ -989,7 +975,6 @@ static DetectorResult DetectPure(const BitMatrix& image)
 DetectorResults Detect(const BitMatrix& image, bool tryHarder, bool tryRotate, bool isPure)
 {
 	//fprintf(stderr, "Detect\n");
-#ifdef __cpp_impl_coroutine
 	// First try the very fast DetectPure() path. Also because DetectNew() generally fails with pure module size 1 symbols
 	// TODO: implement a tryRotate version of DetectPure, see #590.
 	if (auto r = DetectPure(image); r.isValid())
@@ -1005,14 +990,6 @@ DetectorResults Detect(const BitMatrix& image, bool tryHarder, bool tryRotate, b
 				co_yield std::move(r);
 		}
 	}
-#else
-	auto result = DetectPure(image);
-	if (!result.isValid() && !isPure)
-		result = DetectNew(image, tryHarder, tryRotate);
-	if (!result.isValid() && tryHarder && !isPure)
-		result = DetectOld(image);
-	return result;
-#endif
 }
 
 } // namespace ZXing::DataMatrix

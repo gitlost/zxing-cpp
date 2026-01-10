@@ -16,6 +16,7 @@
 
 #include "DCDecoder.h"
 
+#include "Barcode.h"
 #include "ByteArray.h"
 #include "Content.h"
 #include "DecoderResult.h"

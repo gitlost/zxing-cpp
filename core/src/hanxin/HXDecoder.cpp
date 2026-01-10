@@ -16,6 +16,7 @@
 
 #include "HXDecoder.h"
 
+#include "Barcode.h"
 #include "BitMatrix.h"
 #include "BitSource.h"
 #include "ByteArray.h"

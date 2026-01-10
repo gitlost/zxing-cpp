@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "BitMatrixIO.h"
-#if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
+#ifdef ZXING_USE_ZINT
 #include "JSON.h"
 #include "CreateBarcode.h"
 #include "WriteBarcode.h"
@@ -177,7 +177,7 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 		// "MEBKM:TITLE:hypeモバイル;URL:http\://live.fdgm.jp/u/event/hype/hype_top.html;;"
 		std::string QRText("MEBKM:TITLE:hype\u30E2\u30D0\u30A4\u30EB;URL:http\\://live.fdgm.jp/u/event/hype/hype_top.html;;");
 		BarcodeFormat format = BarcodeFormat::QRCode;
-#if defined(ZXING_EXPERIMENTAL_API) and defined(ZXING_USE_ZINT)
+#ifdef ZXING_USE_ZINT
 		std::string options = JsonProp("eci", "UTF8") + JsonProp("ecLevel", 1) + JsonProp("margin", aQRBorder);
 		auto cOpts = CreatorOptions(format, options);
 		auto barcode = CreateBarcodeFromText(QRText, cOpts);

@@ -5,7 +5,7 @@
 
 // #define USE_OLD_WRITER_API
 
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 #include "ECI.h"
 #include "JSON.h"
 #include "Utf.h"
@@ -42,7 +42,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -noqz      Print barcode without quiet zone\n"
 			  << "    -hrt       Print human readable text below the barcode (if supported)\n"
 			  << "    -invert    Invert colors (switch black and white)\n"
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 			  << "    -verbose   Print barcode information\n"
 			  << "    -bytes     Encode input text as-is\n"
 			  << "    -rotate    Rotate 0, 90, 180, 270 degrees\n"
@@ -51,7 +51,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -version   Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n";
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 	for (auto f : BarcodeFormats::all())
 #else
 	for (auto f : BarcodeFormatsFromString("Aztec Codabar Code39 Code93 Code128 DataMatrix EAN8 EAN13 ITF PDF417 QRCode UPCA UPCE"))
@@ -75,7 +75,7 @@ struct CLI
 	bool addQZs = true;
 	bool verbose = false;
 //	CharacterSet encoding = CharacterSet::Unknown;
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 	bool bytes = false;
 #endif
 	int rotate = 0;
@@ -94,7 +94,7 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 		// 	if (++i == argc)
 		// 		return false;
 		// 	cli.encoding = CharacterSetFromString(argv[i]);
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 		} else if (is("-bytes")) {
 			cli.bytes = true;
 		} else if (is("-rotate")) {
@@ -162,7 +162,7 @@ std::vector<T> ReadFile(const std::string& fn)
 	return ifs ? std::vector(std::istreambuf_iterator<T>(ifs), std::istreambuf_iterator<T>()) : std::vector<T>();
 };
 
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
 	bool not_first = false;
 	for (const auto& e : ecis) {
@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 	}
 
 	try {
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 		auto cOpts = CreatorOptions(cli.format, cli.options);
 		auto barcode = cli.inputIsFile ? CreateBarcodeFromBytes(ReadFile(cli.input), cOpts)
 					   : cli.bytes ? CreateBarcodeFromBytes(cli.input, cOpts) : CreateBarcodeFromText(cli.input, cOpts);
@@ -261,7 +261,7 @@ int main(int argc, char* argv[])
 		} else if (ext == "jpg" || ext == "jpeg") {
 			success = stbi_write_jpg(cli.outPath.c_str(), bitmap.width(), bitmap.height(), 1, bitmap.data(), 0);
 		} else if (ext == "svg") {
-#ifndef USE_OLD_WRITER_API
+#ifdef ZXING_USE_ZINT
 			success = (std::ofstream(cli.outPath) << WriteBarcodeToSVG(barcode, wOpts)).good();
 #else
 			success = (std::ofstream(cli.outPath) << ToSVG(matrix)).good();

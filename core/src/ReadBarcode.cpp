@@ -282,9 +282,7 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 	if (opts.isPure()) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
 		auto r = FirstOrDefault(reader.read(*bitmap, 1));
-#ifdef ZXING_EXPERIMENTAL_API
 		r.symbol(bitmap->getBitMatrix()->copy());
-#endif
 		return {r.setReaderOptions(opts)};
 	}
 
@@ -322,9 +320,7 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 					if (!Contains(res, r)) {
 						r.setReaderOptions(opts);
 						r.d->isInverted = bitmap->inverted();
-#ifdef ZXING_EXPERIMENTAL_API
 						r.symbol(bitmap->getBitMatrix()->copy());
-#endif
 						res.push_back(std::move(r));
 						--maxSymbols;
 					}

@@ -190,9 +190,21 @@ template<typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
 inline T FromString(std::string_view sv)
 {
 	T val = {};
+#if defined(__APPLE__) // Hack for current non-support of `std::from_chars()` with floats
+	if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>) {
+		val = (T)strtod(sv.data(), nullptr); // locale-dependent
+		if (errno == ERANGE)
+			throw std::invalid_argument(StrCat("failed to parse '", TypeName<T>(), "' from '", sv, "'"));
+	} else {
+		auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
+		if (ec != std::errc() || ptr != sv.data() + sv.size())
+			throw std::invalid_argument(StrCat("failed to parse '", TypeName<T>(), "' from '", sv, "'"));
+	}
+#else
 	auto [ptr, ec] = std::from_chars(sv.data(), sv.data() + sv.size(), val);
 	if (ec != std::errc() || ptr != sv.data() + sv.size())
 		throw std::invalid_argument(StrCat("failed to parse '", TypeName<T>(), "' from '", sv, "'"));
+#endif
 
 	return val;
 }

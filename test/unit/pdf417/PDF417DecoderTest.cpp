@@ -593,3 +593,11 @@ TEST(PDF417DecoderTest, Reserved)
 	EXPECT_FALSE(valid({ 3, 903, 0 })); // Not supported
 	EXPECT_FALSE(valid({ 3, 0, 903 }));
 }
+
+TEST(PDF417DecoderTest, SymbologyIdentifier)
+{
+	// No ECI ("AA")
+	EXPECT_EQ(parse({ 2, 0 }).symbologyIdentifier(), "]L2" );
+	// ECI 4 ("AA")
+	EXPECT_EQ(parse({ 4, 927, 4, 0 }).symbologyIdentifier(), "]L1");
+}

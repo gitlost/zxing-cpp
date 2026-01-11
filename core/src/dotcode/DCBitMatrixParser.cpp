@@ -262,7 +262,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 		addCodeword(state, image.get(0, height - 1), result, erasureLocs); // 6
 	}
 
-	if (result.size() % 3 == 0) { // Section 11.5 "total number of codewords ... shall NOT be a muliple of 3"
+	if (result.size() % 3 == 0) { // Section 11.5 "total number of codewords ... shall NOT be a multiple of 3"
 		result.pop_back(); // Discard padding
 		// TODO: fix erasureLocs
 	}

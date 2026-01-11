@@ -164,7 +164,7 @@ BitMatrix AddQuietZones(BitMatrix&& input, int xQuietZone, int yQuietZone);
 
 /**
  * @brief Deflate (crop + subsample) a bit matrix
- * @param input matrix to be shrinked
+ * @param input matrix to be shrunk
  * @param width new width
  * @param height new height
  * @param top cropping starts at top row

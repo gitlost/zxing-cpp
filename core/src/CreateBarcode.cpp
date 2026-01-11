@@ -358,7 +358,7 @@ static int VersionZint2ZXing(const zint_symbol* zint)
 
 	switch (symbology) {
 	case BARCODE_AZTEC:
-		// Convert to layers (can differentate between Compact and Full using `bits` dimensions)
+		// Convert to layers (can differentiate between Compact and Full using `bits` dimensions)
 		if (option_2 >= 1 && option_2 <= 36)
 			return option_2 <= 4 ? option_2 : option_2 - 4;
 		break;

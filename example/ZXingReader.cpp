@@ -67,7 +67,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
 #ifdef ZXING_EXPERIMENTAL_API
 			  << "    -symbol       Print the detected symbol (if available)\n"
-			  << "    -json         Print a complete JSON formated serialization\n"
+			  << "    -json         Print a complete JSON formatted serialization\n"
 			  << "    -denoise      Use extra denoiseing (closing operation)\n"
 #endif
 			  << "    -pngout <file name>\n"

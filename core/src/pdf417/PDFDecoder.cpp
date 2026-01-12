@@ -691,7 +691,7 @@ DecoderResult Decode(const std::vector<int>& codewords)
 {
 	Diagnostics::fmt("  Codewords:  (%d)", Size(codewords)); Diagnostics::dump(codewords, "\n");
 	Content result;
-	result.symbology = {'L', '2', -1};
+	result.symbology = {'L', '2', char(-1)};
 	result.defaultCharset = CharacterSet::ISO8859_1;
 
 	bool readerInit = false;

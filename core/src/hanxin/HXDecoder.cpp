@@ -320,7 +320,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 	} else {
 		modifier = '0';
 	}
-	signed char offset = '1' - modifier;
+	char offset = '1' - modifier;
 	result.symbology = {'h', modifier, offset}; // If ECI always '1'
 
 	return DecoderResult(std::move(result))

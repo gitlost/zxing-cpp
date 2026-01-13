@@ -213,7 +213,7 @@ if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
         src/ReedSolomonEncoder.cpp
     )
 endif()
-if (ZXING_WRITERS_OLD)
+if (ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS)
     set (COMMON_FILES ${COMMON_FILES}
         src/MultiFormatWriter.h
         src/MultiFormatWriter.cpp
@@ -247,14 +247,14 @@ endif()
 if (ZXING_WRITERS_OLD OR ZXING_WRITERS_NEW)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/BitMatrix.h
-        src/Range.h
         src/Matrix.h
+        src/Range.h
+        src/ZXAlgorithms.h
     )
 endif()
 if (ZXING_WRITERS_OLD)
     set (PUBLIC_HEADERS ${PUBLIC_HEADERS}
         src/BitMatrixIO.h
-        src/Matrix.h
         src/MultiFormatWriter.h
     )
 endif()

@@ -57,8 +57,8 @@ public:
 	int readBits(int numBits);
 
 	/**
-	* @param numBits number of bits to peek
-	* @return int representing the bits peeked.  The bits will appear as the least-significant
+	* @param numBits number of bits to peek at
+	* @return int representing the bits peeked at.  The bits will appear as the least-significant
 	*         bits of the int
 	*/
 	int peekBits(int numBits) const;

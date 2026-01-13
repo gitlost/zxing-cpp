@@ -26,20 +26,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <optional>
-#include <sstream>
 #include <vector>
 
 using namespace ZXing;
 namespace py = pybind11;
 using namespace pybind11::literals; // to bring in the `_a` literal
-
-std::ostream& operator<<(std::ostream& os, const Position& points) {
-	for (const auto& p : points)
-		os << p.x << "x" << p.y << " ";
-	os.seekp(-1, os.cur);
-	os << '\0';
-	return os;
-}
 
 auto read_barcodes_impl(py::object _image, const BarcodeFormats& formats, bool try_rotate, bool try_downscale, TextMode text_mode,
 						Binarizer binarizer, bool is_pure, EanAddOnSymbol ean_add_on_symbol, bool return_errors,
@@ -324,8 +315,9 @@ PYBIND11_MODULE(zxingcpp, m)
 		.value("Plain", TextMode::Plain, "bytes() transcoded to unicode based on ECI info or guessed charset (the default mode prior to 2.0)")
 		.value("ECI", TextMode::ECI, "standard content following the ECI protocol with every character set ECI segment transcoded to unicode")
 		.value("HRI", TextMode::HRI, "Human Readable Interpretation (dependent on the ContentType)")
-		.value("Hex", TextMode::Hex, "bytes() transcoded to ASCII string of HEX values")
 		.value("Escaped", TextMode::Escaped, "Use the EscapeNonGraphical() function (e.g. ASCII 29 will be transcoded to '<GS>'")
+		.value("Hex", TextMode::Hex, "bytes() transcoded to ASCII string of HEX values")
+		.value("HexECI", TextMode::HexECI, "bytesECI() transcoded to ASCII string of HEX values")
 		.export_values();
 	py::enum_<ImageFormat>(m, "ImageFormat", "Enumeration of image formats supported by read_barcodes")
 		.value("Lum", ImageFormat::Lum)
@@ -357,11 +349,7 @@ PYBIND11_MODULE(zxingcpp, m)
 		.def_property_readonly("bottom_right", &Position::bottomRight,
 			":return: coordinate of the symbol's bottom-right corner\n"
 			":rtype: zxingcpp.Point")
-		.def("__str__", [](Position pos) {
-			std::ostringstream oss;
-			oss << pos;
-			return oss.str();
-		});
+		.def("__str__", [](Position pos) { return ToString(pos); });
 	py::enum_<Error::Type>(m, "ErrorType", "")
 		.value("None", Error::Type::None, "No error")
 		.value("Format", Error::Type::Format, "Data format error")

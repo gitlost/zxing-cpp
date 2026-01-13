@@ -254,7 +254,7 @@ static StructuredAppendInfo ParseStructuredAppend(Content& res)
 
 	Diagnostics::fmt("SAI(%d,%d,%s)", sai.index, sai.count, sai.id.c_str());
 
-	res.erase(0, i + 2); // Remove
+	res.erase(0, narrow_cast<int>(i + 2)); // Remove
 
 	return sai;
 }

@@ -12,6 +12,7 @@
 #include "Utf.h"
 #include "ZXAlgorithms.h"
 #include "StdPrint.h"
+#include "Version.h"
 
 #include <chrono>
 #include <exception>
@@ -379,7 +380,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		auto startTime = std::chrono::steady_clock::now();
 
 		// clang-format off
-#ifdef ZXING_WITH_AZTEC
+#ifdef ZXING_ENABLE_AZTEC
 		// Expected failures:
 		// abc-inverted.png (fast) - fast does not try inverted
 		// az-thick.png (pure)
@@ -400,7 +401,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 21, 21, 270 },
 		});
 #endif
-#ifdef ZXING_WITH_DATAMATRIX
+#ifdef ZXING_ENABLE_DATAMATRIX
 		runTests("datamatrix-1", "DataMatrix", 29, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 29, 29, 0   },
@@ -435,7 +436,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 19, 0, pure },
 		});
 #endif
-#ifdef ZXING_WITH_1D
+#ifdef ZXING_ENABLE_1D
 		runTests("dxfilmedge-1", "DXFilmEdge", 3, {
 			{ 1, 3, 0 },
 			{ 0, 3, 180 },
@@ -639,7 +640,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 2, 0, pure },
 		});
 #endif
-#ifdef ZXING_WITH_MAXICODE
+#ifdef ZXING_ENABLE_MAXICODE
 		runTests("maxicode-1", "MaxiCode", 9, {
 			{ 9, 9, 0 },
 		});
@@ -648,7 +649,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 0, 0, 0 },
 		});
 #endif
-#ifdef ZXING_WITH_QRCODE
+#ifdef ZXING_ENABLE_QRCODE
 		runTests("qrcode-1", "QRCode", 16, {
 			{ 16, 16, 0   },
 			{ 16, 16, 90  },
@@ -719,7 +720,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{  2,  2, pure },
 		});
 #endif
-#ifdef ZXING_WITH_PDF417
+#ifdef ZXING_ENABLE_PDF417
 		runTests("pdf417-1", "PDF417", 17, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 16, 17, 0   },

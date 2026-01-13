@@ -28,11 +28,11 @@ struct AiInfo
 		if ((aiPrefix[0] == '3' && Contains("1234569", aiPrefix[1])) || aiPrefix == "703"sv || aiPrefix == "723"sv)
 			return 4;
 		else
-			return (int)strlen(aiPrefix);
+			return narrow_cast<int>(strlen(aiPrefix));
 	}
 };
 
-// https://github.com/gs1/gs1-syntax-dictionary 2026-01-11 HEAD [c7e0c5b]
+// https://github.com/gs1/gs1-syntax-dictionary 2025-12-08 HEAD [c7e0c5b]
 static const AiInfo aiInfos[] = {
 //TWO_DIGIT_DATA_LENGTH
 	{ "00", 18 },

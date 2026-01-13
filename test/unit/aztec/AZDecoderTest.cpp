@@ -10,6 +10,7 @@
 #include "DecoderResult.h"
 #include "Diagnostics.h"
 #include "aztec/AZDetectorResult.h"
+#include "ZXAlgorithms.h"
 
 #include "gtest/gtest.h"
 #include <string_view>

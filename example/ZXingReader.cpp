@@ -4,6 +4,8 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
+#include "ZXingCpp.h"
+
 #include "BitMatrix.h"
 #include "BitMatrixIO.h"
 #ifdef ZX_DIAGNOSTICS
@@ -13,11 +15,8 @@
 #ifdef ZXING_EXPERIMENTAL_API
 #include "JSON.h"
 #endif
-#include "ReadBarcode.h"
 #include "TextDecoder.h"
 #include "Utf.h"
-#include "Version.h"
-#include "WriteBarcode.h"
 
 #include <chrono>
 #include <cstring>
@@ -204,7 +203,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			PrintUsage(argv[0]);
 			exit(0);
 		} else if (is("-version") || is("--version")) {
-			std::cout << "ZXingReader " << ZXING_VERSION_STR << "\n";
+			std::cout << "ZXingReader " << Version() << "\n";
 			exit(0);
 		} else {
 			cli.filePaths.push_back(argv[i]);
@@ -461,7 +460,7 @@ int main(int argc, char* argv[])
 #endif
 		}
 
-		if (Size(cli.filePaths) == 1 && !cli.outPath.empty())
+		if (cli.filePaths.size() == 1 && !cli.outPath.empty())
 			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(), image.rowStride());
 
 #ifdef NDEBUG

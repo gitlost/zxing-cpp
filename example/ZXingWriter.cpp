@@ -5,19 +5,18 @@
 
 // #define USE_OLD_WRITER_API
 
+#include "ZXingCpp.h"
+
 #ifdef ZXING_USE_ZINT
 #include "ECI.h"
 #include "JSON.h"
 #include "Utf.h"
-#include "CreateBarcode.h"
-#include "WriteBarcode.h"
 #else
 #include "BitMatrixIO.h"
 #include "CharacterSet.h"
 #include "MultiFormatWriter.h"
 #endif
 #include "BitMatrix.h"
-#include "Version.h"
 
 #include <algorithm>
 #include <cctype>

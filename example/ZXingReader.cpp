@@ -84,10 +84,10 @@ static void PrintUsage(const char* exePath)
 			  << "    -version      Print version information\n"
 			  << "\n"
 			  << "Supported formats are:\n" << "   ";
-	for (auto f : BarcodeFormats::all()) {
+	for (auto f : BarcodeFormats::list(BarcodeFormat::AllReadable)) {
 		std::cout << " " << ToString(f);
 	}
-	std::cout << "\nFormats can be lowercase, with or without '-', separated by ',' and/or '|'\n";
+	std::cout << "BarcodeFormats can be lowercase, with or without any of ' -_/', separated by ',' or '|'\n";
 
 	std::cout << "\n" << "Supported binarizers are:\n" << "   ";
 	for (int j = 0; j < 4; j++) {
@@ -125,7 +125,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			try {
 				options.formats(BarcodeFormatsFromString(argv[i]));
 			} catch (const std::exception& e) {
-				std::cerr << e.what() << "\n";
+				std::cerr << "Error: " << e.what() << "\n\n";
 				return false;
 			}
 		} else if (is("-binarizer")) {
@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 #endif
 #ifdef ZXING_EXPERIMENTAL_API
 			if (cli.json) {
-				if (barcode.format() != ZXing::BarcodeFormat::None)
+				if (barcode.format() != BarcodeFormat::None)
 					std::cout << "{\"FilePath\":\"" << filePath << "\"," << barcode.extra("ALL").substr(1) << "\n";
 				continue;
 			}
@@ -384,6 +384,7 @@ int main(int argc, char* argv[])
 				std::cout << "Bytes ECI:    " << ToHex(barcode.bytesECI()) << "\n";
 			std::cout << "Length:       " << text.size() << "\n"
 					  << "Format:       " << ToString(barcode.format()) << "\n"
+					  << "Symbology:    " << ToString(barcode.symbology()) << "\n"
 					  << "Identifier:   " << barcode.symbologyIdentifier() << "\n"
 					  << "Content Type: " << ToString(barcode.contentType()) << "\n";
 
@@ -427,8 +428,7 @@ int main(int argc, char* argv[])
 			if (barcode.lineCount())
 				std::cout << "Lines:        " << barcode.lineCount() << "\n";
 
-			if ((BarcodeFormat::EAN13 | BarcodeFormat::EAN8 | BarcodeFormat::UPCA | BarcodeFormat::UPCE)
-					.testFlag(barcode.format())) {
+			if (barcode.symbology() == BarcodeFormat::EANUPC) {
 				printOptional("Country:      ", GTIN::LookupCountryIdentifier(barcode.text(TextMode::Plain), barcode.format()));
 				printOptional("Add-On:       ", GTIN::EanAddOn(barcode));
 				printOptional("Price:        ", GTIN::Price(GTIN::EanAddOn(barcode)));

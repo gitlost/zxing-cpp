@@ -24,13 +24,17 @@
 
 using namespace ZXing;
 using namespace testing;
+using enum BarcodeFormat;
 
 namespace {
 	static void check(int line, const Barcode& barcode, std::string_view symbologyIdentifier, std::string_view text, std::string_view bytes,
 					  bool hasECI, std::string_view textECI, std::string_view bytesECI, std::string_view HRI, std::string_view contentType,
 					  std::string_view position = {}, std::string_view ecLevel = {}, std::string_view version = {}, int dataMask = -1)
 	{
+		//EXPECT_TRUE(cOpts.format() & AllCreatable);
 		EXPECT_TRUE(barcode.isValid()) << "line:" << line;
+		if (!barcode.isValid())
+			return;
 		EXPECT_EQ(barcode.symbologyIdentifier(), symbologyIdentifier) << "line:" << line;
 		EXPECT_EQ(barcode.text(TextMode::Plain), text) << "line:" << line;
 		EXPECT_EQ(ToHex(barcode.bytes()), bytes) << "line:" << line;
@@ -304,7 +308,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with DEL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("12\17734", cOpts);
@@ -322,7 +326,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with SOH & DEL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("12\001\17734", cOpts);
@@ -340,7 +344,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with NUL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
 		auto cOpts = CreatorOptions(format);
 		// HRI escaped as content type considered "Binary" (NUL)
@@ -407,7 +411,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 #endif
 	}
 	{
-		BarcodeFormat format = BarcodeFormat::DataBarExpanded;
+		BarcodeFormat format = BarcodeFormat::DataBarExp;
 
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
@@ -426,7 +430,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 #endif
 	}
 	{
-		BarcodeFormat format = BarcodeFormat::DataBarExpanded; // Stacked
+		BarcodeFormat format = BarcodeFormat::DataBarExp; // Stacked
 
 		auto cOpts = CreatorOptions(format, "stacked");
 		Barcode barcode = CreateBarcodeFromText("(01)12345678901231(20)12(90)123(91)1234", cOpts);
@@ -445,7 +449,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 #endif
 	}
 	{
-		BarcodeFormat format = BarcodeFormat::DataBarLimited;
+		BarcodeFormat format = BarcodeFormat::DataBarLtd;
 
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
@@ -1399,29 +1403,29 @@ TEST(CreateBarcodeTest, CreatorOptions)
 {
 	Barcode bc;
 
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417});
+	bc = CreateBarcodeFromText("12345", {PDF417});
 	EXPECT_EQ(bc.symbol().height(), 18);
 
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417, "rows=3"});
+	bc = CreateBarcodeFromText("12345", {PDF417, "rows=3"});
 	EXPECT_EQ(bc.symbol().height(), 9);
 
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::PDF417, "columns=1"});
+	bc = CreateBarcodeFromText("12345", {PDF417, "columns=1"});
 	EXPECT_EQ(bc.symbol().height(), 36);
 
-	bc = CreateBarcodeFromText("(21)123456789", {BarcodeFormat::DataBarExpanded, "stacked,columns=1"});
+	bc = CreateBarcodeFromText("(21)123456789", {DataBarExp, "stacked,columns=1"});
 	EXPECT_GT(bc.symbol().height(), bc.symbol().width());
 
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::DataMatrix, "readerInit"});
+	bc = CreateBarcodeFromText("12345", {DataMatrix, "readerInit"});
 	EXPECT_TRUE(bc.readerInit());
 
-	bc = CreateBarcodeFromText("12345abcdefghijklmnopqr", {BarcodeFormat::DataMatrix, "forceSquare"});
+	bc = CreateBarcodeFromText("12345abcdefghijklmnopqr", {DataMatrix, "forceSquare"});
 	EXPECT_EQ(bc.symbol().height(), bc.symbol().width());
 
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::QRCode, "version=5"});
+	bc = CreateBarcodeFromText("12345", {QRCode, "version=5"});
 	EXPECT_EQ(bc.symbol().height(), 37);
 
 #ifdef ZXING_READERS
-	bc = CreateBarcodeFromText("12345", {BarcodeFormat::QRCode, "dataMask=0"});
+	bc = CreateBarcodeFromText("12345", {QRCode, "dataMask=0"});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
 	EXPECT_EQ(bc.extra("dataMask"), "0");
 #endif // ZXING_READERS
@@ -1447,8 +1451,8 @@ TEST(CreateBarcodeTest, RandomDataBar)
 							  << nErrors * 100 / (double)n << "%)";
 	};
 
-	randomTest(BarcodeFormat::DataBar);
-	randomTest(BarcodeFormat::DataBarLimited);
-	randomTest(BarcodeFormat::DataBarExpanded);
+	randomTest(DataBar);
+	randomTest(DataBarLtd);
+	randomTest(DataBarExp);
 }
 #endif // ZXING_READERS

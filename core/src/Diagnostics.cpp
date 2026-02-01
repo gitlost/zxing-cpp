@@ -165,6 +165,14 @@ void dump(const ByteArray& value, const char* const postfix, int begin, int end,
 	}
 }
 
+static const char* const ascii_nongraphs[34] = {
+	"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
+	 "BS",  "HT",  "LF",  "VT",  "FF",  "CR",  "SO",  "SI",
+	"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
+	"CAN",  "EM", "SUB", "ESC",  "FS",  "GS",  "RS",  "US",
+	 "SP", "DEL",
+};
+
 std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode)
 {
 	std::ostringstream s;
@@ -181,8 +189,12 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 						haveDecode = true;
 						s << " ";
 					} else if (haveDecode) {
-						s << value;
-						if (!zx_isspace(value.back())) {
+						if (zx_iscntrl(value.back())) {
+							s << "<" << ascii_nongraphs[value.back() == 127 ? 33 : value.back()] << ">";
+						} else {
+							s << value;
+						}
+						if (haveDecode && value.back() != ' ') {
 							s << " ";
 						}
 					}
@@ -192,10 +204,18 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 			if (p_diagnostics->empty()) {
 				s << " (empty)\n";
 			} else {
+				bool haveDecode = false;
 				s << "\n";
 				for (std::string value : *p_diagnostics) {
-					s << value;
-					if (!zx_isspace(value.back())) {
+					if (value.find("Decode:") != std::string::npos) {
+						haveDecode = true;
+					}
+					if (haveDecode && zx_iscntrl(value.back())) {
+						s << "<" << ascii_nongraphs[value.back() == 127 ? 33 : value.back()] << ">";
+					} else {
+						s << value;
+					}
+					if (haveDecode && value.back() != ' ') {
 						s << " ";
 					}
 				}
@@ -308,13 +328,6 @@ void chr(std::list<std::string>* p_diagnostics, const unsigned char value, const
 		 const bool appendHex)
 {
 	if (_enabled) {
-		static const char* const ascii_nongraphs[34] = {
-			"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
-			 "BS",  "HT",  "LF",  "VT",  "FF",  "CR",  "SO",  "SI",
-			"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
-			"CAN",  "EM", "SUB", "ESC",  "FS",  "GS",  "RS",  "US",
-			 "SP", "DEL",
-		};
 		std::ostringstream s;
 
 		if (value > 32 && value < 127) { // Graphical ASCII

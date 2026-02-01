@@ -1006,7 +1006,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format, "eci=ISO8859_1");
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]z3", "1234é", "31 32 33 34 E9", true, "]z3\\0000261234é",
-			  "5D 7A 33 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "17%", "1");
+			  "5D 7A 33 5C 30 30 30 30 30 33 31 32 33 34 E9", "1234é", "Text", "" /*position*/, "65%", "2");
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);

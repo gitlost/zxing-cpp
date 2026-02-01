@@ -587,6 +587,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, erasureLocs);
 	if (codewords.size() == 0) {
+		fprintf(stderr, "Decode ReadCodewords(): fail\n");
 		Diagnostics::clear();
 		return {};
 	}
@@ -605,7 +606,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 		ByteArray& codewordBytes = dataBlock.codewords;
 		const int numDataCodewords = dataBlock.numDataCodewords;
 		if (!CorrectErrors(field, codewordBytes, numDataCodewords)) {
-			//fprintf(stderr, " checksum fail\n");
+			fprintf(stderr, " checksum fail\n");
 			return {};
 		}
 

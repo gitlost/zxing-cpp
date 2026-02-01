@@ -409,7 +409,7 @@ int main(int argc, char* argv[])
 			printOptional("EC Level:     ", barcode.ecLevel());
 			std::string azType;
 #ifdef ZXING_EXPERIMENTAL_API
-			if (barcode.format() == BarcodeFormat::Aztec) {
+			if (barcode.format() == BarcodeFormat::Aztec && !barcode.version().empty()) {
 				if (int version = std::stoi(barcode.version()), height = barcode.symbolMatrix().height();
 						(version == 1 && height % 15 == 0) || (version == 2 && height % 19 == 0)
 						 || (version == 3 && height % 23 == 0) || (version == 4 && height % 27 == 0))

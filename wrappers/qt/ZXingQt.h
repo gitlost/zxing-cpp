@@ -11,7 +11,7 @@
 #include <QDebug>
 #include <QMetaType>
 #include <QPoint>
-#include <QVector>
+#include <QList>
 #include <QObject>
 #include <QScopeGuard>
 #include <QThreadPool>
@@ -69,7 +69,7 @@ Q_ENUM_NS(ContentType)
 Q_ENUM_NS(TextMode)
 Q_ENUM_NS(Binarizer)
 
-using BarcodeFormats = QVector<BarcodeFormat>;
+using BarcodeFormats = QList<BarcodeFormat>;
 
 using ZXing::ReaderOptions;
 using ZXing::WriterOptions;
@@ -106,6 +106,30 @@ ZQ_DECL_TO_STRING(ContentType)
 // 	return dbg.noquote() << ToString(v);
 // }
 
+class Error : private ZXing::Error
+{
+	Q_GADGET
+
+	Q_PROPERTY(Type type READ type)
+	Q_PROPERTY(QString message READ message)
+	Q_PROPERTY(QString location READ location)
+
+public:
+	enum class Type { None, Format, Checksum, Unsupported };
+	Q_ENUM(Type)
+
+	Error() = default;
+	explicit Error(const ZXing::Error& e) : ZXing::Error(e) {}
+
+	Type type() const { return static_cast<Type>(ZXing::Error::type()); }
+	QString message() const { return QString::fromStdString(ZXing::Error::msg()); }
+	QString location() const { return QString::fromStdString(ZXing::Error::location()); }
+
+	using ZXing::Error::operator bool;
+
+	bool operator==(const Error& o) const { return ZXing::Error::operator==(o); }
+};
+
 class Position : public ZXing::Quadrilateral<QPoint>
 {
 	Q_GADGET
@@ -129,11 +153,25 @@ class Barcode : private ZXing::Barcode
 	Q_GADGET
 
 	Q_PROPERTY(BarcodeFormat format READ format)
+	Q_PROPERTY(BarcodeFormat symbology READ symbology)
 	Q_PROPERTY(QString text READ text)
 	Q_PROPERTY(QByteArray bytes READ bytes)
+	Q_PROPERTY(QByteArray bytesECI READ bytesECI)
 	Q_PROPERTY(bool isValid READ isValid)
+	Q_PROPERTY(Error error READ error)
 	Q_PROPERTY(ContentType contentType READ contentType)
+	Q_PROPERTY(bool hasECI READ hasECI)
 	Q_PROPERTY(Position position READ position)
+	Q_PROPERTY(int orientation READ orientation)
+	Q_PROPERTY(bool isMirrored READ isMirrored)
+	Q_PROPERTY(bool isInverted READ isInverted)
+	Q_PROPERTY(QString symbologyIdentifier READ symbologyIdentifier)
+	Q_PROPERTY(int sequenceSize READ sequenceSize)
+	Q_PROPERTY(int sequenceIndex READ sequenceIndex)
+	Q_PROPERTY(QString sequenceId READ sequenceId)
+	Q_PROPERTY(bool isLastInSequence READ isLastInSequence)
+	Q_PROPERTY(bool isPartOfSequence READ isPartOfSequence)
+	Q_PROPERTY(int lineCount READ lineCount)
 
 public:
 	Barcode() = default; // required for qmetatype machinery
@@ -143,13 +181,26 @@ public:
 	using ZXing::Barcode::isValid;
 
 	BarcodeFormat format() const { return static_cast<BarcodeFormat>(ZXing::Barcode::format()); }
+	BarcodeFormat symbology() const { return static_cast<BarcodeFormat>(ZXing::Barcode::symbology()); }
 	ContentType contentType() const { return static_cast<ContentType>(ZXing::Barcode::contentType()); }
+
+	Error error() const { return Error(ZXing::Barcode::error()); }
+
 	QString text() const { return QString::fromStdString(ZXing::Barcode::text()); }
+	QString text(TextMode mode) const { return QString::fromStdString(ZXing::Barcode::text(static_cast<ZXing::TextMode>(mode))); }
 
 	QByteArray bytes() const
 	{
 		return QByteArray(reinterpret_cast<const char*>(ZXing::Barcode::bytes().data()), std::size(ZXing::Barcode::bytes()));
 	}
+
+	QByteArray bytesECI() const
+	{
+		auto b = ZXing::Barcode::bytesECI();
+		return QByteArray(reinterpret_cast<const char*>(b.data()), b.size());
+	}
+
+	using ZXing::Barcode::hasECI;
 
 	Position position() const
 	{
@@ -157,6 +208,22 @@ public:
 		auto qp = [&pos](int i) { return QPoint(pos[i].x, pos[i].y); };
 		return {qp(0), qp(1), qp(2), qp(3)};
 	}
+
+	using ZXing::Barcode::orientation;
+	using ZXing::Barcode::isMirrored;
+	using ZXing::Barcode::isInverted;
+
+	QString symbologyIdentifier() const { return QString::fromStdString(ZXing::Barcode::symbologyIdentifier()); }
+
+	using ZXing::Barcode::sequenceSize;
+	using ZXing::Barcode::sequenceIndex;
+	using ZXing::Barcode::isLastInSequence;
+	using ZXing::Barcode::isPartOfSequence;
+	QString sequenceId() const { return QString::fromStdString(ZXing::Barcode::sequenceId()); }
+
+	QString extra(QStringView key = {}) const { return QString::fromStdString(ZXing::Barcode::extra(Detail::qba2sv(key.toUtf8()))); }
+
+	using ZXing::Barcode::lineCount;
 
 	QString toSVG(const WriterOptions& options = {}) const
 	{
@@ -168,6 +235,14 @@ public:
 		auto img = ZXing::WriteBarcodeToImage(*this, options);
 		return QImage(img.data(), img.width(), img.height(), img.width(), QImage::Format::Format_Grayscale8).copy();
 	}
+
+	QImage symbol() const
+	{
+		auto img = ZXing::Barcode::symbol();
+		return img.data() ? QImage(img.data(), img.width(), img.height(), img.width(), QImage::Format::Format_Grayscale8).copy() : QImage();
+	}
+
+	bool operator==(const Barcode& o) const { return ZXing::Barcode::operator==(o); }
 
 	static Barcode fromText(QStringView text, BarcodeFormat format, QStringView options = {})
 	{
@@ -183,7 +258,7 @@ public:
 
 };
 
-inline QVector<Barcode> ReadBarcodes(const QImage& img, const ReaderOptions& opts = {})
+inline QList<Barcode> ReadBarcodes(const QImage& img, const ReaderOptions& opts = {})
 {
 	using namespace ZXing;
 
@@ -205,7 +280,7 @@ inline QVector<Barcode> ReadBarcodes(const QImage& img, const ReaderOptions& opt
 	};
 
 	auto exec = [&](const QImage& img) {
-		return Detail::transcode<QVector<Barcode>>(ZXing::ReadBarcodes(
+		return Detail::transcode<QList<Barcode>>(ZXing::ReadBarcodes(
 			{img.bits(), img.width(), img.height(), ImgFmtFromQImg(img), static_cast<int>(img.bytesPerLine())}, opts));
 	};
 
@@ -219,7 +294,7 @@ inline Barcode ReadBarcode(const QImage& img, const ReaderOptions& opts = {})
 }
 
 #ifdef QT_MULTIMEDIA_LIB
-inline QVector<Barcode> ReadBarcodes(const QVideoFrame& frame, const ReaderOptions& opts = {})
+inline QList<Barcode> ReadBarcodes(const QVideoFrame& frame, const ReaderOptions& opts = {})
 {
 	using namespace ZXing;
 
@@ -315,7 +390,7 @@ inline QVector<Barcode> ReadBarcodes(const QVideoFrame& frame, const ReaderOptio
 		}
 		QScopeGuard unmap([&] { img.unmap(); });
 
-		return Detail::transcode<QVector<Barcode>>(ZXing::ReadBarcodes(
+		return Detail::transcode<QList<Barcode>>(ZXing::ReadBarcodes(
 			{img.bits(FIRST_PLANE) + pixOffset, img.width(), img.height(), fmt, img.bytesPerLine(FIRST_PLANE), pixStride}, opts));
 	}
 	else {
@@ -364,12 +439,12 @@ class BarcodeReader : public QObject, private ReaderOptions
 {
 	Q_OBJECT
 
-	QThreadPool _pool;
+	mutable QThreadPool _pool;
 
 	Q_PROPERTY(BarcodeFormats formats READ formats WRITE setFormats NOTIFY formatsChanged)
 	Q_PROPERTY(TextMode textMode READ textMode WRITE setTextMode NOTIFY textModeChanged)
 
-	void emitFoundBarcodes(const QVector<Barcode>& barcodes)
+	void emitFoundBarcodes(const QList<Barcode>& barcodes) const
 	{
 		if (!barcodes.isEmpty())
 			Q_EMIT foundBarcodes(barcodes);
@@ -412,6 +487,7 @@ public:
 			Q_EMIT formatsChanged();
 		}
 	}
+	// Q_SLOT void setFormats(BarcodeFormat newVal) { setFormats(BarcodeFormats({newVal})); }
 	Q_SIGNAL void formatsChanged();
 
 	TextMode textMode() const noexcept { return static_cast<TextMode>(ReaderOptions::textMode()); }
@@ -431,26 +507,32 @@ public:
 	ZQ_PROPERTY(bool, tryInvert, setTryInvert)
 	ZQ_PROPERTY(bool, tryDownscale, setTryDownscale)
 	ZQ_PROPERTY(bool, isPure, setIsPure)
+	ZQ_PROPERTY(bool, returnErrors, setReturnErrors)
 
 	// For debugging/development
-	QAtomicInt runTime = 0;
+	mutable QAtomicInt runTime = 0;
 	Q_PROPERTY(int runTime MEMBER runTime)
 
-	Q_SLOT QVector<Barcode> read(const QImage& image)
+	Q_SLOT QList<Barcode> read(const QImage& image) const
 	{
 		auto barcodes = ReadBarcodes(image, *this);
 		emitFoundBarcodes(barcodes);
 		return barcodes;
 	}
 
+	Q_SLOT void readAsync(const QImage& image) const
+	{
+		_pool.start([this, image]() { read(image); });
+	}
+
 Q_SIGNALS:
-	void foundNoBarcodes();
-	void foundBarcodes(const QVector<Barcode>& barcodes);
+	/// @note If an async read is called, the foundBarcodes() and foundNoBarcodes() signals are emitted from a worker thread.
+	void foundNoBarcodes() const;
+	void foundBarcodes(const QList<Barcode>& barcodes) const;
 
 public:
 #ifdef QT_MULTIMEDIA_LIB
-	// Function should be thread safe, as it may be called from a separate thread.
-	Q_SLOT QVector<Barcode> read(const QVideoFrame& image)
+	Q_SLOT QList<Barcode> read(const QVideoFrame& image) const
 	{
 		QElapsedTimer t;
 		t.start();
@@ -458,6 +540,11 @@ public:
 		runTime = t.elapsed();
 		emitFoundBarcodes(barcodes);
 		return barcodes;
+	}
+
+	Q_SLOT bool tryReadAsync(const QVideoFrame& frame) const
+	{
+		return _pool.tryStart([this, frame]() { read(frame); });
 	}
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -477,14 +564,7 @@ public:
 			disconnect(_sink, nullptr, this, nullptr);
 
 		_sink = sink;
-		connect(_sink, &QVideoSink::videoFrameChanged, this, &BarcodeReader::onVideoFrameChanged, Qt::DirectConnection);
-	}
-	void onVideoFrameChanged(const QVideoFrame& frame)
-	{
-		if (_pool.activeThreadCount() >= _pool.maxThreadCount())
-			return; // we are busy => skip the frame
-
-		_pool.start([this, frame]() { read(frame); });
+		connect(_sink, &QVideoSink::videoFrameChanged, this, &BarcodeReader::tryReadAsync, Qt::DirectConnection);
 	}
 	Q_PROPERTY(QVideoSink* videoSink MEMBER _sink WRITE setVideoSink)
 
@@ -521,6 +601,7 @@ inline QVideoFilterRunnable* BarcodeReader::createFilterRunnable()
 
 
 // Q_DECLARE_METATYPE: compile-time declaration required for QVariant storage and template instantiation
+Q_DECLARE_METATYPE(ZXingQt::Error)
 Q_DECLARE_METATYPE(ZXingQt::Position)
 Q_DECLARE_METATYPE(ZXingQt::Barcode)
 
@@ -536,7 +617,7 @@ class ZXingQml : public QObject
 public:
 	Q_INVOKABLE static QString FormatToString(BarcodeFormat format) { return ZXingQt::ToString(format); }
 	Q_INVOKABLE static QString ContentTypeToString(ContentType type) { return ZXingQt::ToString(type); }
-	Q_INVOKABLE static QVector<BarcodeFormat> ListBarcodeFormats(BarcodeFormat filter = BarcodeFormat::None)
+	Q_INVOKABLE static QList<BarcodeFormat> ListBarcodeFormats(BarcodeFormat filter = BarcodeFormat::None)
 	{
 		return ZXingQt::ListBarcodeFormats(filter);
 	}
@@ -550,10 +631,12 @@ inline void registerQmlAndMetaTypes()
 	qRegisterMetaType<ZXingQt::BarcodeFormat>("BarcodeFormat");
 	qRegisterMetaType<ZXingQt::ContentType>("ContentType");
 	qRegisterMetaType<ZXingQt::TextMode>("TextMode");
+	qRegisterMetaType<ZXingQt::Error>("Error");
+	qRegisterMetaType<ZXingQt::Error::Type>("Error::Type");
 	qRegisterMetaType<ZXingQt::Position>("Position");
 	qRegisterMetaType<ZXingQt::Barcode>("Barcode");
-	qRegisterMetaType<QVector<ZXingQt::BarcodeFormat>>("QVector<BarcodeFormat>");
-	qRegisterMetaType<QVector<ZXingQt::Barcode>>("QVector<Barcode>");
+	qRegisterMetaType<QList<ZXingQt::BarcodeFormat>>("QList<BarcodeFormat>");
+	qRegisterMetaType<QList<ZXingQt::Barcode>>("QList<Barcode>");
 
 	// Custom enum to string converters
 	QMetaType::registerConverter<BarcodeFormat, QString>(
@@ -563,6 +646,7 @@ inline void registerQmlAndMetaTypes()
 		[](ContentType type) { return QString::fromStdString(ZXing::ToString(static_cast<ZXing::ContentType>(type))); });
 
 	// qmlRegisterType allows us to store the position / barcode in a QML property, i.e. property barcode myBarcode: ...
+	qmlRegisterType<ZXingQt::Error>("ZXing", 1, 0, "error");
 	qmlRegisterType<ZXingQt::Position>("ZXing", 1, 0, "position");
 	qmlRegisterType<ZXingQt::Barcode>("ZXing", 1, 0, "barcode");
 

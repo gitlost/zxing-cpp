@@ -48,15 +48,9 @@ public:
 		update();
 	}
 
-	void setBarcodes(const QVector<Barcode>& barcodes)
+	void setBarcodes(const QList<Barcode>& barcodes)
 	{
 		_barcodes = barcodes;
-		update();
-	}
-
-	void clearBarcodes()
-	{
-		_barcodes.clear();
 		update();
 	}
 
@@ -123,7 +117,7 @@ protected:
 
 private:
 	QVideoFrame _frame;
-	QVector<Barcode> _barcodes;
+	QList<Barcode> _barcodes;
 };
 
 class CameraReaderWidget : public QMainWindow
@@ -137,8 +131,7 @@ public:
 		resize(640, 480);
 
 		setupUI();
-		setupCamera();
-		setupBarcodeReader();
+		setupCameraAndReader();
 	}
 
 	~CameraReaderWidget() { _camera->stop(); }
@@ -193,16 +186,15 @@ private:
 		_controlsWidget = new QWidget(videoContainer);
 		_controlsWidget->setStyleSheet(
 			QStringLiteral("QWidget#controlsWidget { background-color: rgba(128, 128, 128, 180); padding: 10px; } "
-						   "QCheckBox, QLabel { color: white; background: transparent; } "
-						   "QComboBox { color: white; background: rgba(0, 0, 0, 100); padding: 3px; }"));
+						   "QCheckBox, QLabel { color: white; background: transparent; }"));
 		_controlsWidget->setObjectName(QStringLiteral("controlsWidget"));
 		auto controlsLayout = new QVBoxLayout(_controlsWidget);
 		controlsLayout->setContentsMargins(10, 10, 10, 10);
 		controlsLayout->setSpacing(5);
 
-		auto addCheckBox = [&](QCheckBox*& checkbox, const QString& text) {
+		auto addCheckBox = [&](QCheckBox*& checkbox, const QString& text, bool defaultValue = true) {
 			checkbox = new QCheckBox(text);
-			checkbox->setChecked(true);
+			checkbox->setChecked(defaultValue);
 			connect(checkbox, &QCheckBox::toggled, this, &CameraReaderWidget::updateReaderOptions);
 			controlsLayout->addWidget(checkbox);
 		};
@@ -211,6 +203,7 @@ private:
 		addCheckBox(_tryHarderCheck, tr("Try Harder"));
 		addCheckBox(_tryInvertCheck, tr("Try Invert"));
 		addCheckBox(_tryDownscaleCheck, tr("Try Downscale"));
+		addCheckBox(_returnErrorsCheck, tr("Return Errors"), false);
 
 		// Format filter combobox
 		auto formatLayout = new QHBoxLayout();
@@ -228,8 +221,9 @@ private:
 		gridLayout->addWidget(_controlsWidget, 0, 0, 1, 1, Qt::AlignBottom | Qt::AlignRight);
 	}
 
-	void setupCamera()
+	void setupCameraAndReader()
 	{
+		// Create camera and video pipeline
 		_camera = new QCamera(this);
 		_camera->setFocusMode(QCamera::FocusModeAutoNear);
 
@@ -246,7 +240,7 @@ private:
 		_videoSink = new QVideoSink(this);
 		_captureSession->setVideoOutput(_videoSink);
 
-		connect(_videoSink, &QVideoSink::videoFrameChanged, this, &CameraReaderWidget::onVideoFrameChanged);
+		connect(_videoSink, &QVideoSink::videoFrameChanged, _videoWidget, &VideoWidget::setVideoFrame);
 
 		if (QMediaDevices::videoInputs().isEmpty()) {
 			_infoLabel->setText(tr("No camera found"));
@@ -278,16 +272,15 @@ private:
 #else
 		_camera->start();
 #endif
-	}
 
-	void setupBarcodeReader()
-	{
+		// Create barcode reader and configure
 		_barcodeReader = new BarcodeReader(this);
-		_barcodeReader->setTextMode(TextMode::HRI);
-		updateReaderOptions();
+		_barcodeReader->setVideoSink(_videoSink);
 
 		connect(_barcodeReader, &BarcodeReader::foundBarcodes, this, &CameraReaderWidget::onBarcodesFound);
 		connect(_barcodeReader, &BarcodeReader::foundNoBarcodes, this, &CameraReaderWidget::onFoundNoBarcodes);
+
+		updateReaderOptions();
 
 		_resetTimer = new QTimer(this);
 		_resetTimer->setSingleShot(true);
@@ -297,24 +290,17 @@ private:
 
 	void updateReaderOptions()
 	{
-		auto formatFilter = static_cast<BarcodeFormat>(_formatCombo->currentData().toUInt());
-		_barcodeReader->setFormats(ListBarcodeFormats(formatFilter));
+		_barcodeReader->setFormats({static_cast<BarcodeFormat>(_formatCombo->currentData().toUInt())});
 		_barcodeReader->setTryRotate(_tryRotateCheck->isChecked());
 		_barcodeReader->setTryHarder(_tryHarderCheck->isChecked());
 		_barcodeReader->setTryInvert(_tryInvertCheck->isChecked());
 		_barcodeReader->setTryDownscale(_tryDownscaleCheck->isChecked());
+		_barcodeReader->setReturnErrors(_returnErrorsCheck->isChecked());
 	}
 
 private Q_SLOTS:
-	void onVideoFrameChanged(const QVideoFrame& frame)
-	{
-		_videoWidget->setVideoFrame(frame);
 
-		// Process frame for barcode reading (in background thread)
-		_barcodeReader->read(frame);
-	}
-
-	void onBarcodesFound(const QVector<Barcode>& barcodes)
+	void onBarcodesFound(const QList<Barcode>& barcodes)
 	{
 		if (barcodes.isEmpty())
 			return;
@@ -341,7 +327,7 @@ private Q_SLOTS:
 
 	void onFoundNoBarcodes()
 	{
-		_videoWidget->clearBarcodes();
+		_videoWidget->setBarcodes({});
 
 		if (!_resetTimer->isActive()) {
 			_infoLabel->setText(tr("No barcode found (in %1 ms)").arg(_barcodeReader->runTime.loadRelaxed()));
@@ -370,6 +356,7 @@ private:
 	QCheckBox* _tryHarderCheck = nullptr;
 	QCheckBox* _tryInvertCheck = nullptr;
 	QCheckBox* _tryDownscaleCheck = nullptr;
+	QCheckBox* _returnErrorsCheck = nullptr;
 
 	QCamera* _camera = nullptr;
 	QMediaCaptureSession* _captureSession = nullptr;

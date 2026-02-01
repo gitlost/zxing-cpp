@@ -85,8 +85,8 @@ ZX_RO_PROPERTY(float, height);
 
 CreatorOptions::CreatorOptions(BarcodeFormat format, std::string options) : d(std::make_unique<Data>(format, std::move(options))) {}
 CreatorOptions::~CreatorOptions() = default;
-CreatorOptions::CreatorOptions(CreatorOptions&&) = default;
-CreatorOptions& CreatorOptions::operator=(CreatorOptions&&) = default;
+CreatorOptions::CreatorOptions(CreatorOptions&&) noexcept = default;
+CreatorOptions& CreatorOptions::operator=(CreatorOptions&&) noexcept = default;
 
 inline bool IsAscii(ByteView bv)
 {
@@ -586,21 +586,21 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	return res;
 }
 
-Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& opts)
+Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& options)
 {
-	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, opts);
+	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, options);
 }
 
 #if __cplusplus > 201703L && __cpp_concepts > 201703L
-Barcode CreateBarcodeFromText(std::u8string_view contents, const CreatorOptions& opts)
+Barcode CreateBarcodeFromText(std::u8string_view contents, const CreatorOptions& options)
 {
-	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, opts);
+	return CreateBarcode(contents.data(), contents.size(), -1 /*mode*/, options);
 }
 #endif
 
-Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions& opts)
+Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions& options)
 {
-	return CreateBarcode(data, size, DATA_MODE, opts);
+	return CreateBarcode(data, size, DATA_MODE, options);
 }
 
 #else // ZXING_USE_ZINT

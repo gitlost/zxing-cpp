@@ -50,7 +50,7 @@ public:
 	bool hasECI = false;
 	std::list<std::string>* p_diagnostics = nullptr;
 
-	Content();
+	Content() = default;
 	Content(ByteArray&& bytes, SymbologyIdentifier si, CharacterSet defaultCharset = CharacterSet::Unknown);
 
 	// make movable but not copyable

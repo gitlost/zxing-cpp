@@ -75,12 +75,6 @@ static BitMatrix EncodeLowLevel(const BitMatrix& placement, const SymbolInfo& sy
 	return matrix;
 }
 
-Writer::Writer() :
-	_shapeHint(SymbolShape::NONE),
-	_encoding(CharacterSet::Unknown)
-{
-}
-
 BitMatrix
 Writer::encode(const std::string& contents, int width, int height) const
 {

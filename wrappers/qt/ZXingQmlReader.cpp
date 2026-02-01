@@ -6,7 +6,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
-#include "ZXingQtReader.h"
+#include "ZXingQt.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,15 +14,13 @@ int main(int argc, char *argv[])
 	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
 
-	ZXingQt::registerQmlAndMetaTypes();
-
 	QGuiApplication app(argc, argv);
 	app.setApplicationName(QStringLiteral("ZXingQtCamReader"));
 	QQmlApplicationEngine engine;
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-	engine.load(QUrl(QStringLiteral("qrc:/ZXingQt5CamReader.qml")));
+	engine.load(QUrl(QStringLiteral("qrc:/ZXingQml5Reader.qml")));
 #else
-	engine.load(QUrl(QStringLiteral("qrc:/ZXingQt6CamReader.qml")));
+	engine.load(QUrl(QStringLiteral("qrc:/ZXingQml6Reader.qml")));
 #endif
 	if (engine.rootObjects().isEmpty())
 		return -1;

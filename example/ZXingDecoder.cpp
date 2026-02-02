@@ -20,11 +20,11 @@
 #ifdef ZX_DIAGNOSTICS
 #include "Diagnostics.h"
 #endif
-#include "ReadBarcode.h"
 #include "TextDecoder.h"
 #include "ThresholdBinarizer.h"
 #include "Utf.h"
 #include "ZXCType.h"
+
 #include "aztec/AZReader.h"
 #include "codablockf/CBFReader.h"
 #include "code16k/C16KReader.h"
@@ -80,7 +80,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -opts <OPT[,OPT]>    Reader options\n"
 			  << "    -charset <CHARSET>   Default character set\n"
 			  << "Supported formats (case insensitive, with or without '-'):\n  ";
-	for (auto f : BarcodeFormats::all()) {
+	for (auto f : BarcodeFormats::list(BarcodeFormat::AllCreatable)) {
 		std::cout << "  " << ToString(f);
 	}
 	std::cout << "\nSupported reader options (-opts) (case insensitive, comma-separated):\n  ";
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 6, bits.height() * 6, 7, 0);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
-	} else if (opts.formats().testFlags(BarcodeFormat::LinearCodes)) {
+	} else if (opts.hasFormat(BarcodeFormat::AllLinear)) {
 		opts.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);

@@ -72,6 +72,7 @@ ZX_RO_PROPERTY(bool, readerInit);
 ZX_RO_PROPERTY(bool, stacked);
 ZX_RO_PROPERTY(bool, forceSquare);
 ZX_RO_PROPERTY(bool, addQuietZones);
+ZX_RO_PROPERTY(bool, tryCode39ExtendedMode);
 ZX_RO_PROPERTY(bool, debug);
 ZX_RO_PROPERTY(int, columns);
 ZX_RO_PROPERTY(int, rows);
@@ -165,7 +166,6 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::Code128, {'C', '0'}}, // '1' GS1, '2' AIM
 	{BarcodeFormat::Code16K, {'K', '0'}}, // '1' GS1, '2' AIM, '4' D1 PAD
 	{BarcodeFormat::Code39, {'A', '0'}}, // '3' checksum, '4' extended, '7' checksum,extended
-	{BarcodeFormat::Code39Ext, {'A', '4'}}, // '3' checksum, '4' extended, '7' checksum,extended TODO: unhack
 	{BarcodeFormat::Code93, {'G', '0'}}, // no modifiers
 	{BarcodeFormat::DataBar, {'e', '0', 0, AIFlag::GS1}},
 	{BarcodeFormat::DataBarExp, {'e', '0', 0, AIFlag::GS1}},
@@ -422,6 +422,8 @@ zint_symbol* CreatorOptions::zint() const
 			zint->symbology = BARCODE_DBAR_OMNSTK;
 		else if (format() == DataBarExp && stacked())
 			zint->symbology = BARCODE_DBAR_EXPSTK;
+		else if (format() == Code39 && tryCode39ExtendedMode())
+			zint->symbology = BARCODE_EXCODE39;
 
 		zint->scale = 0.5f;
 

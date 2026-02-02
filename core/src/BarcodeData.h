@@ -64,7 +64,7 @@ inline BarcodeData LinearBarcode(BarcodeFormat format, const std::string& text, 
 {
 	return {.content = Content(ByteArray(text), si, CharacterSet::ISO8859_1),
 			.error = std::move(error),
-			.position = Line(y, xStart, xStop),
+			.position = Position{{xStart, y}, {xStop, y}, {xStop, y}, {xStart, y}}, // TODO: unhack, was getting "use of undeclared identifier 'Line'"
 			.format = format,
 			.extra = std::move(extra)};
 }

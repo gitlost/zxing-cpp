@@ -57,12 +57,11 @@
 	X(RMQRCode,         'Q', 'r', "mr g", 145, ZXING_ENABLE_QRCODE,     "rMQR Code") \
 	X(DataMatrix,       'd', ' ', "mrwg",  71, ZXING_ENABLE_DATAMATRIX, "Data Matrix") \
 	X(MaxiCode,         'U', ' ', "mr  ",  57, ZXING_ENABLE_MAXICODE,   "MaxiCode") \
-	X(Code39Ext,        'A', '4', "lrw ",   9, ZXING_ENABLE_1D,         "Extended Code 39") /*TODO: unhack*/\
+	/* Add new formats here */ \
 	X(CodablockF,       'O', ' ', "srw ",  74, 1,                       "Codablock-F") \
 	X(Code16K,          'K', ' ', "srwg",  23, 1,                       "Code 16K") \
 	X(DotCode,          'J', ' ', "mrwg", 115, 1,                       "DotCode") \
 	X(HanXin,           'h', ' ', "mrw ", 116, 1,                       "Han Xin") \
-	/* Add new formats here */
 // clang-format on
 
 #define ZX_BCF_ID(SYM, VAR) (((uint8_t)(SYM) << 0) | ((uint8_t)(VAR) << 8))

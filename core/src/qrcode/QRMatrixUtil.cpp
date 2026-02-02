@@ -14,6 +14,10 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef _MSC_VER
+#include <bit>
+#endif
+
 namespace ZXing::QRCode {
 
 // From Appendix D in JISX0510:2004 (p. 67)

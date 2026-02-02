@@ -308,9 +308,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with DEL
-		BarcodeFormat format = BarcodeFormat::Code39Ext;
+		BarcodeFormat format = BarcodeFormat::Code39;
 
-		auto cOpts = CreatorOptions(format);
+		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
 		Barcode barcode = CreateBarcodeFromText("12\17734", cOpts);
 		// HRI not escaped as content type considered "Text" (DEL not recognized)
 		check(__LINE__, barcode, "]A4", "12\17734", "31 32 7F 33 34", false, "]A4\\00002612\17734", "5D 41 34 31 32 7F 33 34",
@@ -326,9 +326,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with SOH & DEL
-		BarcodeFormat format = BarcodeFormat::Code39Ext;
+		BarcodeFormat format = BarcodeFormat::Code39;
 
-		auto cOpts = CreatorOptions(format);
+		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
 		Barcode barcode = CreateBarcodeFromText("12\001\17734", cOpts);
 		// HRI escaped as content type considered "Binary" (SOH)
 		check(__LINE__, barcode, "]A4", "12\001\17734", "31 32 01 7F 33 34", false, "]A4\\00002612\001\17734",
@@ -344,9 +344,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with NUL
-		BarcodeFormat format = BarcodeFormat::Code39Ext;
+		BarcodeFormat format = BarcodeFormat::Code39;
 
-		auto cOpts = CreatorOptions(format);
+		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
 		// HRI escaped as content type considered "Binary" (NUL)
 		Barcode barcode = CreateBarcodeFromText(std::string("12\00034", 5), cOpts);
 		check(__LINE__, barcode, "]A4", std::string("12\00034", 5), "31 32 00 33 34", false,

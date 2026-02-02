@@ -70,6 +70,7 @@ public:
 	ZX_RO_PROPERTY(bool, stacked);        // DataBar/DataBarExpanded: generates a stacked version
 	ZX_RO_PROPERTY(bool, forceSquare);    // DataMatrix: only consider square symbol versions
 	ZX_RO_PROPERTY(bool, addQuietZones);
+	ZX_RO_PROPERTY(bool, tryCode39ExtendedMode);
 	ZX_RO_PROPERTY(bool, debug);
 	ZX_RO_PROPERTY(int, columns);         // specify number of columns (e.g. for DataBarExpanded, PDF417)
 	ZX_RO_PROPERTY(int, rows);            // specify number of rows (e.g. for DataBarExpanded, PDF417)

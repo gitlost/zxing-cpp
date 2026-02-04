@@ -31,7 +31,7 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 	BarcodesData res;
 	for (auto&& detRes : detRess) {
 		auto decRes =
-			Decode(detRes).setReaderInit(detRes.readerInit()).setIsMirrored(detRes.isMirrored()).setVersionNumber(detRes.nbLayers());
+			Decode(detRes, _opts.characterSet()).setReaderInit(detRes.readerInit()).setIsMirrored(detRes.isMirrored()).setVersionNumber(detRes.nbLayers());
 		if (decRes.isValid(_opts.returnErrors())) {
 			res.emplace_back(MatrixBarcode(std::move(decRes), std::move(detRes), BarcodeFormat::Aztec));
 			if (maxSymbols > 0 && Size(res) >= maxSymbols)

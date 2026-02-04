@@ -83,7 +83,7 @@ INTERNAL int z_chr_cnt(const unsigned char source[], const int length, const uns
 
 /* Flag table for `is_chr()` and `z_not_sane()` */
 #define IS_CLS_F    (IS_CLI_F | IS_SIL_F)
-static const unsigned short flags[128] = {
+static const unsigned short flags[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*00-1F*/
                IS_SPC_F,            IS_C82_F,            IS_C82_F,            IS_HSH_F, /*20-23*/ /*  !"# */
                IS_CLS_F, IS_SIL_F | IS_C82_F,            IS_C82_F,            IS_C82_F, /*24-27*/ /* $%&' */
@@ -109,11 +109,15 @@ static const unsigned short flags[128] = {
                IS_LWO_F,            IS_LWO_F,            IS_LWO_F,            IS_LWO_F, /*74-77*/ /* tuvw */
                IS_LX__F,            IS_LWO_F,            IS_LWO_F,                   0, /*78-7B*/ /* xyz{ */
                       0,                   0,                   0,                   0, /*7B-7F*/ /* |}~D */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*80-9F*/
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*A0-BF*/
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*C0-DF*/
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /*E0-FF*/
 };
 
 /* Whether a character `ch` matches `flag` */
 INTERNAL int z_is_chr(const unsigned int flag, const unsigned int ch) {
-    return z_isascii(ch) && (flags[ch] & flag);
+    return z_isascii(ch) && (flags[ch] & flag); /* As `ch` passed as an int need to check it's ASCII */
 }
 
 /* Verifies if a string only uses valid characters, returning 1-based position in `source` if not, 0 for success */
@@ -121,7 +125,7 @@ INTERNAL int z_not_sane(const unsigned int flag, const unsigned char source[], c
     int i;
 
     for (i = 0; i < length; i++) {
-        if (!z_isascii(source[i]) || !(flags[source[i]] & flag)) {
+        if (!(flags[source[i]] & flag)) {
             return i + 1;
         }
     }

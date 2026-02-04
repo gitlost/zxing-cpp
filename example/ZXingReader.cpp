@@ -17,6 +17,7 @@
 #endif
 #include "TextDecoder.h"
 #include "Utf.h"
+#include "ZXCType.h"
 
 #include <chrono>
 #include <cstring>
@@ -156,7 +157,18 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 				std::cerr << "No argument for -charset\n";
 				return false;
 			}
-			options.setCharacterSet(argv[i]);
+			CharacterSet cs;
+			std::string argvi(argv[i]);
+			if (std::find_if_not(argvi.begin(), argvi.end(), zx_isdigit) == argvi.end()) { // Allow numeric ECI
+				cs = ToCharacterSet(ECI(std::stoi((argvi))));
+			} else {
+				cs = CharacterSetFromString(argvi);
+			}
+			if (cs == CharacterSet::Unknown) {
+				std::cerr << "Unknown character set '" << argv[i] << "'\n";
+				return false;
+			}
+			options.setCharacterSet(cs);
 		} else if (is("-diagnostics")) {
 #ifdef ZX_DIAGNOSTICS
 			options.setEnableDiagnostics(true);

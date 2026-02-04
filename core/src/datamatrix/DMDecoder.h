@@ -13,7 +13,7 @@ class BitMatrix;
 
 namespace DataMatrix {
 
-DecoderResult Decode(const BitMatrix& bits);
+DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset = CharacterSet::Unknown);
 
 } // DataMatrix
 } // ZXing

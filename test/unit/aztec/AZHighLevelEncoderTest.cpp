@@ -15,7 +15,7 @@
 
 namespace ZXing::Aztec {
 
-DecoderResult Decode(const BitArray& bits);
+DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset = CharacterSet::Unknown);
 
 }
 

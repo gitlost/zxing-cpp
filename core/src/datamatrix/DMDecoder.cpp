@@ -310,13 +310,14 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(ByteArray&& bytes, const bool isDMRE)
+DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet optionsCharset)
 {
 	BitSource bits(bytes);
 	Content result;
 	Error error;
 	result.symbology = {'d', '1', 3}; // ECC 200 (ISO 16022:2006 Annex N Table N.1)
 	result.defaultCharset = CharacterSet::ISO8859_1;
+	result.optionsCharset = optionsCharset;
 	std::string resultTrailer;
 
 	struct StructuredAppendInfo sai;
@@ -460,7 +461,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 	return true;
 }
 
-static DecoderResult DoDecode(const BitMatrix& bits)
+static DecoderResult DoDecode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	//fprintf(stderr, "DMDecoder::DoDecode\n");
 	// Construct a parser and read version, error-correction level
@@ -513,7 +514,7 @@ retry:
 #endif
 
 	// Decode the contents of that stream of bytes
-	return DecodedBitStreamParser::Decode(std::move(resultBytes), version->isDMRE())
+	return DecodedBitStreamParser::Decode(std::move(resultBytes), version->isDMRE(), optionsCharset)
 		.setVersionNumber(version->versionNumber)
 		.addExtra(BarcodeExtra::Version, std::to_string(version->symbolHeight) + 'x' + std::to_string(version->symbolWidth));
 }
@@ -527,17 +528,17 @@ static BitMatrix FlippedL(const BitMatrix& bits)
 	return res;
 }
 
-DecoderResult Decode(const BitMatrix& bits)
+DecoderResult Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
 	//fprintf(stderr, "DMDecoder::Decode(bits)\n");
-	auto res = DoDecode(bits);
+	auto res = DoDecode(bits, optionsCharset);
 	if (res.isValid())
 		return res;
 
 	//TODO:
 	// * unify bit mirroring helper code with QRReader?
 	// * rectangular symbols with the a size of 8 x Y are not supported a.t.m.
-	if (auto mirroredRes = DoDecode(FlippedL(bits)); mirroredRes.error().type() != Error::Checksum) {
+	if (auto mirroredRes = DoDecode(FlippedL(bits), optionsCharset); mirroredRes.error().type() != Error::Checksum) {
 		mirroredRes.setIsMirrored(true);
 		return mirroredRes;
 	}

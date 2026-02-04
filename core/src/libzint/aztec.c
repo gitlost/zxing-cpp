@@ -571,22 +571,20 @@ static int az_count_byte_only(const unsigned char source[], const int length, co
 static int az_punct_size(const unsigned char source[], const int len, const int gs1) {
     int i;
     int cnt_doubles = 0;
-    int cnt_fnc1s = 0;
-    int size;
 
     if (gs1) {
-        for (i = 0; i < len; i++) {
-            cnt_doubles += AZ_DOUBLE_PUNCT(source, len, i);
-            cnt_fnc1s += (source[i] == '\x1D');
+        int cnt_fnc1s = 0;
+        for (i = 0; i + 1 < len; i++) {
+            cnt_doubles += AZ_DOUBLE_PUNCT_NO_LEN_CHECK(source, i);
+            cnt_fnc1s += source[i] == '\x1D';
         }
-    } else {
-        for (i = 0; i < len; i++) {
-            cnt_doubles += AZ_DOUBLE_PUNCT(source, len, i);
-        }
+        cnt_fnc1s += source[i] == '\x1D';
+        return 5 * (len - cnt_doubles - cnt_fnc1s) + (cnt_fnc1s << 3);
     }
-    size = 5 * (len - cnt_doubles - cnt_fnc1s) + 8 * cnt_fnc1s;
-
-    return size;
+    for (i = 0; i + 1 < len; i++) {
+        cnt_doubles += AZ_DOUBLE_PUNCT_NO_LEN_CHECK(source, i);
+    }
+    return 5 * (len - cnt_doubles);
 }
 
 struct az_edge {
@@ -700,7 +698,7 @@ static void az_new_Edge(const struct az_edge *edges, const char mode, const unsi
                 }
                 edge->bytes = len + previous->bytes;
             }
-            edge->size += 8 * len;
+            edge->size += len << 3;
             edge->startMode = previousStartMode;
             break;
     }
@@ -709,7 +707,7 @@ static void az_new_Edge(const struct az_edge *edges, const char mode, const unsi
 
 /* Add an edge for a mode at a vertex if no existing edge or if more optimal than existing edge */
 static void az_addEdge(const unsigned char *source, const int length, struct az_edge *edges, const char mode,
-            const int from, const int len, const int gs1, const int initial_mode, struct az_edge *previous) {
+            const int from, const int len, const int gs1, const int initial_mode, const struct az_edge *previous) {
     struct az_edge edge;
     const int vertexIndex = from + len;
     const int v_ij = vertexIndex * AZ_NUM_MODES + AZ_MASK(mode) - 1;
@@ -726,7 +724,7 @@ static void az_addEdge(const unsigned char *source, const int length, struct az_
 
 /* Add edges for the various modes at a vertex */
 static void az_addEdges(const unsigned char source[], const int length, const int gs1, const int initial_mode,
-            struct az_edge *edges, const int from, struct az_edge *previous) {
+            struct az_edge *edges, const int from, const struct az_edge *previous) {
     const unsigned char ch = source[from];
     int len;
 
@@ -783,12 +781,13 @@ static int az_define_modes(char modes[], unsigned char source[], const int lengt
     struct az_edge *edge;
     int mode_end, mode_len;
     int reduced_length;
-    struct az_edge *edges;
 
-    if ((length + 1) * AZ_NUM_MODES > USHRT_MAX
-            || !(edges = (struct az_edge *) calloc((length + 1) * AZ_NUM_MODES, sizeof(struct az_edge)))) {
+    struct az_edge *edges = (edges = (struct az_edge *) calloc((length + 1) * AZ_NUM_MODES, sizeof(struct az_edge)));
+    if (!edges) {
         return 0;
     }
+    assert((length + 1) * AZ_NUM_MODES < USHRT_MAX); /* Guaranteed by input length limit */
+
     az_addEdges(source, length, gs1, initial_mode, edges, 0, NULL);
 
     AZ_TRACE_Edges("DEBUG Initial situation\n", source, length, initial_mode, edges, 0);
@@ -962,7 +961,7 @@ static int az_text_size(const char *modes, const unsigned char *source, int leng
                 if (count > 2047) { /* Max 11-bit number */
                     big_batch = count > 2078 ? 2078 : count;
                     /* Put 00000 followed by 11-bit number of bytes less 31 */
-                    size += 16 + 8 * big_batch;
+                    size += 16 + (big_batch << 3);
                     i += big_batch;
                     count -= big_batch;
                 }
@@ -978,7 +977,7 @@ static int az_text_size(const char *modes, const unsigned char *source, int leng
                         /* Put 5-bit number of bytes */
                         size += 5;
                     }
-                    size += 8 * count;
+                    size += count << 3;
                     i += count;
                 }
                 i--;
@@ -1511,6 +1510,10 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
     unsigned int *ecc_part;
     float ecc_ratio;
     int dim;
+
+    if ((i = z_segs_length(segs, seg_count)) > 4981) { /* Max is 4981 digits */
+        return z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 799, "Input length %d too long (maximum 4981)", i);
+    }
 
     if (gs1 && reader_init) {
         return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 501, "Cannot use Reader Initialisation in GS1 mode");

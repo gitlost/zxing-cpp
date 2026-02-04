@@ -318,10 +318,12 @@ static void DecodeContent(const BitArray& bits, Content& res, bool &haveFNC1)
 }
 
 ZXING_EXPORT_TEST_ONLY
-DecoderResult Decode(const BitArray& bits)
+DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset)
 {
 	Content res;
 	res.symbology = {'z', '0', 3};
+	res.defaultCharset = CharacterSet::ISO8859_1;
+	res.optionsCharset = optionsCharset;
 	bool haveFNC1;
 
 	try {
@@ -377,7 +379,7 @@ DecoderResult DecodeRune(const DetectorResult& detectorResult) {
 	return DecoderResult(std::move(res));
 }
 
-DecoderResult Decode(const DetectorResult& detectorResult)
+DecoderResult Decode(const DetectorResult& detectorResult, const CharacterSet optionsCharset)
 {
 	try {
 		if (detectorResult.nbLayers() == 0) {
@@ -398,7 +400,7 @@ DecoderResult Decode(const DetectorResult& detectorResult)
 		Diagnostics::fmt("  Codewords:   %d (Data %d, ECC %d)\n", numCodewords, numDataCodewords, numECCodewords);
 		Diagnostics::put("  Decode:      ");
 
-		auto result = Decode(bits);
+		auto result = Decode(bits, optionsCharset);
 		if (result.isValid())
 			result.setEcLevel(std::to_string(ecLevel) + "%");
 		return result;

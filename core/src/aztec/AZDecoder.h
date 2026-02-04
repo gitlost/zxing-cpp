@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "CharacterSet.h"
+
 namespace ZXing {
 
 class DecoderResult;
@@ -14,7 +16,7 @@ namespace Aztec {
 
 class DetectorResult;
 
-DecoderResult Decode(const DetectorResult& detectorResult);
+DecoderResult Decode(const DetectorResult& detectorResult, const CharacterSet optionsCharset = CharacterSet::Unknown);
 
 } // Aztec
 } // ZXing

@@ -77,7 +77,7 @@ std::string DecodeCode39AndCode93FullASCII(std::string encoded, const char ctrl[
 BarcodeData Code39Reader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
 {
 	// minimal number of characters that must be present (including start, stop and checksum characters)
-	int minCharCount = _opts.validateCode39CheckSum() ? 4 : 3;
+	int minCharCount = _opts.validateOptionalCheckSum() ? 4 : 3;
 	auto isStartOrStopSymbol = [](char c) { return c == '*'; };
 
 	// provide the indices with the narrow bars/spaces which have to be equally wide
@@ -116,30 +116,27 @@ BarcodeData Code39Reader::decodePattern(int rowNumber, PatternView& next, std::u
 	if (Size(txt) < minCharCount - 2 || !next.hasQuietZoneAfter(QUIET_ZONE_SCALE))
 		return {};
 
-	Error error;
-	if (_opts.validateCode39CheckSum()) {
-		auto checkDigit = txt.back();
-		txt.pop_back();
-		int checksum = TransformReduce(txt, 0, [](char c) { return IndexOf(ALPHABET, c); });
-		if (checkDigit != ALPHABET[checksum % 43])
-			error = ChecksumError();
-	}
+	auto lastChar = txt.back();
+	txt.pop_back();
+	int checksum = TransformReduce(txt, 0, [](char c) { return IndexOf(ALPHABET, c); });
+	bool hasValidCheckSum = lastChar == ALPHABET[checksum % 43];
+	if (!hasValidCheckSum)
+		txt.push_back(lastChar);
 
 	const char shiftChars[] = "$%/+";
-	bool hasFullASCII = false;
-	if (!error && _opts.tryCode39ExtendedMode()) {
-		auto fullASCII = DecodeCode39AndCode93FullASCII(txt, shiftChars);
-		if (fullASCII.empty()) {
-			error = FormatError("Decoding extended Code39/Code93 failed");
-		} else {
-			if ((hasFullASCII = std::find_first_of(txt.begin(), txt.end(), shiftChars, shiftChars + 4) != txt.end()))
-				txt = fullASCII;
-		}
-	}
+	auto fullASCII = _opts.hasFormat(BarcodeFormat::Code39Ext) ? DecodeCode39AndCode93FullASCII(txt, shiftChars) : "";
+	bool hasFullASCII = !fullASCII.empty() && std::find_first_of(txt.begin(), txt.end(), shiftChars, shiftChars + 4) != txt.end();
+	if (hasFullASCII)
+		txt = fullASCII;
+
+	if (hasValidCheckSum)
+		txt.push_back(lastChar);
+
+	Error error = _opts.validateOptionalCheckSum() && !hasValidCheckSum ? ChecksumError() : Error();
 
 	// Symbology identifier modifiers ISO/IEC 16388:2007 Annex C Table C.1
 	constexpr const char symbologyModifiers[4] = { '0', '3' /*checksum*/, '4' /*extended*/, '7' /*checksum,extended*/ };
-	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)_opts.validateCode39CheckSum() + 2 * (int)hasFullASCII]};
+	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)hasValidCheckSum + 2 * (int)hasFullASCII]};
 
 	int xStop = next.pixelsTillEnd();
 	return LinearBarcode(BarcodeFormat::Code39, std::move(txt), rowNumber, xStart, xStop, symbologyIdentifier, error);

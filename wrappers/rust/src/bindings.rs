@@ -51,7 +51,6 @@ pub const ZXing_BarcodeFormat_All: ZXing_BarcodeFormat = 0x2A2A;
 pub const ZXing_BarcodeFormat_AllReadable: ZXing_BarcodeFormat = 0x722A;
 pub const ZXing_BarcodeFormat_AllCreatable: ZXing_BarcodeFormat = 0x772A;
 pub const ZXing_BarcodeFormat_AllLinear: ZXing_BarcodeFormat = 0x6C2A;
-pub const ZXing_BarcodeFormat_AllStacked: ZXing_BarcodeFormat = 0x732A;
 pub const ZXing_BarcodeFormat_AllMatrix: ZXing_BarcodeFormat = 0x6D2A;
 pub const ZXing_BarcodeFormat_AllGS1: ZXing_BarcodeFormat = 0x672A;
 pub const ZXing_BarcodeFormat_Codabar: ZXing_BarcodeFormat = 0x2046;
@@ -204,6 +203,7 @@ unsafe extern "C" {
 	pub fn ZXing_ReaderOptions_setTryDownscale(opts: *mut ZXing_ReaderOptions, tryDownscale: bool);
 	pub fn ZXing_ReaderOptions_setTryDenoise(opts: *mut ZXing_ReaderOptions, tryDenoise: bool);
 	pub fn ZXing_ReaderOptions_setIsPure(opts: *mut ZXing_ReaderOptions, isPure: bool);
+	pub fn ZXing_ReaderOptions_setValidateOptionalCheckSum(opts: *mut ZXing_ReaderOptions, validateOptionalCheckSum: bool);
 	pub fn ZXing_ReaderOptions_setReturnErrors(opts: *mut ZXing_ReaderOptions, returnErrors: bool);
 	pub fn ZXing_ReaderOptions_setFormats(
 		opts: *mut ZXing_ReaderOptions,
@@ -221,6 +221,7 @@ unsafe extern "C" {
 	pub fn ZXing_ReaderOptions_getTryDownscale(opts: *const ZXing_ReaderOptions) -> bool;
 	pub fn ZXing_ReaderOptions_getTryDenoise(opts: *const ZXing_ReaderOptions) -> bool;
 	pub fn ZXing_ReaderOptions_getIsPure(opts: *const ZXing_ReaderOptions) -> bool;
+	pub fn ZXing_ReaderOptions_getValidateOptionalCheckSum(opts: *const ZXing_ReaderOptions) -> bool;
 	pub fn ZXing_ReaderOptions_getReturnErrors(opts: *const ZXing_ReaderOptions) -> bool;
 	pub fn ZXing_ReaderOptions_getFormats(
 		opts: *const ZXing_ReaderOptions,

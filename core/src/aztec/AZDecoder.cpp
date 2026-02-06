@@ -170,7 +170,8 @@ static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const B
 			correctedBits.appendBits(dataWord, codewordSize);
 	}
 
-	return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
+	//return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
+	return {std::move(correctedBits), numECCodewords * 100 / numCodewords};
 }
 
 /**
@@ -322,7 +323,6 @@ DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset)
 {
 	Content res;
 	res.symbology = {'z', '0', 3};
-	res.defaultCharset = CharacterSet::ISO8859_1;
 	res.optionsCharset = optionsCharset;
 	bool haveFNC1;
 

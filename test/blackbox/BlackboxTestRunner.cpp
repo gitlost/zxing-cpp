@@ -460,7 +460,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 		runTests("code39-2", "Code39", 3, {
 			{ 3, 3, 0   },
 			{ 3, 3, 180 },
-		}, ReaderOptions().setTryCode39ExtendedMode(true));
+		});
 
 		runTests("code39-3", "Code39", 12, {
 			{ 12, 12, 0   },

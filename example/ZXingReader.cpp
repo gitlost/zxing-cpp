@@ -22,6 +22,7 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <iomanip>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -84,10 +85,12 @@ static void PrintUsage(const char* exePath)
 			  << "    -help         Print usage information and exit\n"
 			  << "    -version      Print version information\n"
 			  << "\n"
-			  << "Supported formats are:\n" << "   ";
+			  << "Supported formats are: Variants):\n" << "   ";
 	for (auto f : BarcodeFormats::list(BarcodeFormat::AllReadable)) {
 		std::cout << " " << ToString(f);
 	}
+	std::cout << "\n\n";
+
 	std::cout << "BarcodeFormats can be lowercase, with or without any of ' -_/', separated by ',' or '|'\n";
 
 	std::cout << "\n" << "Supported binarizers are:\n" << "   ";

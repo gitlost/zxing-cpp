@@ -304,6 +304,7 @@ ZX_PROPERTY(bool, tryDownscale, TryDownscale)
 	ZX_PROPERTY(bool, tryDenoise, TryDenoise)
 #endif
 ZX_PROPERTY(bool, isPure, IsPure)
+ZX_PROPERTY(bool, validateOptionalCheckSum, ValidateOptionalCheckSum)
 ZX_PROPERTY(bool, returnErrors, ReturnErrors)
 ZX_PROPERTY(int, minLineCount, MinLineCount)
 ZX_PROPERTY(int, maxNumberOfSymbols, MaxNumberOfSymbols)
@@ -312,10 +313,10 @@ ZX_PROPERTY(int, maxNumberOfSymbols, MaxNumberOfSymbols)
 
 void ZXing_ReaderOptions_setFormats(ZXing_ReaderOptions* opts, const ZXing_BarcodeFormat* formats, int count)
 {
-	if (!formats)
+	if (!formats || !count)
 		return;
-	if (count == 0) // determine count by looking for null terminator
-		for (; formats[count] != ZXing_BarcodeFormat_None; ++count)
+	if (count == -1) // determine count by looking for null terminator
+		for (count = 0; formats[count] != ZXing_BarcodeFormat_None; ++count)
 			;
 	std::vector<BarcodeFormat> v((BarcodeFormat*)formats, (BarcodeFormat*)formats + count);
 	opts->formats(std::move(v));

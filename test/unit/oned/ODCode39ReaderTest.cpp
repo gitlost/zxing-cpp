@@ -40,7 +40,7 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 	{
 		// "A" with checksum
 		PatternRow row({ 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
-		auto result = parse(row, ReaderOptions().setValidateCode39CheckSum(true));
+		auto result = parse(row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]A3");
 		EXPECT_EQ(result.text(), "A");
 
@@ -51,23 +51,23 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 	{
 		// Extended "a"
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
-		auto result = parse(row, ReaderOptions().setTryCode39ExtendedMode(true));
+		auto result = parse(row, ReaderOptions().formats(BarcodeFormat::Code39Ext));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A4");
 		EXPECT_EQ(result.text(), "a");
 
-		result = parse(row, ReaderOptions().setTryCode39ExtendedMode(false));
+		result = parse(row, ReaderOptions().formats(BarcodeFormat::Code39Std));
 		EXPECT_EQ(result.symbologyIdentifier(), "]A0");
 		EXPECT_EQ(result.text(), "+A");
 	}
 	{
 		// Extended "a" with checksum
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 2, 1, 1, 2, 1, 1 });
-		auto result = parse(row, ReaderOptions().setTryCode39ExtendedMode(true).setValidateCode39CheckSum(true));
-		EXPECT_EQ(result.symbologyIdentifier(), "]A7");
-		EXPECT_EQ(result.text(), "a");
+		auto result = parse(row);
+		EXPECT_EQ(result.symbologyIdentifier(), "]A5");
+		EXPECT_EQ(result.text(), "a8");
 
-		result = parse(row, ReaderOptions().setTryCode39ExtendedMode(false));
-		EXPECT_EQ(result.symbologyIdentifier(), "]A0");
+		result = parse(row, ReaderOptions().formats(BarcodeFormat::Code39Std));
+		EXPECT_EQ(result.symbologyIdentifier(), "]A1");
 		EXPECT_EQ(result.text(), "+A8");
 	}
 }

@@ -53,7 +53,6 @@ using namespace ZXing;
 #endif
 
 static const char *readerOpts[] = {
-	"tryCode39ExtendedMode", "validateCode39CheckSum"
 };
 
 static const char *charsets[] = {
@@ -238,14 +237,8 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 			std::istringstream input(opt);
 			for (std::string token; std::getline(input, token, ',');) {
 				if (!token.empty()) {
-					if (token == "trycode39extendedmode" || token == "code39extendedmode") {
-						opts.setTryCode39ExtendedMode(true);
-					} else if (token == "validatecode39checksum" || token == "code39checksum") {
-						opts.setValidateCode39CheckSum(true);
-					} else {
-						std::cerr << "Unknown opts '" << token << "'\n";
-						return false;
-					}
+					std::cerr << "Unknown opts '" << token << "'\n";
+					return false;
 				}
 			}
 
@@ -340,9 +333,6 @@ int main(int argc, char* argv[])
 #ifdef ZX_DIAGNOSTICS
 	std::list<std::string> diagnostics;
 #endif
-
-	// For backwards compatibility (and as don't have option off UI)
-	opts.setTryCode39ExtendedMode(false);
 
 	if (!ParseOptions(argc, argv, opts, bitstream, width, textOnly, angleEscape)) {
 		PrintUsage(argv[0]);

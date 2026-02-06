@@ -219,7 +219,7 @@ make_zxing_enum!(EanAddOnSymbol { Ignore, Read, Require });
 
 #[rustfmt::skip]
 make_zxing_enum!(BarcodeFormat {
-	Invalid, None, All, AllReadable, AllCreatable, AllLinear, AllStacked, AllMatrix, AllGS1,
+	Invalid, None, All, AllReadable, AllCreatable, AllLinear, AllMatrix, AllGS1,
 	Codabar, Code39, PZN, Code93, Code128, ITF,
 	DataBar, DataBarOmni, DataBarLtd, DataBarExp,
 	EANUPC, EAN13, EAN8, EAN5, EAN2, ISBN, UPCA, UPCE, DXFilmEdge,
@@ -592,12 +592,13 @@ impl BarcodeReader {
 	property!(ReaderOptions, TryInvert, bool);
 	property!(ReaderOptions, TryDownscale, bool);
 	property!(ReaderOptions, IsPure, bool);
+	property!(ReaderOptions, ValidateOptionalCheckSum, bool);
 	property!(ReaderOptions, ReturnErrors, bool);
-	property!(ReaderOptions, TextMode, TextMode);
 	property!(ReaderOptions, Binarizer, Binarizer);
 	property!(ReaderOptions, EanAddOnSymbol, EanAddOnSymbol);
-	property!(ReaderOptions, MaxNumberOfSymbols, i32);
+	property!(ReaderOptions, TextMode, TextMode);
 	property!(ReaderOptions, MinLineCount, i32);
+	property!(ReaderOptions, MaxNumberOfSymbols, i32);
 
 	pub fn formats(self, v: impl AsRef<[BarcodeFormat]>) -> Self {
 		unsafe { ZXing_ReaderOptions_setFormats(self.0, transmute(v.as_ref().as_ptr()), v.as_ref().len() as c_int) };

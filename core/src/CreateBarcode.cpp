@@ -69,7 +69,6 @@ ZX_RO_PROPERTY(std::string, ecLevel);
 ZX_RO_PROPERTY(std::string, eci);
 ZX_RO_PROPERTY(bool, gs1);
 ZX_RO_PROPERTY(bool, readerInit);
-ZX_RO_PROPERTY(bool, stacked);
 ZX_RO_PROPERTY(bool, forceSquare);
 ZX_RO_PROPERTY(bool, addQuietZones);
 ZX_RO_PROPERTY(bool, tryCode39ExtendedMode);
@@ -168,7 +167,11 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::Code39, {'A', '0'}}, // '3' checksum, '4' extended, '7' checksum,extended
 	{BarcodeFormat::Code93, {'G', '0'}}, // no modifiers
 	{BarcodeFormat::DataBar, {'e', '0', 0, AIFlag::GS1}},
+	{BarcodeFormat::DataBarOmni, {'e', '0', 0, AIFlag::GS1}},
+	{BarcodeFormat::DataBarStk, {'e', '0', 0, AIFlag::GS1}},
+	{BarcodeFormat::DataBarStkOmni, {'e', '0', 0, AIFlag::GS1}},
 	{BarcodeFormat::DataBarExp, {'e', '0', 0, AIFlag::GS1}},
+	{BarcodeFormat::DataBarExpStk, {'e', '0', 0, AIFlag::GS1}},
 	{BarcodeFormat::DataBarLtd, {'e', '0', 0, AIFlag::GS1}},
 	{BarcodeFormat::DataMatrix, {'d', '1', 3}}, // '2' GS1, '3' AIM
 	{BarcodeFormat::DotCode, {'J', '0', 3}}, // '1' GS1, '2' AIM
@@ -279,16 +282,16 @@ static QuadrilateralI PositionZint2ZXing(const CreatorOptions& opts, const BitMa
 		// TODO: Hack
 		if (format == BarcodeFormat::Aztec) {
 			// Do nothing
-		} else if (format == BarcodeFormat::DataBar) {
-			if (opts.stacked()) {
+		} else if (format & (BarcodeFormat::DataBarOmni | BarcodeFormat::DataBarStk)) {
+			if (format == BarcodeFormat::DataBarStk) {
 				width--;
 				left++;
 			} else {
 				// Leave width & left
 			}
 			height--; // Point at bottommost
-		} else if (format == BarcodeFormat::DataBarExp) {
-			if (opts.stacked()) {
+		} else if (format & (BarcodeFormat::DataBarExp | BarcodeFormat::DataBarExpStk)) {
+			if (format == BarcodeFormat::DataBarExpStk) {
 			} else {
 				width--; // Point at rightmost
 				height--; // Point at bottommost
@@ -416,12 +419,11 @@ zint_symbol* CreatorOptions::zint() const
 #undef X
 		};
 
+		if (zint->symbology == 0)
+			throw std::invalid_argument(StrCat("Unsupported barcode format for creation: ", ToString(format())));
+
 		if (format() == Code128 && gs1())
 			zint->symbology = BARCODE_GS1_128;
-		else if (format() == DataBar && stacked())
-			zint->symbology = BARCODE_DBAR_OMNSTK;
-		else if (format() == DataBarExp && stacked())
-			zint->symbology = BARCODE_DBAR_EXPSTK;
 		else if (format() == Code39 && tryCode39ExtendedMode())
 			zint->symbology = BARCODE_EXCODE39;
 
@@ -433,10 +435,10 @@ zint_symbol* CreatorOptions::zint() const
 		if (auto val = version(); val && !(format() & AllLinear))
 			zint->option_2 = *val;
 
-		if (auto val = columns(); val && format() & (DataBarExp | PDF417 | MicroPDF417 | CompactPDF417))
+		if (auto val = columns(); val && format() & (DataBarExpStk | PDF417 | MicroPDF417 | CompactPDF417))
 			zint->option_2 = *val;
 
-		if (auto val = rows(); val && format() & (DataBarExp | PDF417))
+		if (auto val = rows(); val && format() & (DataBarExpStk | PDF417))
 			zint->option_3 = *val;
 
 		if (auto val = dataMask(); val && format() & (QRCode | MicroQRCode))

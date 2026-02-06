@@ -353,8 +353,17 @@ int main(int argc, char* argv[])
 	Diagnostics::setEnabled(opts.enableDiagnostics());
 #endif
 
+	assert(opts.formats().size() == 1);
+	auto format = *(opts.formats().data());
+
 	if (width == 0) {
 		width = static_cast<int>(bitstream.length());
+		if (format & BarcodeFormat::AllMatrix) { 
+			const int w = static_cast<int>(std::sqrt(width));
+			if (w * w == width) {
+				width = w;
+			}
+		}
 	}
 	if (width > 1 && bitstream.length() % width) {
 		std::cerr << "Invalid bitstream - width " << width << " not multiple of length " << bitstream.length() << "\n";
@@ -376,33 +385,33 @@ int main(int argc, char* argv[])
 
 	opts.setIsPure(true);
 
-	if (opts.formats() == BarcodeFormat::Aztec) {
+	if (format == BarcodeFormat::Aztec) {
 		Aztec::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::CodablockF) {
+	} else if (format == BarcodeFormat::CodablockF) {
 		CodablockF::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::Code16K) {
+	} else if (format == BarcodeFormat::Code16K) {
 		Code16K::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::DataMatrix) {
+	} else if (format == BarcodeFormat::DataMatrix) {
 		DataMatrix::Reader reader(opts);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
 		//fprintf(stderr, "ivbits width %d, height %d\n", ivbits.width(), ivbits.height());
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::HanXin) {
+	} else if (format == BarcodeFormat::HanXin) {
 		HanXin::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::DotCode) {
+	} else if (format == BarcodeFormat::DotCode) {
 		DotCode::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::MaxiCode) {
+	} else if (format == BarcodeFormat::MaxiCode) {
 		MaxiCode::Reader reader(opts);
 		BitMatrix ivbits(bits.width() * 2, bits.height()); // Shift odd rows 1 right
 		for (int r = 0, offset = 0; r < bits.height(); r++, offset = 1 - offset) {
@@ -412,7 +421,7 @@ int main(int argc, char* argv[])
 		}
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::PDF417) {
+	} else if (format == BarcodeFormat::PDF417) {
 		Pdf417::Reader reader(opts);
 		int height = bits.height() * 3;
 		if (height >= 1) {
@@ -423,22 +432,21 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width(), height);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::MicroPDF417) {
+	} else if (format == BarcodeFormat::MicroPDF417) {
 		MicroPdf417::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::DXFilmEdge) {
+	} else if (format == BarcodeFormat::DXFilmEdge) {
 		OneD::Reader reader(opts);
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 6, bits.height() * 6, 7, 0);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
-	} else if (opts.hasFormat(BarcodeFormat::AllLinear)) {
+	} else if (format & BarcodeFormat::AllLinear) {
 		opts.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
-	} else if (opts.formats() == BarcodeFormat::QRCode || opts.formats() == BarcodeFormat::MicroQRCode
-			|| opts.formats() == BarcodeFormat::RMQRCode) {
+	} else if (format & (BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode | BarcodeFormat::RMQRCode)) {
 		QRCode::Reader reader(opts);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 	}

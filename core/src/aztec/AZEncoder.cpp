@@ -61,7 +61,9 @@ static void GenerateCheckWords(const BitArray& bitArray, int totalBits, int word
 	ReedSolomonEncode(GetGFFromWordSize(wordSize), messageWords, (totalBits - bitArray.size()) / wordSize);
 	int startPad = totalBits % wordSize;
 	messageBits = BitArray();
-	messageBits.appendBits(0, startPad);
+	if (startPad) {
+		messageBits.appendBits(0, startPad);
+	}
 	for (int messageWord : messageWords)
 		messageBits.appendBits(messageWord, wordSize);
 }

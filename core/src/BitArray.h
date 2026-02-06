@@ -73,6 +73,8 @@ public:
 	*/
 	void appendBits(int value, int numBits)
 	{
+		assert(numBits >= 1 && numBits <= 32);
+
 		for (; numBits; --numBits)
 			_bits.push_back((value >> (numBits-1)) & 1);
 	}
@@ -174,7 +176,8 @@ public:
 			throw std::out_of_range("BitArrayView::peekBits() out of range.");
 		int res = 0;
 		for (auto i = cur; n > 0; --n, i++)
-			AppendBit(res, *i);
+			if (*i)
+				AppendBit(res, *i);
 		return res;
 	}
 

@@ -167,8 +167,10 @@ BarcodeData DXFilmEdgeReader::decodePattern(int rowNumber, PatternView& next, st
 	while (next.isValid(1) && dataBits.size() < clock->dataLength()) {
 
 		int modules = int(next[0] / clock->moduleSize() + 0.5);
-		// even index means we are at a bar, otherwise at a space
-		dataBits.appendBits(next.index() % 2 == 0 ? 0xFFFFFFFF : 0x0, modules);
+		if (modules >= 1 && modules <= 32) {
+			// even index means we are at a bar, otherwise at a space
+			dataBits.appendBits(next.index() % 2 == 0 ? 0xFFFFFFFF : 0x0, modules);
+		}
 
 		next.shift(1);
 	}

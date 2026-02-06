@@ -35,8 +35,7 @@ jobs:
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
-        -DZXING_READERS=ON -DZXING_WRITERS=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON -DZXING_C_API=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
@@ -126,8 +125,8 @@ jobs:
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
-        -DZXING_READERS=ON -DZXING_WRITERS=NEW -DZXING_EXPERIMENTAL_API=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=ON
+        -DZXING_READERS=ON -DZXING_WRITERS=BOTH -DZXING_EXPERIMENTAL_API=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
@@ -156,7 +155,6 @@ jobs:
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
-        -DZXING_READERS=ON -DZXING_WRITERS=ON
         -DZXING_BLACKBOX_TESTS=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=OFF -DZXING_C_API=OFF
         -DCMAKE_CXX_COMPILER=clang++
         -DCMAKE_CXX_FLAGS="-march=native -fsanitize=address,undefined -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-omit-frame-pointer"
@@ -221,7 +219,6 @@ jobs:
 
   build-kn:
     runs-on: ubuntu-latest
-    needs: build-experimental
     defaults:
       run:
         working-directory: wrappers/kn
@@ -379,3 +376,35 @@ jobs:
   #     with:
   #       name: winrt-ARM64-artifacts
   #       path: build/dist
+
+  build-tarball:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        submodules: true
+
+    - name: Build
+      run: python .github/create_release_archive.py
+
+    - name: Find generated archives
+      id: find
+      run: |
+        tgz=$(ls zxing-cpp-*.tar.gz 2>/dev/null | head -n1 || true)
+        zip=$(ls zxing-cpp-*.zip 2>/dev/null | head -n1 || true)
+        echo "tgz=$tgz" >> $GITHUB_OUTPUT
+        echo "zip=$zip" >> $GITHUB_OUTPUT
+
+    - name: Upload tarball archive
+      if: steps.find.outputs.tgz != ''
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ steps.find.outputs.tgz }}
+        path: ${{ steps.find.outputs.tgz }}
+
+    - name: Upload zip archive
+      if: steps.find.outputs.zip != ''
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ steps.find.outputs.zip }}
+        path: ${{ steps.find.outputs.zip }}

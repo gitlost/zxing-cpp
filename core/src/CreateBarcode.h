@@ -67,7 +67,6 @@ public:
 	ZX_RO_PROPERTY(std::string, eci);     // most 2D symbologies: specify ECI designator to use
 	ZX_RO_PROPERTY(bool, gs1);
 	ZX_RO_PROPERTY(bool, readerInit);     // most 2D symbologies: set the "reader init" flag
-	ZX_RO_PROPERTY(bool, stacked);        // DataBar/DataBarExpanded: generates a stacked version
 	ZX_RO_PROPERTY(bool, forceSquare);    // DataMatrix: only consider square symbol versions
 	ZX_RO_PROPERTY(bool, addQuietZones);
 	ZX_RO_PROPERTY(bool, tryCode39ExtendedMode);

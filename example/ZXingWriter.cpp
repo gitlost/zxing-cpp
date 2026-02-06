@@ -36,7 +36,9 @@ static void PrintUsage(const char* exePath)
 			  << " [-options <creator-options>] [-scale <factor>] [-binary] [-noqz] [-hrt] [-invert] <format> <text> <output>\n"
 			  << "    -options   Comma separated list of format specific options and flags\n"
 			  << "    -scale     module size of generated image / negative numbers mean 'target size in pixels'\n"
-//			  << "    -encoding  Encoding used to encode input text\n"
+#ifndef ZXING_USE_ZINT
+			  << "    -encoding  Encoding used to encode input text\n"
+#endif
 			  << "    -binary    Interpret <text> as a file name containing binary data\n"
 			  << "    -noqz      Print barcode without quiet zone\n"
 			  << "    -hrt       Print human readable text below the barcode (if supported)\n"
@@ -46,6 +48,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -bytes     Encode input text as-is\n"
 			  << "    -rotate    Rotate 0, 90, 180, 270 degrees\n"
 #endif
+			  << "    -escape    Process escape sequences (2-digit \"\\xXX\" and \"\\\\\")\n"
 			  << "    -help      Print usage information\n"
 			  << "    -version   Print version information\n"
 			  << "\n"
@@ -68,8 +71,11 @@ struct CLI
 	bool invert = false;
 	bool addHRT = false;
 	bool addQZs = true;
+	bool escape = false;
 	bool verbose = false;
-//	CharacterSet encoding = CharacterSet::Unknown;
+#ifndef ZXING_USE_ZINT
+	CharacterSet encoding = CharacterSet::Unknown;
+#endif
 #ifdef ZXING_USE_ZINT
 	bool bytes = false;
 #endif
@@ -85,10 +91,12 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.scale = std::stoi(argv[i]);
-		// } else if (is("-encoding")) {
-		// 	if (++i == argc)
-		// 		return false;
-		// 	cli.encoding = CharacterSetFromString(argv[i]);
+#ifndef ZXING_USE_ZINT
+		} else if (is("-encoding")) {
+			if (++i == argc)
+				return false;
+			cli.encoding = CharacterSetFromString(argv[i]);
+#endif
 #ifdef ZXING_USE_ZINT
 		} else if (is("-bytes")) {
 			cli.bytes = true;
@@ -109,6 +117,8 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 			if (++i == argc)
 				return false;
 			cli.options = argv[i];
+		} else if (is("-escape")) {
+			cli.escape = true;
 		} else if (is("-verbose")) {
 			cli.verbose = true;
 		} else if (is("-help") || is("--help")) {
@@ -170,6 +180,28 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>
 	return os;
 }
 #endif
+
+static std::string escape(std::string_view input)
+{
+	std::string output;
+	output.reserve(input.size());
+	auto xtoi = [&](const char ch) { return ch <= '9' && ch >= '0' ? ch - '0' : ch >= 'A' && ch <= 'F' ? ch - 'A' + 10 : ch - 'a' + 10; };
+
+	for (int i = 0, len = input.size(); i < len; i++) {
+		if (input[i] == '\\') {
+			if (++i == len)
+				throw std::runtime_error("single backslash at end");
+			if (input[i] == '\\')
+				output.push_back('\\');
+			else if (i + 2 < len && (input[i] == 'X' || input[i] == 'x') && std::isxdigit(input[i + 1]) && std::isxdigit(input[i + 2]))
+				output.push_back((xtoi(input[i + 1]) << 4) | xtoi(input[i + 2])), i += 2;
+			else
+				throw std::runtime_error("invalid escape sequence " + std::string(input.data() + i - 1));
+		} else
+			output.push_back(input[i]);
+	}
+	return output;
+}
 
 int main(int argc, char* argv[])
 {
@@ -245,7 +277,9 @@ int main(int argc, char* argv[])
 			writer.setEncoding(CharacterSet::BINARY);
 			matrix = writer.encode(bytes, cli.scale, std::clamp(cli.scale / 2, 50, 300));
 		} else {
-			writer.setEncoding(CharacterSet::UTF8);
+			if (cli.escape)
+				cli.input = escape(cli.input);
+			writer.setEncoding(cli.encoding != CharacterSet::Unknown ? cli.encoding : CharacterSet::UTF8);
 			matrix = writer.encode(cli.input, cli.scale, std::clamp(cli.scale / 2, 50, 300));
 		}
 		auto bitmap = ToMatrix<uint8_t>(matrix);

@@ -686,15 +686,13 @@ static void az_new_Edge(const struct az_edge *edges, const char mode, const unsi
             if (previousMode != mask_mode) {
                 edge->size += switch_sizes[previousMode - 1][mask_mode - 1];
                 if (len > 31) {
-                    edge->size += 11;
+                    edge->size += 11; /* Sub-optimal ignoring of 1-bit difference between 2 5-bit vs 1 11-bit */
                 }
                 edge->bytes = len;
             } else {
-                if (len + previous->bytes > 31) {
-                    if (previous->bytes <= 31) {
-                        /* Note this may be sub-optimal as not taken into account when previous edge added */
-                        edge->size += 11;
-                    }
+                /* Note this may be sub-optimal as not taken into account when previous edge added */
+                if (len + previous->bytes > 31 && previous->bytes <= 31) {
+                    edge->size += 11; /* Sub-optimal ignoring of 1-bit difference between 2 5-bit vs 1 11-bit */
                 }
                 edge->bytes = len + previous->bytes;
             }
@@ -714,6 +712,7 @@ static void az_addEdge(const unsigned char *source, const int length, struct az_
 
     az_new_Edge(edges, mode, source, from, len, gs1, initial_mode, previous, &edge);
 
+    /* This can perform poorly for AZ_B as non-AZ_B modes piggyback on previous AZ_B */
     if (edges[v_ij].mode == 0 || edges[v_ij].size > edge.size) {
         AZ_TRACE_AddEdge(source, length, edges, previous, vertexIndex, &edge);
         edges[v_ij] = edge;
@@ -726,9 +725,10 @@ static void az_addEdge(const unsigned char *source, const int length, struct az_
 static void az_addEdges(const unsigned char source[], const int length, const int gs1, const int initial_mode,
             struct az_edge *edges, const int from, const struct az_edge *previous) {
     const unsigned char ch = source[from];
+    const int not_byte_only = z_isascii(ch) && AztecFlags[ch];
     int len;
 
-    if (z_isascii(ch) && AztecFlags[ch]) {
+    if (not_byte_only) {
         int begins_double;
 
         if ((len = az_count_punct(source, length, from, gs1, &begins_double))) {
@@ -763,7 +763,7 @@ static void az_addEdges(const unsigned char source[], const int length, const in
     }
 
     if (!gs1 || ch != '\x1D') {
-        if (ch == '\r' || ch == ' ' || ch == '.' || ch == ',') { /* Multi-mode chars */
+        if (not_byte_only && AztecModes[ch] == AZ_X) { /* Multi-mode chars */
             len = 1;
         } else {
             len = 1 + az_count_byte_only(source, length, from + 1);
@@ -772,7 +772,8 @@ static void az_addEdges(const unsigned char source[], const int length, const in
     }
 }
 
-/* Default, close to optimal encoding, using Dijkstra-based algorithm adapted from Data Matrix one by Alex Geller.
+/* Default, optimal except for AZ_B handling, when it can perform poorly, using Dijkstra-based algorithm adapted from
+   Data Matrix one by Alex Geller.
    Note that a bitstream that is encoded to be shortest based on mode choices may not be so after bit-stuffing */
 static int az_define_modes(char modes[], unsigned char source[], const int length, const int gs1,
             const char initial_mode, const int debug_print) {
@@ -782,7 +783,7 @@ static int az_define_modes(char modes[], unsigned char source[], const int lengt
     int mode_end, mode_len;
     int reduced_length;
 
-    struct az_edge *edges = (edges = (struct az_edge *) calloc((length + 1) * AZ_NUM_MODES, sizeof(struct az_edge)));
+    struct az_edge *edges = (struct az_edge *) calloc((length + 1) * AZ_NUM_MODES, sizeof(struct az_edge));
     if (!edges) {
         return 0;
     }
@@ -814,8 +815,8 @@ static int az_define_modes(char modes[], unsigned char source[], const int lengt
         for (i = 0; i < length + 1; i++) {
             v_i = i * AZ_NUM_MODES;
             for (j = 0; j < AZ_NUM_MODES; j++) {
-                fprintf(stdout, " %*d(%02X,%*d,%*d,%*d)",
-                        fw, v_i + j, edges[v_i + j].mode, fw, edges[v_i + j].len, fw, edges[v_i + j].size,
+                fprintf(stdout, "%*d: %*d(%02X,%*d,%*d,%*d)",
+                        fw, i - 1, fw, v_i + j, edges[v_i + j].mode, fw, edges[v_i + j].len, fw, edges[v_i + j].size,
                         fw, edges[v_i + j].previous);
             }
             fputc('\n', stdout);
@@ -969,11 +970,17 @@ static int az_text_size(const char *modes, const unsigned char *source, int leng
                     if (big_batch) {
                         size += 5;
                     }
-                    if (count > 31) {
+                    if (count > 62) {
                         assert(count <= 2078);
                         /* Put 00000 followed by 11-bit number of bytes less 31 */
                         size += 16;
                     } else {
+                        if (count > 31) {
+                            /* 2 5-bit B/Ss beats 1 11-bit */
+                            size += 10 + (31 << 3);
+                            count -= 31;
+                            i += 31;
+                        }
                         /* Put 5-bit number of bytes */
                         size += 5;
                     }
@@ -1007,7 +1014,7 @@ static int az_text_size(const char *modes, const unsigned char *source, int leng
 /* Determine encoding modes and encode */
 static int az_text_process(unsigned char *source, int length, int bp, char *binary_string, const int gs1,
             const int gs1_bp, const int eci, const int fast_encode, char *p_current_mode, int *data_length,
-            const int debug_print) {
+            const int debug) {
     int i, j;
     char current_mode;
     int reduced_length;
@@ -1019,18 +1026,20 @@ static int az_text_process(unsigned char *source, int length, int bp, char *bina
     const char initial_mode = p_current_mode ? *p_current_mode : AZ_U;
     const int set_gs1 = bp == gs1_bp;
     const int all_byte_only_or_uld = az_all_byte_only_or_uld(source, length);
+    const int debug_print = debug & ZINT_DEBUG_PRINT;
+    const int debug_skip_all = debug & 4; /* Test flag to skip using `all_byte_only_or_uld` */
 #ifndef NDEBUG
     const int initial_bp = bp;
 #endif
 
     /* See if it's worthwhile latching to AZ_P when have ECI */
-    if (!all_byte_only_or_uld && eci && initial_mode != AZ_P && az_count_initial_puncts(source, length)
-            > 2 + (initial_mode == AZ_D)) {
+    if ((debug_skip_all || !all_byte_only_or_uld) && eci && initial_mode != AZ_P
+            && az_count_initial_puncts(source, length) > 2 + (initial_mode == AZ_D)) {
         assert(!gs1);
         eci_latch = 1;
     }
 
-    if (all_byte_only_or_uld) {
+    if (!debug_skip_all && all_byte_only_or_uld) {
         memset(modes, all_byte_only_or_uld, length);
         reduced_length = length;
     } else if (fast_encode) {
@@ -1212,11 +1221,20 @@ static int az_text_process(unsigned char *source, int length, int bp, char *bina
                     if (big_batch) {
                         bp = z_bin_append_posn(31, 5, binary_string, bp); /* B/S */
                     }
-                    if (count > 31) {
+                    if (count > 62) {
                         assert(count <= 2078);
                         /* Put 00000 followed by 11-bit number of bytes less 31 */
                         bp = z_bin_append_posn(count - 31, 16, binary_string, bp);
                     } else {
+                        if (count > 31) {
+                            /* 2 5-bit B/Ss beats 1 11-bit */
+                            bp = z_bin_append_posn(31, 5, binary_string, bp); /* 5-bit byte count */
+                            for (j = 0; j < 31; j++) {
+                                bp = z_bin_append_posn(source[i++], 8, binary_string, bp);
+                            }
+                            bp = z_bin_append_posn(31, 5, binary_string, bp); /* B/S */
+                            count -= 31;
+                        }
                         /* Put 5-bit number of bytes */
                         bp = z_bin_append_posn(count, 5, binary_string, bp);
                     }
@@ -1303,7 +1321,7 @@ static int az_text_process(unsigned char *source, int length, int bp, char *bina
 
 /* Call `az_text_process()` for each segment */
 static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs[], const int seg_count, int bp,
-            char binary_string[], const int gs1, const int gs1_bp, int *data_length, const int debug_print) {
+            char binary_string[], const int gs1, const int gs1_bp, int *data_length) {
     int i;
     char current_mode = AZ_U;
     const int fast_encode = symbol->input_mode & FAST_MODE;
@@ -1313,7 +1331,7 @@ static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs
 
     for (i = 0; i < seg_count; i++) {
         if (!az_text_process(segs[i].source, segs[i].length, bp, binary_string, gs1, gs1_bp, segs[i].eci, fast_encode,
-                &current_mode, &bp, debug_print)) {
+                &current_mode, &bp, symbol->debug)) {
             return ZINT_ERROR_TOO_LONG; /* `az_text_process()` only fails with too long */
         }
         if (content_segs && segs[i].eci) {
@@ -1560,13 +1578,13 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
         }
 
         (void) az_text_process(sa_src, sa_len, bp, binary_string, 0 /*gs1*/, 0 /*gs1_bp*/, 0 /*eci*/,
-                                0 /*fast_encode*/, NULL /*p_current_mode*/, &bp, debug_print);
+                                0 /*fast_encode*/, NULL /*p_current_mode*/, &bp, symbol->debug);
         /* Will be in U/L due to uppercase A-Z index/count indicators at end */
         gs1_bp = bp; /* Initial FNC1 (FLG0) position */
     }
 
-    if ((error_number = az_text_process_segs(symbol, segs, seg_count, bp, binary_string, gs1, gs1_bp, &data_length,
-                                                debug_print))) {
+    if ((error_number = az_text_process_segs(symbol, segs, seg_count, bp, binary_string, gs1, gs1_bp,
+                                            &data_length))) {
         assert(error_number == ZINT_ERROR_TOO_LONG || error_number == ZINT_ERROR_MEMORY);
         if (error_number == ZINT_ERROR_TOO_LONG) {
             return z_errtxt(error_number, symbol, 502,

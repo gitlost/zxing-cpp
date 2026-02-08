@@ -85,7 +85,7 @@ static void PrintUsage(const char* exePath)
 			  << "    -help         Print usage information and exit\n"
 			  << "    -version      Print version information\n"
 			  << "\n"
-			  << "Supported formats are: Variants):\n" << "   ";
+			  << "Supported formats are:\n" << "   ";
 	for (auto f : BarcodeFormats::list(BarcodeFormat::AllReadable)) {
 		std::cout << " " << ToString(f);
 	}

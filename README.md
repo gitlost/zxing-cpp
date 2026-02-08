@@ -31,10 +31,10 @@ It was originally ported from the Java [ZXing library](https://github.com/zxing/
 | EAN/UPC | EAN-13, EAN-8, EAN-5ᵂ, EAN-2ᵂ, UPC-A, UPC-E, ISBN
 | DataBar | Omnidirectional, Stacked, Limited, Expanded, Expanded Stacked
 | ***Industrial:*** | *(Logistics, Tracking, Pharma)*
-| Code39 | Standard, Extended, PZN, LOGMARS, Code32, VIN
+| Code39 | Standard, Extended, PZN, Code32, (VIN, LOGMARS)
 | Code93 |
 | Code128 |
-| ITF | ITF-14, Leitcode, Identcode
+| ITF | ITF-14, (DHL Leitcode, DHL Identcode)
 | ***Matrix:*** | *(Documents, Tickets, Logistics, IDs)*
 | Aztec Code | Aztec Code, Aztec Rune
 | Data Matrix | ECC200
@@ -61,7 +61,7 @@ You can sponsor this library at [GitHub Sponsors](https://github.com/sponsors/ax
 | [![KURZ](https://avatars.githubusercontent.com/u/25196688?s=32)](https://github.com/kurzdigital) | [KURZ Digital Solutions GmbH & Co. KG](https://github.com/kurzdigital) |
 | [![Moonshine AI](https://avatars.githubusercontent.com/u/98664891?s=32)](https://github.com/moonshine-ai) | [Moonshine AI](https://github.com/moonshine-ai) |
 | [![SAP](https://avatars.githubusercontent.com/u/2531208?s=32)](https://www.sap.com/germany/about/company/innovation/open-source.html) | [SAP (Open Source Program Office)](https://www.sap.com/germany/about/company/innovation/open-source.html) |
-| [![Socomo Software](https://avatars.githubusercontent.com/u/41477867?s=32)](https://github.com/somcosoftware) | [Somco Software](https://somcosoftware.com/en) |
+| [![Somco Software](https://avatars.githubusercontent.com/u/41477867?s=32)](https://github.com/somcosoftware) | [Somco Software](https://somcosoftware.com/en) |
 | [![synedra](https://www.synedra.com/favicon.ico)](https://synedra.com/) | [synedra information technologies GmbH](https://synedra.com/) |
 
 Thanks a lot for your contribution!

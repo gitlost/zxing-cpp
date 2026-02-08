@@ -40,6 +40,8 @@ static void PrintUsage(const char* exePath)
 #ifndef ZXING_USE_ZINT
 			  << "    -encoding  Encoding used to encode input text\n"
 #endif
+			  << "    -rotate	 Rotate image by given angle (90, 180 or 270)\n"
+//			  << "    -encoding  Encoding used to encode input text\n"
 			  << "    -binary    Interpret <text> as a file name containing binary data\n"
 			  << "    -noqz      Print barcode without quiet zone\n"
 			  << "    -hrt       Print human readable text below the barcode (if supported)\n"
@@ -47,7 +49,6 @@ static void PrintUsage(const char* exePath)
 #ifdef ZXING_USE_ZINT
 			  << "    -verbose   Print barcode information\n"
 			  << "    -bytes     Encode input text as-is\n"
-			  << "    -rotate    Rotate 0, 90, 180, 270 degrees\n"
 #endif
 			  << "    -escape    Process escape sequences (2-digit \"\\xXX\" and \"\\\\\")\n"
 			  << "    -help      Print usage information\n"
@@ -70,6 +71,7 @@ struct CLI
 {
 	BarcodeFormat format = BarcodeFormat::None;
 	int scale = 0;
+	int rotate = 0;
 	std::string input;
 	std::string outPath;
 	std::string options;
@@ -85,7 +87,6 @@ struct CLI
 #ifdef ZXING_USE_ZINT
 	bool bytes = false;
 #endif
-	int rotate = 0;
 };
 
 static bool ParseOptions(int argc, char* argv[], CLI& cli)
@@ -306,11 +307,11 @@ int main(int argc, char* argv[])
 		}
 
 		if (!success) {
-			std::cerr << "Failed to write image: " << cli.outPath << std::endl;
+			std::cerr << "Failed to write image: " << cli.outPath << "\n";
 			return -1;
 		}
 	} catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << e.what() << "\n";
 		return -1;
 	}
 

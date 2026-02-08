@@ -170,7 +170,7 @@ static int DetectCRAPCode(const C& c)
 			bestCode = code;
 		}
 	}
-	//printf("bestVariance %g\n", bestVariance);
+	//fprintf(stderr, "bestVariance %g\n", bestVariance);
 	return bestVariance < MAX_AVG_VARIANCE ? bestCode : -1;
 }
 
@@ -182,7 +182,7 @@ static int DecodeCodeword(const C& c, const int cluster)
 	}
 	const std::array<int, CHAR_LEN>& np = NormalizedPattern<CHAR_LEN, 17>(c);
 	int patternCluster = (np[0] - np[2] + np[4] - np[6] + 9) % 9;
-	//printf("0x%X: patternCluster %d, cluster %d\n", ToInt(np), patternCluster, cluster);
+	//fprintf(stderr, "0x%X: patternCluster %d, cluster %d\n", ToInt(np), patternCluster, cluster);
 	if (patternCluster != cluster) {
 		return -1;
 	}
@@ -208,43 +208,43 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 			continue;
 		}
 		PatternView view(bars);
-		//printf("rowNumber %d, nRows %d\n", rowNumber, nRows);
-		//printf("  view"); for (int i = 0; i < Size(view); i++) { printf(" %d", view[i]); } printf("\n");
+		//fprintf(stderr, "rowNumber %d, nRows %d\n", rowNumber, nRows);
+		//fprintf(stderr, "  view"); for (int i = 0; i < Size(view); i++) { fprintf(stderr, " %d", view[i]); } fprintf(stderr, "\n");
 
 		PatternView next = view.subView(0, RAP_CHAR_LEN);
-		//printf("  next"); for (int i = 0; i < Size(next); i++) { printf(" %d", next[i]); } printf("\n");
+		//fprintf(stderr, "  next"); for (int i = 0; i < Size(next); i++) { fprintf(stderr, " %d", next[i]); } fprintf(stderr, "\n");
 
 		if ((lrap = DetectLRRAPCode(next)) == -1) {
-			//printf("rowNumber %d, LRAP not detected\n", rowNumber);
+			//fprintf(stderr, "rowNumber %d, LRAP not detected\n", rowNumber);
 			continue;
 		}
-		//printf("rowNumber: %d, LRAP %d detected, row cluster %d\n", rowNumber, lrap, (lrap % 3) * 3);
+		//fprintf(stderr, "rowNumber: %d, LRAP %d detected, row cluster %d\n", rowNumber, lrap, (lrap % 3) * 3);
 		if (!lraps.empty() && lraps.back() == lrap) {
 			continue;
 		}
 		int cluster = (lrap % 3) * 3;
 		if (lastCluster != -1 && (lastCluster + 3) % 9 != cluster) {
-			//printf("  cluster %d, lastCluster %d, out of sync\n", cluster, lastCluster);
+			//fprintf(stderr, "  cluster %d, lastCluster %d, out of sync\n", cluster, lastCluster);
 			continue;
 		}
 
 		xStart = view.pixelsInFront();
 		offset = next.size();
 		next = view.subView(offset, CHAR_LEN);
-		//printf("  1st next offset %d", offset); for (int i = 0; i < Size(next); i++) { printf(" %d", next[i]); } printf("\n");
+		//fprintf(stderr, "  1st next offset %d", offset); for (int i = 0; i < Size(next); i++) { fprintf(stderr, " %d", next[i]); } fprintf(stderr, "\n");
 
 		int cw1, cw2 = -1, cw3 = -1, cw4 = -1;
 		if ((cw1 = DecodeCodeword(next, cluster)) == -1) {
-			printf("  cw1 read fail\n");
+			//fprintf(stderr, "  cw1 read fail\n");
 			continue;
 		}
 		offset += next.size();
-		//printf("  1st cw1 %d, nCols %d, offset %d\n", cw1, nCols, offset);
+		//fprintf(stderr, "  1st cw1 %d, nCols %d, offset %d\n", cw1, nCols, offset);
 
 		if (nCols == -1) {
 			int calcOffset = offset;
 			next = view.subView(calcOffset, CHAR_LEN);
-			//printf("  1st calc next"); for (int i = 0; i < Size(next); i++) { printf(" %d", next[i]); } printf("\n");
+			//fprintf(stderr, "  1st calc next"); for (int i = 0; i < Size(next); i++) { fprintf(stderr, " %d", next[i]); } fprintf(stderr, "\n");
 			if ((cw2 = DecodeCodeword(next, cluster)) != -1) {
 				calcOffset += next.size();
 				next = view.subView(calcOffset, RAP_CHAR_LEN);
@@ -253,98 +253,98 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 				} else if ((crap = DetectCRAPCode(next)) != -1) {
 					nCols = 4;
 				} else {
-					printf("  Calc 2/4 cols, no LRAP or CRAP fail\n");
+					//fprintf(stderr, "  Calc 2/4 cols, no LRAP or CRAP fail\n");
 					continue;
 				}
 			} else {
 				next = view.subView(calcOffset, RAP_CHAR_LEN);
 				if ((rrap = DetectLRRAPCode(next)) != -1) {
-					//printf("  Calc 1/3 RRAP detected\n");
+					//fprintf(stderr, "  Calc 1/3 RRAP detected\n");
 					nCols = 1;
 				} else if ((crap = DetectCRAPCode(next)) != -1) {
 					nCols = 3;
 				} else {
-					printf("  Calc 1/3 cols, no LRAP or CRAP fail\n");
+					//fprintf(stderr, "  Calc 1/3 cols, no LRAP or CRAP fail\n");
 					continue;
 				}
 			}
-			//printf("  nCols %d\n", nCols);
+			//fprintf(stderr, "  nCols %d\n", nCols);
 		}
 		if (nCols == 1) {
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((rrap = DetectLRRAPCode(next)) == -1) {
-				printf("  1-col RRAP read fail\n");
+				//fprintf(stderr, "  1-col RRAP read fail\n");
 				continue;
 			}
 		} else if (nCols == 2) {
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw2 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  2-col cw2 read fail\n");
+				//fprintf(stderr, "  2-col cw2 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((rrap = DetectLRRAPCode(next)) == -1) {
-				printf("  2-col RRAP read fail\n");
+				//fprintf(stderr, "  2-col RRAP read fail\n");
 				continue;
 			}
 		} else if (nCols == 3) {
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((crap = DetectCRAPCode(next)) == -1) {
-				printf("  3-col CRAP read fail\n");
+				//fprintf(stderr, "  3-col CRAP read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw2 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  3-col cw2 read fail\n");
+				//fprintf(stderr, "  3-col cw2 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw3 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  3-col cw3 read fail\n");
+				//fprintf(stderr, "  3-col cw3 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((rrap = DetectLRRAPCode(next)) == -1) {
-				printf("  3-col RRAP read fail\n");
+				//fprintf(stderr, "  3-col RRAP read fail\n");
 				continue;
 			}
 		} else { /* nCols == 4 */
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw2 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  4-col cw2 read fail\n");
+				//fprintf(stderr, "  4-col cw2 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((crap = DetectCRAPCode(next)) == -1) {
-				printf("  4-col CRAP read fail\n");
+				//fprintf(stderr, "  4-col CRAP read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw3 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  4-col cw3 read fail\n");
+				//fprintf(stderr, "  4-col cw3 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, CHAR_LEN);
 			if ((cw4 = DecodeCodeword(next, cluster)) == -1) {
-				printf("  4-col cw4 read fail\n");
+				//fprintf(stderr, "  4-col cw4 read fail\n");
 				continue;
 			}
 			offset += next.size();
 			next = view.subView(offset, RAP_CHAR_LEN);
 			if ((rrap = DetectLRRAPCode(next)) == -1) {
-				printf("  4-col RRAP read fail\n");
+				//fprintf(stderr, "  4-col RRAP read fail\n");
 				continue;
 			}
 		}
 		offset += next.size();
-		//printf("  lrap %d, crap %d, rrap %d, cw1 %d, cw2 %d, cw3 %d, cw4 %d\n", lrap, crap, rrap, cw1, cw2, cw3, cw4);
+		//fprintf(stderr, "  lrap %d, crap %d, rrap %d, cw1 %d, cw2 %d, cw3 %d, cw4 %d\n", lrap, crap, rrap, cw1, cw2, cw3, cw4);
 		lraps.push_back(lrap);
 		if (crap != -1) {
 			craps.push_back(crap);
@@ -374,7 +374,7 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 	br = PointI(xEnd, lastRowNumber + 1);
 
 #if 0
-	printf("nCols %d, nRows %d, codeWords (%d):", nCols, nRows, Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { printf(" %d", codeWords[i]); } printf("\n");
+	fprintf(stderr, "nCols %d, nRows %d, codeWords (%d):", nCols, nRows, Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { fprintf(stderr, " %d", codeWords[i]); } fprintf(stderr, "\n");
 #endif
 	if (Size(codeWords) < 7) {
 		return MatrixBarcode(DecoderResult(FormatError("< 7 codewords")), DetectorResult{}, BarcodeFormat::MicroPDF417);
@@ -470,7 +470,7 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 	}
 
 	codeWords.insert(codeWords.begin(), Size(codeWords) + 1);
-	//printf("codeWords (%d)", Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { printf(" %d", codeWords[i]); } printf("\n");
+	//fprintf(stderr, "codeWords (%d)", Size(codeWords)); for (int i = 0; i < Size(codeWords); i++) { fprintf(stderr, " %d", codeWords[i]); } fprintf(stderr, "\n");
 
 	Diagnostics::fmt("  Dimensions: %dx%d (RowsxColumns)\n", nRows, nCols);
 	DecoderResult decoderResult = Pdf417::DecodeCodewords(codeWords, numECCodewords);
@@ -482,7 +482,7 @@ static BarcodeData DecodePure(const BinaryBitmap& image)
 	BarcodeData res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
+		//fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
 		return {};
 	}
 

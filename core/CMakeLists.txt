@@ -137,6 +137,7 @@ set (COMMON_FILES
     src/WriteBarcode.cpp
     src/ZXingCpp.h
     src/ZXingCpp.cpp
+    src/ZXingQt.h
     src/ZXAlgorithms.h
     src/ZXConfig.h
     src/ZXCType.h
@@ -237,6 +238,7 @@ set (PUBLIC_HEADERS
     src/ReaderOptions.h
     src/WriteBarcode.h
     src/ZXingCpp.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingQt.h
     $<$<BOOL:${ZXING_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>
 )
 if (ZXING_READERS)
@@ -732,10 +734,13 @@ if (PROJECT_VERSION)
     set_target_properties(ZXing PROPERTIES SOVERSION ${ZXING_SONAME})
 endif()
 
+# TODO: use FILE_SET HEADERS instead of PUBLIC_HEADER and target_sources, once CMake 3.23+ is required
 set_target_properties(ZXing PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 set(PRECOMPILE_HEADERS ${PUBLIC_HEADERS})
-list(REMOVE_ITEM PRECOMPILE_HEADERS "$<$<BOOL:${ZXING_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>")
+list(REMOVE_ITEM PRECOMPILE_HEADERS
+    "$<$<BOOL:${ZXING_C_API}>:${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingC.h>"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/ZXingQt.h")
 list(APPEND PRECOMPILE_HEADERS "src/BarcodeData.h" "src/Content.h" "src/Range.h")
 if (NOT ZXING_DISABLE_PCH)
     target_precompile_headers(ZXing PRIVATE ${PRECOMPILE_HEADERS})

@@ -236,7 +236,7 @@ static BarcodeData DecodePure(const BinaryBitmap& image)
 	BarcodeData res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
+		//fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
 		return {};
 	}
 

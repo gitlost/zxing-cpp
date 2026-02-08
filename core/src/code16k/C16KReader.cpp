@@ -384,7 +384,7 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 			}
 			int code = DecodeDigit(next);
 			if (code == -1) {
-				fprintf(stderr, "code -1\n");
+				//fprintf(stderr, "code -1\n");
 				next = next.subView(0, START_STOP_CHAR_LEN);
 				if (!DetectRowStopCode(next, Size(rows))) {
 					if (Size(rawCodes) == 5) {
@@ -517,7 +517,7 @@ static BarcodeData DecodePure(const BinaryBitmap& image)
 	BarcodeData res = DetectSymbol(image);
 
 	if (!res.isValid()) {
-		fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
+		//fprintf(stderr, "ERROR: %s\n", res.error.msg().c_str());
 		return {};
 	}
 

@@ -53,10 +53,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 		printf("%s: %s / %s\n", ToString(r.format()).c_str(), r.text().c_str(), ToString(r.error()).c_str());
 #endif
 
-	static int detectedSybols = 0;
-	detectedSybols += Size(res);
-	if (!res.empty() && detectedSybols % 100 == 0)
-		printf("detected barcode symbols: %d\n", detectedSybols);
+	static int detectedSymbols = 0;
+	detectedSymbols += Size(res);
+	if (!res.empty() && detectedSymbols % 100 == 0)
+		printf("detected barcode symbols: %d\n", detectedSymbols);
 
 	return 0;
 }

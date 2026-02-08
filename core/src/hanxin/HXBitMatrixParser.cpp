@@ -302,11 +302,11 @@ static bool getFunctionalInfo(const BitMatrix& image, const int size, int &versi
 					| ((int)image.get(c + 1, 8) << 1) | (int)image.get(c + 2, 8);
 
 	#if 0
-	printf("%s(%d) %s:", __FILE__, __LINE__, __func__);
+	fprintf(stderr, "%s(%d) %s:", __FILE__, __LINE__, __func__);
 	for (int i = 0; i < 7; i++) {
-		printf(" funcInfo[%d] 0x%X", i, funcInfo[i]);
+		fprintf(stderr, " funcInfo[%d] 0x%X", i, funcInfo[i]);
 	}
-	printf("\n");
+	fprintf(stderr, "\n");
 	#endif
 
 	if (!ReedSolomonDecode(GenericGF::HanXinFuncInfo(), funcInfo, 4)) {
@@ -326,25 +326,25 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, int& version, i
 	int size = image.width();
 
 	if (image.height() != size) {
-		printf("%s(%d) %s: image.height() %d != size %d\n", __FILE__, __LINE__, __func__, image.height(), size);
+		//fprintf(stderr, "%s(%d) %s: image.height() %d != size %d\n", __FILE__, __LINE__, __func__, image.height(), size);
 		return {};
 	}
-	//printf("%s(%d) %s: size %d\n", __FILE__, __LINE__, __func__, size);
+	//fprintf(stderr, "%s(%d) %s: size %d\n", __FILE__, __LINE__, __func__, size);
 
 	if (!getFunctionalInfo(image, size, version, ecLevel, mask)) {
-		printf("%s(%d) %s: Fail(getFunctionalInfo)\n", __FILE__, __LINE__, __func__); fflush(stdout);
+		//fprintf(stderr, "%s(%d) %s: Fail(getFunctionalInfo)\n", __FILE__, __LINE__, __func__); fflush(stdout);
 		BitMatrix inverted = image.copy();
 		inverted.rotate180();
 		if (!getFunctionalInfo(inverted, size, version, ecLevel, mask)) {
-			printf("%s(%d) %s: Fail(getFunctionalInfo2)\n", __FILE__, __LINE__, __func__); fflush(stdout);
+			//fprintf(stderr, "%s(%d) %s: Fail(getFunctionalInfo2)\n", __FILE__, __LINE__, __func__); fflush(stdout);
 		}
 		//Diagnostics::put("Fail(RSDecodeFuncInfo)");
 		//return {};
 	}
-	//printf("%s(%d) %s: version %d, ecLevel %d, mask %d\n", __FILE__, __LINE__, __func__, version, ecLevel, mask);
+	//fprintf(stderr, "%s(%d) %s: version %d, ecLevel %d, mask %d\n", __FILE__, __LINE__, __func__, version, ecLevel, mask);
 
 	if (size != version * 2 + 21) {
-		printf("%s(%d) %s: size %d != version %d * 2 + 21\n", __FILE__, __LINE__, __func__, size, version);
+		//fprintf(stderr, "%s(%d) %s: size %d != version %d * 2 + 21\n", __FILE__, __LINE__, __func__, size, version);
 		return {};
 	}
 

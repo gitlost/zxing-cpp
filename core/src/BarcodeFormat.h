@@ -32,15 +32,11 @@
 	X(Code39Std,        'A', 's', "lrw I",   8, ZXING_ENABLE_1D,         "Code 39 Standard") \
 	X(Code39Ext,        'A', 'e', "lr  I",   9, ZXING_ENABLE_1D,         "Code 39 Extended") \
 	X(Code32,           'A', '2', "lr  I", 129, ZXING_ENABLE_1D,         "Code 32") \
-	X(LOGMARS,          'A', 'l', "lr  I",  50, ZXING_ENABLE_1D,         "LOGMARS") \
 	X(PZN,              'A', 'p', "lr  I",  52, ZXING_ENABLE_1D,         "Pharmazentralnummer") \
-	X(VIN,              'A', 'v', "lr  I",  73, ZXING_ENABLE_1D,         "VIN") \
 	X(Code93,           'G', ' ', "lrw I",  25, ZXING_ENABLE_1D,         "Code 93") \
 	X(Code128,          'C', ' ', "lrwGI",  20, ZXING_ENABLE_1D,         "Code 128") \
 	X(ITF,              'I', ' ', "lrw I",   3, ZXING_ENABLE_1D,         "ITF") \
 	X(ITF14,            'I', '4', "lr  I",  89, ZXING_ENABLE_1D,         "ITF-14") \
-	X(Leitcode,         'I', 'l', "lr  I",  21, ZXING_ENABLE_1D,         "Leitcode") \
-	X(Identcode,        'I', 'i', "lr  I",  22, ZXING_ENABLE_1D,         "Identcode") \
 	X(DataBar,          'e', ' ', "lr GR",  29, ZXING_ENABLE_1D,         "DataBar") \
 	X(DataBarOmni,      'e', 'o', "lr GR",  29, ZXING_ENABLE_1D,         "DataBar Omni") \
 	X(DataBarStk,       'e', 's', "lr GR",  79, ZXING_ENABLE_1D,         "DataBar Stacked") \
@@ -61,7 +57,7 @@
 	X(PDF417,           'L', ' ', "mrw  ",  55, ZXING_ENABLE_PDF417,     "PDF417") \
 	X(CompactPDF417,    'L', 'c', "mr   ",  56, ZXING_ENABLE_PDF417,     "Compact PDF417") \
 	X(MicroPDF417,      'L', 'm', "m    ",  84, ZXING_ENABLE_PDF417,     "MicroPDF417") \
-	X(Aztec,            'z', ' ', "mrwG ",  92, ZXING_ENABLE_AZTEC,      "Aztec") \
+	X(Aztec,            'z', ' ', "mr G ",  92, ZXING_ENABLE_AZTEC,      "Aztec") \
 	X(AztecCode,        'z', 'c', "mrwG ",  92, ZXING_ENABLE_AZTEC,      "Aztec Code") \
 	X(AztecRune,        'z', 'r', "mr   ", 128, ZXING_ENABLE_AZTEC,      "Aztec Rune") \
 	X(QRCode,           'Q', ' ', "mrwG ",  58, ZXING_ENABLE_QRCODE,     "QR Code") \
@@ -72,10 +68,10 @@
 	X(DataMatrix,       'd', ' ', "mrwG ",  71, ZXING_ENABLE_DATAMATRIX, "Data Matrix") \
 	X(MaxiCode,         'U', ' ', "mr   ",  57, ZXING_ENABLE_MAXICODE,   "MaxiCode") \
 	/* Add new formats here */ \
-	X(CodablockF,       'O', ' ', "mrw  ",  74, 1,                       "Codablock-F") \
-	X(Code16K,          'K', ' ', "mrwG ",  23, 1,                       "Code 16K") \
-	X(DotCode,          'J', ' ', "mrwG ", 115, 1,                       "DotCode") \
-	X(HanXin,           'h', ' ', "mrw  ", 116, 1,                       "Han Xin") \
+	X(CodablockF,       'O', ' ', "xrw  ",  74, 1,                       "Codablock-F") \
+	X(Code16K,          'K', ' ', "xrwG ",  23, 1,                       "Code 16K") \
+	X(DotCode,          'J', ' ', "xrwG ", 115, 1,                       "DotCode") \
+	X(HanXin,           'h', ' ', "xrw  ", 116, 1,                       "Han Xin") \
 // clang-format on
 
 #define ZX_BCF_ID(SYM, VAR) (((uint8_t)(SYM) << 0) | ((uint8_t)(VAR) << 8))

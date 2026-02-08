@@ -216,7 +216,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 				addCodeword(state, image.get(x, y), result, erasureLocs);
 			}
 			if (erasureLocs.size() > erasureEarlyCutoff && erasureLocs.size() * 2 > result.size()) {
-				fprintf(stderr, "BitMatrixParser::ReadCodewords: fail erasureLocs.size() %d, erasureEarlyCutoff %d, result.size() %d\n", (int) erasureLocs.size(), erasureEarlyCutoff, (int) result.size());
+				//fprintf(stderr, "BitMatrixParser::ReadCodewords: fail erasureLocs.size() %d, erasureEarlyCutoff %d, result.size() %d\n", (int) erasureLocs.size(), erasureEarlyCutoff, (int) result.size());
 				return {};
 			}
 		}
@@ -248,7 +248,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 				addCodeword(state, image.get(x, y), result, erasureLocs);
 			}
 			if (erasureLocs.size() > erasureEarlyCutoff && erasureLocs.size() * 2 > result.size()) {
-				#if 1
+				#if 0
 				fprintf(stderr, " BitMatrixParser::ReadCodewords: fail, erasureLocs.size() %d, erasureEarlyCutoff %d, result.size() %d\n",
 						(int) erasureLocs.size(), erasureEarlyCutoff, (int) result.size());
 				#endif
@@ -268,7 +268,7 @@ ByteArray BitMatrixParser::ReadCodewords(const BitMatrix& image, std::vector<int
 		// TODO: fix erasureLocs
 	}
 	if (erasureLocs.size() > 1 && erasureLocs.size() * 14 > result.size()) { // ~7%
-		fprintf(stderr, " BitMatrixParser::ReadCodewords: fail, erasureLocs.size() %d, result.size() %d\n", (int) erasureLocs.size(), (int) result.size());
+		//fprintf(stderr, " BitMatrixParser::ReadCodewords: fail, erasureLocs.size() %d, result.size() %d\n", (int) erasureLocs.size(), (int) result.size());
 		return {};
 	}
 

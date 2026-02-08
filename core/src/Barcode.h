@@ -34,6 +34,7 @@ class CreatorOptions;
 class ReaderOptions;
 class WriterOptions;
 class Barcode;
+struct BarcodeData;
 
 using Position = QuadrilateralI;
 using Barcodes = std::vector<Barcode>;
@@ -54,7 +55,7 @@ namespace BarcodeExtra {
  */
 class Barcode
 {
-	using Data = struct BarcodeData;
+	using Data = BarcodeData;
 
 	std::shared_ptr<Data> d;
 

@@ -170,8 +170,7 @@ static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const B
 			correctedBits.appendBits(dataWord, codewordSize);
 	}
 
-	//return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
-	return {std::move(correctedBits), numECCodewords * 100 / numCodewords};
+	return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
 }
 
 /**

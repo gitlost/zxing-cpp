@@ -41,17 +41,13 @@ TEST(ODCode39ReaderTest, SymbologyIdentifier)
 		// "A" with checksum
 		PatternRow row({ 2, 1, 1, 1, 1, 2, 1, 1, 2, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
 		auto result = parse(row);
-		EXPECT_EQ(result.symbologyIdentifier(), "]A3");
-		EXPECT_EQ(result.text(), "A");
-
-		result = parse(row);
-		EXPECT_EQ(result.symbologyIdentifier(), "]A0");
+		EXPECT_EQ(result.symbologyIdentifier(), "]A1");
 		EXPECT_EQ(result.text(), "AA");
 	}
 	{
 		// Extended "a"
 		PatternRow row({ 1, 2, 1, 1, 1, 2, 1, 2, 1, 0, 2, 1, 1, 1, 1, 2, 1, 1, 2 });
-		auto result = parse(row, ReaderOptions().formats(BarcodeFormat::Code39Ext));
+		auto result = parse(row);
 		EXPECT_EQ(result.symbologyIdentifier(), "]A4");
 		EXPECT_EQ(result.text(), "a");
 

@@ -56,6 +56,8 @@ namespace {
 	{
 		EXPECT_TRUE(b1.isValid()) << "line:" << line;
 		EXPECT_TRUE(b2.isValid()) << "line:" << line;
+		if (!b1.isValid() || !b2.isValid())
+			return;
 		EXPECT_EQ(b1.symbologyIdentifier(), b2.symbologyIdentifier()) << "line:" << line;
 		EXPECT_EQ(b1.text(TextMode::Plain), b2.text(TextMode::Plain)) << "line:" << line;
 		EXPECT_EQ(ToHex(b1.bytes()), ToHex(b2.bytes())) << "line:" << line;
@@ -308,9 +310,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with DEL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
-		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
+		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("12\17734", cOpts);
 		// HRI not escaped as content type considered "Text" (DEL not recognized)
 		check(__LINE__, barcode, "]A4", "12\17734", "31 32 7F 33 34", false, "]A4\\00002612\17734", "5D 41 34 31 32 7F 33 34",
@@ -326,9 +328,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with SOH & DEL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
-		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
+		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("12\001\17734", cOpts);
 		// HRI escaped as content type considered "Binary" (SOH)
 		check(__LINE__, barcode, "]A4", "12\001\17734", "31 32 01 7F 33 34", false, "]A4\\00002612\001\17734",
@@ -344,9 +346,9 @@ TEST(CreateBarcodeTest, ZintASCII)
 	}
 	{
 		// Extended Code 39 with NUL
-		BarcodeFormat format = BarcodeFormat::Code39;
+		BarcodeFormat format = BarcodeFormat::Code39Ext;
 
-		auto cOpts = CreatorOptions(format, "tryCode39ExtendedMode");
+		auto cOpts = CreatorOptions(format);
 		// HRI escaped as content type considered "Binary" (NUL)
 		Barcode barcode = CreateBarcodeFromText(std::string("12\00034", 5), cOpts);
 		check(__LINE__, barcode, "]A4", std::string("12\00034", 5), "31 32 00 33 34", false,

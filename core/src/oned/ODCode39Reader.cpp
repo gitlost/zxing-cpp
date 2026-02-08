@@ -135,7 +135,7 @@ BarcodeData Code39Reader::decodePattern(int rowNumber, PatternView& next, std::u
 	Error error = _opts.validateOptionalCheckSum() && !hasValidCheckSum ? ChecksumError() : Error();
 
 	// Symbology identifier modifiers ISO/IEC 16388:2007 Annex C Table C.1
-	constexpr const char symbologyModifiers[4] = { '0', '3' /*checksum*/, '4' /*extended*/, '7' /*checksum,extended*/ };
+	constexpr const char symbologyModifiers[4] = { '0', '1' /*checksum*/, '4' /*extended*/, '5' /*checksum,extended*/ };
 	SymbologyIdentifier symbologyIdentifier = {'A', symbologyModifiers[(int)hasValidCheckSum + 2 * (int)hasFullASCII]};
 
 	int xStop = next.pixelsTillEnd();

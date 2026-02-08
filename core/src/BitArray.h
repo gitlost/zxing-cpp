@@ -176,8 +176,7 @@ public:
 			throw std::out_of_range("BitArrayView::peekBits() out of range.");
 		int res = 0;
 		for (auto i = cur; n > 0; --n, i++)
-			if (*i)
-				AppendBit(res, *i);
+			AppendBit(res, *i);
 		return res;
 	}
 

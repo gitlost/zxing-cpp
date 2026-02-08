@@ -64,7 +64,7 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 		_readers.emplace_back(new Aztec::Reader(opts, true));
 #endif
 #if ZXING_ENABLE_PDF417
-	if (opts.hasAnyFormat(PDF417) && !opts.hasFormat(MicroPDF417))
+	if (opts.hasFormat(PDF417)|| opts.hasFormat(CompactPDF417))
 		_readers.emplace_back(new Pdf417::Reader(opts));
 #endif
 #if ZXING_ENABLE_MAXICODE

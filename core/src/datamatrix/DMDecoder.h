@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "CharacterSet.h"
+
 namespace ZXing {
 
 class DecoderResult;

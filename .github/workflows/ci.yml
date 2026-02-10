@@ -35,20 +35,20 @@ jobs:
     - name: Configure
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_TEST_DOTNET=ON -DZXING_TEST_INSTALL=ON -DZXING_UNIT_TESTS=ON -DZXING_PYTHON_MODULE=ON
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
 
-    # - name: Set PATH for Tests
-    #   shell: bash # to make the $GITHUB_PATH update work
-    #   if: runner.os == 'Windows'
-    #   run: |
-    #     echo "${GITHUB_WORKSPACE}/build/core/${BUILD_TYPE}" >> $GITHUB_PATH
-    #     echo "${GITHUB_WORKSPACE}/build/lib/${BUILD_TYPE}" >> $GITHUB_PATH
+    - name: Set PATH for Tests
+      shell: bash # to make the $GITHUB_PATH update work
+      if: runner.os == 'Windows'
+      run: |
+        echo "${GITHUB_WORKSPACE}/build/core/${BUILD_TYPE}" >> $GITHUB_PATH
+        echo "${GITHUB_WORKSPACE}/build/bin/${BUILD_TYPE}" >> $GITHUB_PATH
+        cp "${GITHUB_WORKSPACE}/build/core/Release/ZXing.dll" "${GITHUB_WORKSPACE}/build/wrappers/python/Release/"
 
     - name: Test
-      if: runner.os != 'Windows' # need to disable ctest on Windows when build as shared library for now
       run: ctest --test-dir build -V -C ${{env.BUILD_TYPE}}
 
     - name: Install
@@ -126,13 +126,19 @@ jobs:
       run: >
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_SHARED_LIBS=ON
         -DZXING_READERS=ON -DZXING_WRITERS=BOTH -DZXING_EXPERIMENTAL_API=ON
-        -DZXING_BLACKBOX_TESTS=ON -DZXING_INSTALL_TEST=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF
+        -DZXING_BLACKBOX_TESTS=ON -DZXING_TEST_INSTALL=ON -DZXING_UNIT_TESTS=OFF -DZXING_PYTHON_MODULE=OFF
 
     - name: Build
       run: cmake --build build -j8 --config ${{env.BUILD_TYPE}}
 
+    - name: Set PATH for Tests
+      shell: bash # to make the $GITHUB_PATH update work
+      if: runner.os == 'Windows'
+      run: |
+        echo "${GITHUB_WORKSPACE}/build/core/${BUILD_TYPE}" >> $GITHUB_PATH
+        echo "${GITHUB_WORKSPACE}/build/bin/${BUILD_TYPE}" >> $GITHUB_PATH
+
     - name: Test
-      if: runner.os != 'Windows' # need to disable ctest on Windows when build as shared library for now
       run: ctest --test-dir build -V -C ${{env.BUILD_TYPE}}
 
     - name: Install
@@ -297,10 +303,7 @@ jobs:
         path: wrappers/python/zxingcpp.*
 
   build-rust:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: wrappers/rust
@@ -321,11 +324,16 @@ jobs:
     - name: Test
       run: cargo test --release --all-features
 
-    # disable for now, as this started to cause random failures like "error: attempt to get status of nonexistent file 'zint/backend/rss.c'"
-    # this is apparently related with the used symlinks
-    # - name: Package
-    #   # --allow-dirty is required on the windows build (but not the ubuntu build?!)
-    #   run: cargo package --verbose --allow-dirty --all-features
+    - name: Package
+      # --allow-dirty is required on the windows build (but not the ubuntu build?!)
+      run: |
+        cargo package --all-features
+        cargo publish --dry-run
+
+    - uses: actions/upload-artifact@v6
+      with:
+        name: rust-artifacts
+        path: wrappers/rust/target/package/*.crate
 
   build-wasm:
     runs-on: ubuntu-latest

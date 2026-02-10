@@ -572,10 +572,6 @@ PYBIND11_MODULE(zxingcpp, m)
 		py::arg("add_quiet_zones") = true
 	);
 
-#ifdef ZXING_USE_ZINT
-	m.attr("use_zint") = true;
-#endif
-
 	py::class_<ImageView>(m, "ImageView", py::buffer_protocol())
 		.def(py::init(&image_view),
 			 py::arg("buffer"),

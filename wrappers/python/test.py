@@ -82,10 +82,8 @@ class TestReadWrite(unittest.TestCase):
 
 		res = zxingcpp.read_barcode(img)
 		self.check_res(res, format, text)
-		if hasattr(zxingcpp, 'use_zint'):
-			self.assertEqual(res.symbology_identifier, "]Q1")
-		else:
-			self.assertEqual(res.symbology_identifier, "]Q2") # ECI 26 (UTF-8) set by "zxing.cpp" `write_barcode()` via `encoding` CharacterSet::UTF8
+		self.assertEqual(res.symbology_identifier, "]Q1")
+		self.assertEqual(res.ec_level, "H")
 		# self.assertEqual(res.position.top_left.x, 4)
 
 		res = zxingcpp.read_barcode(img, formats=[format])

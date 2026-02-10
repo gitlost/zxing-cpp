@@ -264,7 +264,10 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 	if (opts.isPure()) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
 		auto r = FirstOrDefault(reader.read(*bitmap, 1));
-		r.symbol(bitmap->getBitMatrix()->copy());
+		if (r.isValid() && r.d->symbol.empty()) {
+			assert(r.format() & (BarcodeFormat::AllLinear | BarcodeFormat::AllD2 | BarcodeFormat::MicroPDF417));
+			r.symbol(bitmap->getBitMatrix()->copy());
+		}
 		return {r.setReaderOptions(opts)};
 	}
 
@@ -303,7 +306,6 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 					if (!Contains(res, r)) {
 						r.setReaderOptions(opts);
 						r.d->isInverted = bitmap->inverted();
-						r.symbol(bitmap->getBitMatrix()->copy());
 						res.push_back(std::move(r));
 						--maxSymbols;
 					}

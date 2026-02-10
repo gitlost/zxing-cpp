@@ -604,7 +604,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode);
+		check_same(__LINE__, barcode, readBarcode, true /*cmpPosition*/, false /*cmpBits*/);
 #endif
 	}
 	{
@@ -1063,7 +1063,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode);
+		check_same(__LINE__, barcode, readBarcode, true /*cmpPosition*/, false /*cmpBits*/);
 #endif
 	}
 	{
@@ -1078,7 +1078,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode);
+		check_same(__LINE__, barcode, readBarcode, true /*cmpPosition*/, false /*cmpBits*/);
 #endif
 	}
 	{

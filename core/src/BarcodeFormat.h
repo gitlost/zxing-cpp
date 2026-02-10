@@ -27,6 +27,7 @@
 	X(AllGS1,           '*', 'G', "     ",   0, 1,                       "All GS1") \
 	X(AllRetail,        '*', 'R', "     ",   0, 1,                       "All Retail") \
 	X(AllIndustrial,    '*', 'I', "     ",   0, 1,                       "All Industrial") \
+	X(AllD2,            '*', 'x', "     ",   0, 1,                       "All Diagnostics2") \
 	X(Codabar,          'F', ' ', "lrw  ",  18, ZXING_ENABLE_1D,         "Codabar") \
 	X(Code39,           'A', ' ', "lrw I",   8, ZXING_ENABLE_1D,         "Code 39") \
 	X(Code39Std,        'A', 's', "lrw I",   8, ZXING_ENABLE_1D,         "Code 39 Standard") \

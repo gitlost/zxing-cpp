@@ -619,7 +619,16 @@ static Barcode CreateBarcode(BitMatrix&& bits, std::string_view contents, const 
 
 Barcode CreateBarcodeFromText(std::string_view contents, const CreatorOptions& opts)
 {
+#ifdef _MSC_VER
+#pragma warning(suppress : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	auto writer = MultiFormatWriter(opts.format()).setMargin(0);
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif
 	if (auto ecLevel = opts.ecLevel(); ecLevel && ecLevel->size() == 1 && strchr("012345678", (*ecLevel)[0]))
 		writer.setEccLevel(std::stoi(*ecLevel));
 	if (!IsAscii({(const uint8_t*)contents.data(), contents.size()}))
@@ -639,7 +648,16 @@ Barcode CreateBarcodeFromBytes(const void* data, int size, const CreatorOptions&
 	for (uint8_t c : ByteView(data, size))
 		bytes.push_back(c);
 
+#ifdef _MSC_VER
+#pragma warning(suppress : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 	auto writer = MultiFormatWriter(opts.format()).setMargin(0);
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif
 	if (auto ecLevel = opts.ecLevel(); ecLevel && ecLevel->size() == 1 && strchr("012345678", (*ecLevel)[0]))
 		writer.setEccLevel(std::stoi(*ecLevel));
 	writer.setEncoding(CharacterSet::BINARY);

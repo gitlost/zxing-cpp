@@ -56,11 +56,11 @@ static CharacterSetName NAME_TO_CHARSET[] = {
 	{"US-ASCII",	CharacterSet::ASCII},
 	{"Big5",		CharacterSet::Big5},
 	{"GB2312",		CharacterSet::GB2312},
-	{"GB18030",		CharacterSet::GB18030},
-	{"EUC-CN",		CharacterSet::GB18030},
 	{"GBK",			CharacterSet::GBK},
+	{"GB18030",		CharacterSet::GB18030},
+	{"EUC-JP",		CharacterSet::EUC_JP},
 	{"EUC-KR",		CharacterSet::EUC_KR},
-	{"ISO646_Inv",	CharacterSet::ISO646_Inv},
+	{"ISO646-Inv",	CharacterSet::ISO646_Inv},
 	{"BINARY",		CharacterSet::BINARY},
 };
 

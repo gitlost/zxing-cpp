@@ -34,13 +34,17 @@ using namespace ZXing;
 static void PrintUsage(const char* exePath)
 {
 	std::cout << "Usage: " << exePath
-			  << " [-options <creator-options>] [-scale <factor>] [-binary] [-noqz] [-hrt] [-invert] <format> <text> <output>\n"
+#ifdef ZXING_USE_ZINT
+			  << " [-options <creator-options>] [-scale <factor>] [-rotate <angle>] [-binary] [-noqz] [-hrt] [-invert] [-verbose] [-bytes] [-escape] <format> <text> [<output>]\n"
+#else
+			  << " [-options <creator-options>] [-scale <factor>] [-encoding <charset>] [-rotate <angle>] [-binary] [-noqz] [-hrt] [-invert] [-escape] <format> <text> [<output>]\n"
+#endif
 			  << "    -options   Comma separated list of format specific options and flags\n"
-			  << "    -scale     module size of generated image / negative numbers mean 'target size in pixels'\n"
+			  << "    -scale     Module size of generated image / negative numbers mean 'target size in pixels'\n"
 #ifndef ZXING_USE_ZINT
 			  << "    -encoding  Encoding used to encode input text\n"
 #endif
-			  << "    -rotate	 Rotate image by given angle (90, 180 or 270)\n"
+			  << "    -rotate    Rotate image by given angle (90, 180 or 270)\n"
 //			  << "    -encoding  Encoding used to encode input text\n"
 			  << "    -binary    Interpret <text> as a file name containing binary data\n"
 			  << "    -noqz      Print barcode without quiet zone\n"
@@ -50,21 +54,25 @@ static void PrintUsage(const char* exePath)
 			  << "    -verbose   Print barcode information\n"
 			  << "    -bytes     Encode input text as-is\n"
 #endif
-			  << "    -escape    Process escape sequences (2-digit \"\\xXX\" and \"\\\\\")\n"
+			  << "    -escape    Process escape sequences (2-digit \"\\xXX\", 3-digit \"\\oNNN\" and \"\\\\\")\n"
 			  << "    -help      Print usage information\n"
 			  << "    -version   Print version information\n"
 			  << "\n"
-			  << "Supported formats are (Symbology : Variants):";
+			  << "Supported formats are:";
 	for (auto f : BarcodeFormats::list(BarcodeFormat::AllCreatable)) {
-		if (Symbology(f) == f || f == BarcodeFormat::DXFilmEdge)
-			std::cout << "\n " << std::setw(13) << ToString(f) << " : ";
-		else
-			std::cout << ToString(f) << ", ";
+		std::cout << " " << ToString(f) << " |";
 	}
-	std::cout << "\n\n";
+	std::cout << "\n";
 
 	std::cout << "Format can be lowercase letters, with or without any of ' -_/'.\n"
 			  << "Output format is determined by file name, supported are png, jpg and svg.\n";
+#ifndef ZXING_USE_ZINT
+	std::cout << "Supported encodings are:";
+	for (int i = 1; i < int(CharacterSet::CharsetCount); i++) {
+		std::cout << " " << ToString(static_cast<CharacterSet>(i)) << " |";
+	}
+	std::cout << "\n";
+#endif
 }
 
 struct CLI
@@ -73,7 +81,7 @@ struct CLI
 	int scale = 0;
 	int rotate = 0;
 	std::string input;
-	std::string outPath;
+	std::string outPath = "zxingwriter_out.png";
 	std::string options;
 	bool inputIsFile = false;
 	bool invert = false;
@@ -102,7 +110,8 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 		} else if (is("-encoding")) {
 			if (++i == argc)
 				return false;
-			cli.encoding = CharacterSetFromString(argv[i]);
+			if ((cli.encoding = CharacterSetFromString(argv[i])) == CharacterSet::Unknown)
+				return false;
 #endif
 #ifdef ZXING_USE_ZINT
 		} else if (is("-bytes")) {
@@ -153,7 +162,7 @@ static bool ParseOptions(int argc, char* argv[], CLI& cli)
 		}
 	}
 
-	return nonOptArgCount == 3;
+	return nonOptArgCount >= 2;
 }
 
 static std::string GetExtension(const std::string& path)
@@ -193,15 +202,23 @@ static std::string escape(std::string_view input)
 	std::string output;
 	output.reserve(input.size());
 	auto xtoi = [&](const char ch) { return ch <= '9' && ch >= '0' ? ch - '0' : ch >= 'A' && ch <= 'F' ? ch - 'A' + 10 : ch - 'a' + 10; };
+	auto isodigit = [&](const char ch) { return ch <= '7' && ch >= '0'; };
+	auto otoi = [&](const char ch) { return ch - '0'; };
+                               /* NUL   EOT   BEL   BS    HT    LF    VT    FF    CR    ESC   GS    RS   \ */
+    static const char escs[] = {  '0',  'E',  'a',  'b',  't',  'n',  'v',  'f',  'r',  'e',  'G',  'R', '\\', '\0' };
+    static const char vals[] = { 0x00, 0x04, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x1B, 0x1D, 0x1E, 0x5C };
 
 	for (int i = 0, len = input.size(); i < len; i++) {
 		if (input[i] == '\\') {
+			const char *esc_ch;
 			if (++i == len)
 				throw std::runtime_error("single backslash at end");
-			if (input[i] == '\\')
-				output.push_back('\\');
-			else if (i + 2 < len && (input[i] == 'X' || input[i] == 'x') && std::isxdigit(input[i + 1]) && std::isxdigit(input[i + 2]))
+			if ((esc_ch = strchr(escs, input[i])) != NULL)
+				output.push_back(vals[esc_ch - escs]);
+			else if (i + 2 < len && input[i] == 'x' && std::isxdigit(input[i + 1]) && std::isxdigit(input[i + 2]))
 				output.push_back((xtoi(input[i + 1]) << 4) | xtoi(input[i + 2])), i += 2;
+			else if (i + 3 < len && input[i] == 'o' && isodigit(input[i + 1]) && isodigit(input[i + 2]) && isodigit(input[i + 3]))
+				output.push_back((otoi(input[i + 1]) << 6) | (otoi(input[i + 2]) << 3) | otoi(input[i + 3])), i += 3;
 			else
 				throw std::runtime_error("invalid escape sequence " + std::string(input.data() + i - 1));
 		} else
@@ -273,7 +290,16 @@ int main(int argc, char* argv[])
 			std::cout << WriteBarcodeToUtf8(barcode);
 		}
 #else // 'old' writer API (non zint based)
+#ifdef _MSC_VER
+#pragma warning(suppress : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 		auto writer = MultiFormatWriter(cli.format).setMargin(cli.addQZs ? 10 : 0);
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif
 
 		BitMatrix matrix;
 		if (cli.inputIsFile) {

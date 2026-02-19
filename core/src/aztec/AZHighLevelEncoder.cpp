@@ -85,7 +85,7 @@ static const std::array<std::array<int8_t, 256>, 5>& InitCharMap()
 	charmap[MODE_DIGIT]['.'] = 13;
 	constexpr int8_t mixedTable[] = {
 		0x00, 0x20, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
-		0x0d, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x40, 0x5c, 0x5e, 0x5f, 0x60, 0x7c, 0x7d, 0x7f,
+		0x0d, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x40, 0x5c, 0x5e, 0x5f, 0x60, 0x7c, 0x7e, 0x7f,
 	};
 	for (int i = 0; i < Size(mixedTable); i++) {
 		charmap[MODE_MIXED][mixedTable[i]] = i;
@@ -119,6 +119,22 @@ static const std::array<std::array<int8_t, 6>, 6>& InitShiftTable()
 }
 
 const std::array<std::array<int8_t, 6>, 6>& SHIFT_TABLE = InitShiftTable();
+
+#if 0
+#define AZ_DEBUG_LIST
+#endif
+#ifndef AZ_DEBUG_LIST
+static void az_dump_states(const std::list<EncodingState>& states, const std::string &prefix = "") { (void)states, (void)prefix; }
+#else
+static void az_dump_states(const std::list<EncodingState>& states, const std::string &prefix = "") {
+	static char spaces[50 + 1] = "                                                  ";
+	const int plen = int(prefix.length());
+	fprintf(stderr, "%sSize %d\n", prefix.c_str(), Size(states));
+	int i = 0;
+	for (auto s : states)
+		fprintf(stderr, "%.*s %d: mode %d, Size(tokens) %d\n", plen, spaces, i++, s.mode, Size(s.tokens));
+}
+#endif
 
 // Create a new state representing this state with a latch to a (not
 // necessary different) mode, and then a code.
@@ -216,6 +232,21 @@ static bool IsBetterThanOrEqualTo(const EncodingState& state, const EncodingStat
 	return newModeBitCount <= other.bitCount;
 }
 
+#if 1
+#define AZ_DEBUG_BA
+#endif
+#ifndef AZ_DEBUG_BA
+static void az_dump_ba(const BitArray &ba) { (void)ba; }
+#else
+static void az_dump_ba(const BitArray &ba)
+{
+	fprintf(stderr,  "bits (%d): ", Size(ba));
+	for (int i = 0; i < Size(ba); i++)
+		fputc(ba.get(i) ? '1' : '0', stderr);
+	fputc('\n', stderr);
+}
+#endif
+
 static BitArray ToBitArray(const EncodingState& state, const std::string& text)
 {
 	auto endState = EndBinaryShift(state, Size(text));
@@ -225,6 +256,7 @@ static BitArray ToBitArray(const EncodingState& state, const std::string& text)
 		symbol.appendTo(bits, text);
 	}
 	//assert bitArray.getSize() == this.bitCount;
+	az_dump_ba(bits);
 	return bits;
 }
 
@@ -253,6 +285,7 @@ static void UpdateStateForPair(const EncodingState& state, int index, int pairCo
 
 static std::list<EncodingState> SimplifyStates(const std::list<EncodingState>& states)
 {
+	az_dump_states(states, " SS in  ");
 	std::list<EncodingState> result;
 	for (auto& newState : states) {
 		bool add = true;
@@ -273,6 +306,7 @@ static std::list<EncodingState> SimplifyStates(const std::list<EncodingState>& s
 			result.push_back(newState);
 		}
 	}
+	az_dump_states(result, " SS out ");
 	return result;
 }
 
@@ -346,6 +380,9 @@ static std::list<EncodingState> UpdateStateListForChar(const std::list<EncodingS
 BitArray
 HighLevelEncoder::Encode(const std::string& text)
 {
+#ifdef AZ_DEBUG_LIST
+	fprintf(stderr, "txt length %d\n", int(text.length()));
+#endif
 	std::list<EncodingState> states;
 	states.push_back(EncodingState{ std::vector<Token>(), MODE_UPPER, 0, 0 });
 	for (int index = 0; index < Size(text); index++) {
@@ -358,6 +395,9 @@ HighLevelEncoder::Encode(const std::string& text)
 		case ':': pairCode = nextChar == ' ' ? 5 : 0; break;
 		default: pairCode = 0;
 		}
+#ifdef AZ_DEBUG_LIST
+		fprintf(stderr, "index %d\n", index);
+#endif
 		if (pairCode > 0) {
 			// We have one of the four special PUNCT pairs.  Treat them specially.
 			// Get a new set of states for the two new characters.
@@ -368,6 +408,7 @@ HighLevelEncoder::Encode(const std::string& text)
 			states = UpdateStateListForChar(states, text, index);
 		}
 	}
+	az_dump_states(states, "End ");
 	// We are left with a set of states.  Find the shortest one.
 	EncodingState minState = *std::min_element(states.begin(), states.end(), [](const EncodingState& a, const EncodingState& b) { return a.bitCount < b.bitCount; });
 	// Convert it to a bit array, and return.

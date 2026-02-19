@@ -224,7 +224,16 @@ TEST(QRWriterTest, LibreOfficeQrCodeGenDialog)
 "                                                                              \n"
 		);
 #else
+#ifdef _MSC_VER
+#pragma warning(suppress : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
 		auto writer = MultiFormatWriter(format).setMargin(aQRBorder).setEccLevel(bqrEcc);
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif
 		writer.setEncoding(CharacterSet::UTF8);
 		BitMatrix bitmatrix = writer.encode(QRText, 0, 0);
 		auto actual = ToString(bitmatrix, 'X', ' ', true);

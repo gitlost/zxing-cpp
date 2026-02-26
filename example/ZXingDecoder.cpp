@@ -237,8 +237,23 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 			std::istringstream input(opt);
 			for (std::string token; std::getline(input, token, ',');) {
 				if (!token.empty()) {
-					std::cerr << "Unknown opts '" << token << "'\n";
-					return false;
+					if (token == "trycode39extendedmode" || token == "code39extendedmode") {
+#ifdef _MSC_VER
+#pragma warning(suppress : 4996)
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+						opts.setTryCode39ExtendedMode(true);
+#ifndef _MSC_VER
+#pragma GCC diagnostic pop
+#endif
+					} else if (token == "validateoptionalchecksum") {
+						opts.setValidateOptionalChecksum(true);
+					} else {
+						std::cerr << "Unknown opts '" << token << "'\n";
+						return false;
+					}
 				}
 			}
 

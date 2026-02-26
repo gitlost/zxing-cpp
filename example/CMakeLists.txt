@@ -34,6 +34,9 @@ if (ZXING_READERS)
     endif()
 endif()
 
+add_executable (ZXingBarcodeFormat ZXingBarcodeFormat.cpp)
+target_link_libraries (ZXingBarcodeFormat ZXing::ZXing)
+
 if (ZXING_EXAMPLE_DECODER AND ZXING_READERS)
     add_executable (ZXingDecoder ZXingDecoder.cpp)
 

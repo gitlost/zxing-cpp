@@ -1622,7 +1622,7 @@ static int gs1_packagetype(const unsigned char *data, int data_len, int offset, 
 static int gs1_predefined_len(const unsigned char source[]) {
     const int ai2 = z_to_int(source, 2); /* First 2 digits */
 
-    /* NOTE: previously allowed legacy 23, removed 2026-02-25 */
+    /* NOTE: previously allowed legacy 23, removed 2026-02-26 */
     return (ai2 >= 0 && ai2 <= 4) || (ai2 >= 11 && ai2 <= 20) || (ai2 >= 31 && ai2 <= 36) || ai2 == 41;
 }
 

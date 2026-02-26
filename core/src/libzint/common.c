@@ -1014,6 +1014,9 @@ INTERNAL int z_ct_cpy_cat(struct zint_symbol *symbol, const unsigned char source
     if (z_ct_init_segs(symbol, 1 /*seg_count*/) || ct_init_seg_source(symbol, 0 /*seg_idx*/, total_length)) {
         return ZINT_ERROR_MEMORY; /* `z_ct_init_segs()` & `ct_init_seg_source()` only fail with OOM */
     }
+#ifdef ZINT_SANITIZEM /* Suppress clang-22 -fsanitize=memory false positive (seems unable to track `*s++ =`) */
+    memset(symbol->content_segs[0].source, 0, total_length);
+#endif
     s = symbol->content_segs[0].source;
     if (length > 0) {
         memcpy(s, source, (size_t) length);
@@ -1045,6 +1048,9 @@ INTERNAL int z_ct_cpy_iso8859_1(struct zint_symbol *symbol, const unsigned char 
     if (z_ct_init_segs(symbol, 1 /*seg_count*/) || ct_init_seg_source(symbol, 0 /*seg_idx*/, length + iso_cnt)) {
         return ZINT_ERROR_MEMORY; /* `z_ct_init_segs()` & `ct_init_seg_source()` only fail with OOM */
     }
+#ifdef ZINT_SANITIZEM /* Suppress clang-22 -fsanitize=memory false positive (seems unable to track `*s++ =`) */
+    memset(symbol->content_segs[0].source, 0, length + iso_cnt);
+#endif
     s = symbol->content_segs[0].source;
 
     for (i = 0; i < length; i++) {

@@ -15,9 +15,9 @@
 #include "ZXAlgorithms.h"
 #include "ZXCType.h"
 
-#if !defined(ZXING_READERS) && !defined(ZXING_WRITERS)
 #include "Version.h"
-#endif
+
+#include <cassert>
 
 namespace ZXing {
 

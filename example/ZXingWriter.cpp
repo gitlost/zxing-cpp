@@ -13,8 +13,10 @@
 #include "Utf.h"
 #else
 #include "BitMatrixIO.h"
+#include "ByteArray.h"
 #include "CharacterSet.h"
 #include "MultiFormatWriter.h"
+#include "TextDecoder.h"
 #endif
 #include "BitMatrix.h"
 
@@ -318,7 +320,11 @@ int main(int argc, char* argv[])
 		} else {
 			if (cli.escape)
 				cli.input = escape(cli.input);
-			writer.setEncoding(cli.encoding != CharacterSet::Unknown ? cli.encoding : CharacterSet::UTF8);
+			if (cli.encoding == CharacterSet::Unknown)
+				cli.encoding = CharacterSet::UTF8;
+			writer.setEncoding(cli.encoding);
+			if (cli.encoding != CharacterSet::UTF8)
+				cli.input = BytesToUtf8(ByteArray(cli.input), ToECI(cli.encoding));
 			matrix = writer.encode(cli.input, cli.scale, std::clamp(cli.scale / 2, 50, 300));
 		}
 		auto bitmap = ToMatrix<uint8_t>(matrix);

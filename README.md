@@ -11,17 +11,13 @@ It was originally ported from the Java [ZXing library](https://github.com/zxing/
 * Written in pure C++20 (public API is C++17 compatible), no third-party dependencies (for the library itself)
 * Thread safe
 * Wrappers/Bindings for:
-  * [Android](wrappers/android/README.md)
-  * [C](wrappers/c/README.md)
-  * [iOS](wrappers/ios/README.md)
-  * [Kotlin/Native](wrappers/kn/README.md)
-  * [.NET](wrappers/dotnet/README.md)
-  * [Python](wrappers/python/README.md)
-  * [Qt](wrappers/qt/README.md)
-  * [Rust](wrappers/rust/README.md)
-  * [WebAssembly](wrappers/wasm/README.md)
-  * [WinRT](wrappers/winrt/README.md)
-  * [Flutter](https://pub.dev/packages/flutter_zxing) (external project)
+
+    | | | |
+    |:-|:-|:-|
+    | [Android](wrappers/android/README.md) | [C](wrappers/c/README.md) | [Go](wrappers/go/README.md) |
+    | [iOS](wrappers/ios/README.md) | [Kotlin/Native](wrappers/kn/README.md) | [.NET](wrappers/dotnet/README.md) |
+    | [Python](wrappers/python/README.md) | [Qt](wrappers/qt/README.md) | [Rust](wrappers/rust/README.md) |
+    | [WebAssembly](wrappers/wasm/README.md) | [WinRT](wrappers/winrt/README.md) | [Flutter](https://pub.dev/packages/flutter_zxing) (external project) |
 
 ## Supported Formats
 
@@ -58,6 +54,7 @@ You can sponsor this library at [GitHub Sponsors](https://github.com/sponsors/ax
 
 | | Named Sponsors: |
 |:-:|:-|
+| [![jknlsn](https://avatars.githubusercontent.com/u/9172090?s=32)](https://github.com/jknlsn) | [Jake Nelson](https://github.com/jknlsn) |
 | [![KURZ](https://avatars.githubusercontent.com/u/25196688?s=32)](https://github.com/kurzdigital) | [KURZ Digital Solutions GmbH & Co. KG](https://github.com/kurzdigital) |
 | [![Moonshine AI](https://avatars.githubusercontent.com/u/98664891?s=32)](https://github.com/moonshine-ai) | [Moonshine AI](https://github.com/moonshine-ai) |
 | [![SAP](https://avatars.githubusercontent.com/u/2531208?s=32)](https://www.sap.com/germany/about/company/innovation/open-source.html) | [SAP (Open Source Program Office)](https://www.sap.com/germany/about/company/innovation/open-source.html) |

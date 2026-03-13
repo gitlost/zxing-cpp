@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.16)
 
 
-set (CMAKE_CXX_COMPILER /usr/bin/clang++) # -fsanitize=fuzzer only available in clang
+#set (CMAKE_CXX_COMPILER /usr/bin/clang++) # -fsanitize=fuzzer only available in clang
 
 project (ZXingFuzz)
 

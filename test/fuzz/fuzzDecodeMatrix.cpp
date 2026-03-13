@@ -17,15 +17,15 @@
 using namespace ZXing;
 
 namespace ZXing::Aztec {
-DecoderResult Decode(const BitArray& bits);
+DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset);
 }
 
 namespace ZXing::DataMatrix::DecodedBitStreamParser {
-DecoderResult Decode(ByteArray&& bytes, const bool isDMRE);
+DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet optionsCharset);
 }
 
 namespace ZXing::QRCode {
-DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel);
+DecoderResult DecodeBitStream(ByteArray&& bytes, const Version& version, ErrorCorrectionLevel ecLevel, const CharacterSet optionsCharset = CharacterSet::Unknown);
 }
 
 void az(const uint8_t* data, size_t size)
@@ -36,7 +36,7 @@ void az(const uint8_t* data, size_t size)
 
 	bits.appendBits(data[size - 1], (data[0] & 0x7) + 1);
 
-	Aztec::Decode(bits);
+	Aztec::Decode(bits, CharacterSet::Unknown);
 }
 
 void dm(const uint8_t* data, size_t size)
@@ -44,7 +44,7 @@ void dm(const uint8_t* data, size_t size)
 	ByteArray ba;
 	ba.insert(ba.begin(), data, data + size);
 	try {
-		DataMatrix::DecodedBitStreamParser::Decode(std::move(ba), false);
+		DataMatrix::DecodedBitStreamParser::Decode(std::move(ba), false, CharacterSet::Unknown);
 	} catch (...) {
 	}
 }

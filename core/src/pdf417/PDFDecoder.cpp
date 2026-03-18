@@ -94,21 +94,28 @@ static bool TerminatesCompaction(int code)
 **/
 static int ProcessECI(const std::vector<int>& codewords, int codeIndex, const int length, const int code, Content& result)
 {
-	if (codeIndex < length && IsECI(code)) {
-		if (code == ECI_CHARSET) {
-			int eci = codewords[codeIndex++];
-			result.switchEncoding(ECI(eci));
-			Diagnostics::fmt("ECI(%d,CS)", eci);
-		} else if (code == ECI_GENERAL_PURPOSE) {
-			// Don't currently handle non-character set ECIs so just ignore
+	if (!IsECI(code))
+		return codeIndex;
+
+	if (codeIndex >= length)
+		return codeIndex; // throw FormatError(); TODO: check why there are unit tests that expect this to be silently ignored
+
+	if (code == ECI_CHARSET) {
+		const int eci = codewords[codeIndex++];
+		result.switchEncoding(ECI(eci));
+		Diagnostics::fmt("ECI(%d,CS)", eci);
+	} else {
+		int paramCount = code == ECI_GENERAL_PURPOSE ? 2 : 1;
+		if (codeIndex + paramCount > length)
+			return codeIndex; // throw FormatError(); TODO: check why there are unit tests that expect this to be silently ignored
+		if (code == ECI_GENERAL_PURPOSE) {
 			int eci = (codewords[codeIndex] + 1) * 900 + (codeIndex + 1 < length ? codewords[codeIndex + 1] : 0);
-			codeIndex += 2;
 			Diagnostics::fmt("ECI(%d,GP)", eci);
 		} else {
-			// Don't currently handle non-character set ECIs so just ignore
 			int eci = codewords[codeIndex++] + 810900;
-			Diagnostics::fmt("ECI(%d)", eci);
+			Diagnostics::fmt("ECI(%d,GP)", eci);
 		}
+		codeIndex += paramCount; // Don't currently handle non-character set ECIs so just ignore
 	}
 
 	return codeIndex;
@@ -690,6 +697,10 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, PDF417Cus
 DecoderResult Decode(const std::vector<int>& codewords)
 {
 	Diagnostics::fmt("  Codewords:  (%d)", Size(codewords)); Diagnostics::dump(codewords, "\n");
+
+	if (codewords.empty() || codewords[0] < 1 || codewords[0] > Size(codewords))
+		return FormatError();
+
 	Content result;
 	result.symbology = {'L', '2', -1};
 	result.defaultCharset = CharacterSet::ISO8859_1;

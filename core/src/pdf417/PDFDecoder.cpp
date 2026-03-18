@@ -112,7 +112,7 @@ static int ProcessECI(const std::vector<int>& codewords, int codeIndex, const in
 			int eci = (codewords[codeIndex] + 1) * 900 + (codeIndex + 1 < length ? codewords[codeIndex + 1] : 0);
 			Diagnostics::fmt("ECI(%d,GP)", eci);
 		} else {
-			int eci = codewords[codeIndex++] + 810900;
+			int eci = codewords[codeIndex] + 810900;
 			Diagnostics::fmt("ECI(%d,GP)", eci);
 		}
 		codeIndex += paramCount; // Don't currently handle non-character set ECIs so just ignore

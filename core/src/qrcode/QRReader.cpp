@@ -88,16 +88,11 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 
 			logFPSet(fpSet);
 
-			auto detectorResult = SampleQR(*binImg, fpSet);
-			if (detectorResult.isValid()) {
-#if 0
-				auto decoderResult = Decode(detectorResult.bits(), _opts.characterSet());
-#else
+			for (auto&& detectorResult: SampleQR(*binImg, fpSet)) {
 				auto decoderResult = Decode(detectorResult.bits(), _opts.characterSet());
 				if ((decoderResult.content().symbology.modifier == '0' && !_opts.hasFormat(BarcodeFormat::QRCodeModel1))
 					|| (decoderResult.content().symbology.modifier == '1' && !_opts.hasFormat(BarcodeFormat::QRCodeModel2)))
 					continue;
-#endif
 				if (decoderResult.isValid()) {
 					usedFPs.push_back(fpSet.bl);
 					usedFPs.push_back(fpSet.tl);
@@ -105,10 +100,13 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 				}
 				if (decoderResult.isValid(_opts.returnErrors())) {
 					res.emplace_back(MatrixBarcode(std::move(decoderResult), std::move(detectorResult), BarcodeFormat::QRCode));
-					if (maxSymbols && Size(res) == maxSymbols)
+					// if we found a valid symbol, we stop the inner loop
+					if (res.back().isValid() || (maxSymbols && Size(res) == maxSymbols))
 						break;
 				}
 			}
+			if (maxSymbols && Size(res) == maxSymbols)
+				break;
 		}
 	}
 	

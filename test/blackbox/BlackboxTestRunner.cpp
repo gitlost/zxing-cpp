@@ -404,12 +404,12 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 21, 21, 270 },
 		});
 
-		runTests("datamatrix-1", DataMatrix, 29, {
+		runTests("datamatrix-1", DataMatrix, 30, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
-			{ 29, 29, 0   },
-			{  0, 27, 90  },
-			{  0, 27, 180 },
-			{  0, 27, 270 },
+			{ 30, 30, 0   },
+			{  0, 28, 90  },
+			{  0, 28, 180 },
+			{  0, 28, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
 			{ 28, 0, pure },
 		});
@@ -421,11 +421,11 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{  0, 13, 270 },
 		});
 
-		runTests("datamatrix-3", DataMatrix, 21, {
-			{ 20, 21, 0   },
-			{  0, 21, 90  },
-			{  0, 21, 180 },
-			{  0, 21, 270 },
+		runTests("datamatrix-3", DataMatrix, 22, {
+			{ 21, 22, 0   },
+			{  0, 22, 90  },
+			{  0, 22, 180 },
+			{  0, 22, 270 },
 		});
 
 		runTests("datamatrix-4", DataMatrix, 21, {

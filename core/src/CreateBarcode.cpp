@@ -58,8 +58,6 @@ struct CreatorOptions::Data
 
 ZX_PROPERTY(BarcodeFormat, format)
 ZX_PROPERTY(std::string, options)
-#ifdef ZXING_USE_ZINT
-#endif
 
 #undef ZX_PROPERTY
 

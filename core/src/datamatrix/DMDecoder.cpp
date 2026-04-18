@@ -18,6 +18,7 @@
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
 #include "ZXAlgorithms.h"
+#include "ZXCType.h"
 #include "ZXTestSupport.h"
 
 #include <algorithm>
@@ -351,13 +352,18 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 				// and a shift)
 				if (bits.byteOffset() == firstFNC1Position) {
 					result.symbology.modifier = '2'; // GS1
-					Diagnostics::put("FNC1(GS1)");
-				} else if (bits.byteOffset() == firstFNC1Position + 1) {
-					result.symbology.modifier = '3'; // AIM, note no AIM Application Indicator format defined, ISO 16022:2006 11.2
-					Diagnostics::put("FNC1(2ndPos)");
+					Diagnostics::put("=FNC1(GS1)");
+				// 2nd position AIM, note no AIM Application Indicator format defined in ISO/IEC 16022:2006 11.2
+				// however Code 128 (FNC1-originator) says in ISO/IEC 15417:2007 Annex B.2 that permissible characters are
+				// A-Z, a-z and 00-99 so enforcing that here
+				} else if (bits.byteOffset() == firstFNC1Position + 1
+							&& ((Size(result.bytes) == 1 && zx_isalpha(result.bytes[0]))
+								|| (Size(result.bytes) == 2 && zx_isdigit(result.bytes[0]) && zx_isdigit(result.bytes[1])))) {
+					result.symbology.modifier = '3';
+					Diagnostics::put("=FNC1(2ndPos)");
 				} else {
 					result.push_back((char)29); // translate as ASCII 29 <GS>
-					Diagnostics::put("FNC1(29)");
+					Diagnostics::put("=FNC1(29)");
 				}
 				break;
 			case 233: // Structured Append

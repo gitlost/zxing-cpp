@@ -14,6 +14,7 @@ namespace ZXing {
  */
 static inline int zx_isupper(uint32_t u) { return u >= 'A' && u <= 'Z'; }
 static inline int zx_islower(uint32_t u) { return u >= 'a' && u <= 'z'; }
+static inline int zx_isalpha(uint32_t u) { return zx_isupper(u) || zx_islower(u); }
 static inline int zx_isdigit(uint32_t u) { return u <= '9' && u >= '0'; }
 static inline int zx_isspace(uint32_t u) { return u == ' ' || (u <= '\r' && u >= '\t'); }
 static inline int zx_isascii(uint32_t u) { return (u & 0x7F) == u; }

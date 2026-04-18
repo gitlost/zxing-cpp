@@ -25,6 +25,7 @@ class Code128Decoder
 	SymbologyIdentifier _symbologyIdentifier = {'C', '0'}; // ISO/IEC 15417:2007 Annex C Table C.1
 	bool _readerInit = false;
 	bool _prevReaderInit = false;
+	bool _havePositionFNC1 = false;
 	std::string txt;
 	size_t lastTxtSize = 0;
 

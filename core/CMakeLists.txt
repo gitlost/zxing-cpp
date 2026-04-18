@@ -171,6 +171,8 @@ if (ZXING_READERS)
         src/GridSampler.h
         src/GridSampler.cpp
         src/LogMatrix.h
+        src/LocalGrid.h
+        src/LocalGrid.cpp
         src/HybridBinarizer.h
         src/HybridBinarizer.cpp
         src/MultiFormatReader.h
@@ -736,6 +738,19 @@ set_target_properties(ZXing PROPERTIES POSITION_INDEPENDENT_CODE ON)
 if (PROJECT_VERSION)
     set_target_properties(ZXing PROPERTIES VERSION ${PROJECT_VERSION})
     set_target_properties(ZXing PROPERTIES SOVERSION ${ZXING_SONAME})
+endif()
+
+# Add Windows resource file for version information
+if (WIN32 AND BUILD_SHARED_LIBS)
+    # Convert version to comma-separated format for Windows resources
+    string(REPLACE "." "," FILE_VERSION_COMMA "${PROJECT_VERSION}.0")
+    set(FILE_VERSION_STR "${PROJECT_VERSION}.0")
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/version.rc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/version.rc
+        @ONLY
+    )
+    target_sources(ZXing PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
 endif()
 
 # TODO: use FILE_SET HEADERS instead of PUBLIC_HEADER and target_sources, once CMake 3.23+ is required

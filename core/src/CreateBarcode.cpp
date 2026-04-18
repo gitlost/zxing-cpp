@@ -580,6 +580,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	auto res = MatrixBarcode(std::move(decRes), std::move(detRes), opts.format());
 
 	res.zint = std::move(opts.d->zint);
+	res.zintMutex = std::make_unique<std::mutex>();
 
 	// Reset zint for writing
 	zint->show_hrt = 1;

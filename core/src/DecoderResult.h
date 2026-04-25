@@ -48,7 +48,9 @@ public:
 
 	bool isValid(bool includeErrors = false) const
 	{
-		return !_error || (includeErrors && !!_error);
+		const std::string type = symbologyIdentifier().substr(0, 2);
+		bool emptyContentOK = type == "]z" /*Aztec*/ || type == "]C" /*Code128*/ || type == "]d" /*DataMatrix*/;
+		return ((!_content.bytes.empty() || emptyContentOK) && !_error) || (includeErrors && !!_error);
 	}
 
 	const Content& content() const & { return _content; }

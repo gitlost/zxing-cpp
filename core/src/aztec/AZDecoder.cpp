@@ -332,8 +332,10 @@ DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset)
 		return FormatError();
 	}
 
+	#if 0
 	if (res.bytes.empty())
 		return FormatError("Empty symbol content");
+	#endif
 
 	// Check for Structured Append - need 4 5-bit words, beginning with ML UL, ending with index and count
 	bool haveStructuredAppend = Size(bits) > 20 && ToInt(bits, 0, 5) == 29 // latch to MIXED (from UPPER)

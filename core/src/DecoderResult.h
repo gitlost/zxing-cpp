@@ -48,7 +48,7 @@ public:
 
 	bool isValid(bool includeErrors = false) const
 	{
-		return (!_content.bytes.empty() && !_error) || (includeErrors && !!_error);
+		return !_error || (includeErrors && !!_error);
 	}
 
 	const Content& content() const & { return _content; }

@@ -52,7 +52,7 @@ BarcodesData Reader::read(const BinaryBitmap& image, int maxSymbols) const
 	if (detectorResult.isValid()) {
 		DecoderResult decoderResult = Decoder::Decode(detectorResult.bits(), _opts.characterSet());
 		//if (decoderResult.error()) fprintf(stderr, "DecoderResult error %s\n", decoderResult.error().msg().c_str());
-		if (decoderResult.isValid()) {
+		if (decoderResult.isValid() && !decoderResult.content().empty()) {
 			return ToVector(MatrixBarcode(std::move(decoderResult), DetectorResult{}, BarcodeFormat::DotCode));
 		}
 	}

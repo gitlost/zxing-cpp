@@ -223,6 +223,17 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 			}
 		}
 	}
+	std::istringstream lines(s.str());
+	s.str("");
+	std::string prevLine;
+	while (!lines.eof()) {
+		std::string line;
+		getline(lines, line);
+		if (line != prevLine) {
+			s << line << "\n";
+			prevLine = line;
+		}
+	}
 	return s.str();
 }
 

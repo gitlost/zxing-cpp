@@ -1,7 +1,7 @@
 /* svg.c - Scalable Vector Graphics */
 /*
     libzint - the open source barcode library
-    Copyright (C) 2009-2025 Robin Stuart <rstuart114@gmail.com>
+    Copyright (C) 2009-2026 Robin Stuart <rstuart114@gmail.com>
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -58,33 +58,37 @@ static void svg_pick_colour(const int colour, char colour_code[7]) {
 
 /* Convert text to use HTML entity codes */
 static void svg_make_html_friendly(const unsigned char *string, char *html_version) {
-
+    static const char gt[4] =   { '&','g','t',';' };
+    static const char lt[4] =   { '&','l','t',';' };
+    static const char amp[5] =  { '&','a','m','p',';' };
+    static const char quot[6] = { '&','q','u','o','t',';' };
+    static const char apos[6] = { '&','a','p','o','s',';' };
     /* `NOLINT` required due to disconnect between `symbol->text` and vector `string`s which are always <= */
     /* NOLINTBEGIN(clang-analyzer-security.ArrayBound) clang-tidy-21 false positive */
     for (; *string; string++) {
         switch (*string) {
             case '>':
-                memcpy(html_version, "&gt;", 4);
+                memcpy(html_version, gt, 4);
                 html_version += 4;
                 break;
 
             case '<':
-                memcpy(html_version, "&lt;", 4);
+                memcpy(html_version, lt, 4);
                 html_version += 4;
                 break;
 
             case '&':
-                memcpy(html_version, "&amp;", 5);
+                memcpy(html_version, amp, 5);
                 html_version += 5;
                 break;
 
             case '"':
-                memcpy(html_version, "&quot;", 6);
+                memcpy(html_version, quot, 6);
                 html_version += 6;
                 break;
 
             case '\'':
-                memcpy(html_version, "&apos;", 6);
+                memcpy(html_version, apos, 6);
                 html_version += 6;
                 break;
 

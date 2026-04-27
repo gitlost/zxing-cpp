@@ -1,7 +1,7 @@
 /*  output.c - Common routines for raster/vector
 
     libzint - the open source barcode library
-    Copyright (C) 2020-2025 Robin Stuart <rstuart114@gmail.com>
+    Copyright (C) 2020-2026 Robin Stuart <rstuart114@gmail.com>
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -710,7 +710,8 @@ INTERNAL void zint_out_set_whitespace_offsets(const struct zint_symbol *symbol, 
 
     *p_xoffset = symbol->whitespace_width + qz_left;
     *p_roffset = symbol->whitespace_width + qz_right;
-    if (symbol->output_options & BARCODE_BOX) {
+    /* BARCODE_BIND_TOP trumps BARCODE_BOX */
+    if (!(symbol->output_options & BARCODE_BIND_TOP) && (symbol->output_options & BARCODE_BOX)) {
         *p_xoffset += symbol->border_width;
         *p_roffset += symbol->border_width;
     }
@@ -846,7 +847,7 @@ INTERNAL float zint_out_large_bar_height(struct zint_symbol *symbol, const int s
                 large_bar_height = z_stripf(roundf(large_bar_height * si) / si);
             }
             symbol->height = z_stripf(large_bar_height * zero_count + fixed_height);
-            /* Note should never happen that have both zero_count and round_rows */
+        /* Note should never happen that have both zero_count and round_rows */
         } else {
             if (round_rows) {
                 float total_height = 0.0f;

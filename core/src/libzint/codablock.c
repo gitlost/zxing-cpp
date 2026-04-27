@@ -535,6 +535,7 @@ static void SumASCII(uchar **ppOutPos, const int Sum, const int CharacterSet) {
 /* Main function called by zint framework
  */
 INTERNAL int zint_codablockf(struct zint_symbol *symbol, unsigned char source[], int length) {
+    static const char stop[7] = { '2','3','3','1','1','1','2' }; /* Stop character */
     int charCur, dataLength;
     int error_number;
     int rows, columns, useColumns;
@@ -859,7 +860,7 @@ INTERNAL int zint_codablockf(struct zint_symbol *symbol, unsigned char source[],
         for (c = 0; c < columns - 1; c++, d += 6) {
             memcpy(d, zint_C128Table[pOutput[rc + c]], 6);
         }
-        memcpy(d, "2331112", 7); /* Stop character (106, not in `zint_C128Table[]`) */
+        memcpy(d, stop, 7); /* Stop character (106, not in `zint_C128Table[]`) */
         d += 7;
         z_expand(symbol, dest, (int) (d - dest));
     }

@@ -30,7 +30,7 @@
  */
 /* SPDX-License-Identifier: BSD-3-Clause */
 
-/* The functions "dbar_combins" and "dbar_getWidths" are copyright BSI and are
+/* The functions "dbar_combins" and "dbar_getWidths" are Copyright (C) 2006 BSI and are
    released with permission under the following terms:
 
    "Copyright subsists in all BSI publications. BSI also holds the copyright, in the
@@ -181,11 +181,8 @@ static uint64_t dbar_to_uint64(const unsigned char source[], const int length) {
 
 /* Helper to construct zero-padded GTIN14 with check digit, returning `buf` for convenience */
 static unsigned char *dbar_gtin14(const unsigned char *source, const int length, unsigned char buf[14]) {
-    const int zeroes = 13 - length;
+    const int zeroes = z_zero_fill(source, length, buf, 13);
 
-    assert(zeroes >= 0);
-    memset(buf, '0', zeroes);
-    memcpy(buf + zeroes, source, length);
     buf[zeroes + length] = zint_gs1_check_digit(buf, 13);
 
     return buf;
@@ -870,7 +867,8 @@ static int dbar_exp_binary_string(struct zint_symbol *symbol, const unsigned cha
             if (source[18] == '2') {
                 /* (01) and (392x) */
                 encoding_method = 5;
-            } else if (source[18] == '3' && z_to_int(source + 20, 3) >= 0) { /* Check 3-digit currency string */
+            /* Check 3-digit currency string */
+            } else if (length >= 23 && source[18] == '3' && z_to_int(source + 20, 3) >= 0) {
                 /* (01) and (393x) */
                 encoding_method = 6;
             }

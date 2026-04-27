@@ -1,7 +1,7 @@
 /* dxfilmedge.c - Handles DX Film Edge symbology */
 /*
     libzint - the open source barcode library
-    Copyright (C) 2024-2025 Antoine Merino <antoine.merino.dev@gmail.com>
+    Copyright (C) 2024-2026 Antoine Merino <antoine.merino.dev@gmail.com>
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -54,6 +54,7 @@
 
 static int dx_parse_code(struct zint_symbol *symbol, const unsigned char *source, const int length,
             char *binary_output, int *output_length, int *has_frame_info) {
+    static const char start_stop[6] = { '1','0','1','0','1','0' }; /* All 6 start, middle 4 stop */
     int i;
     int parity_bit = 0;
     int dx_code_1 = -1, dx_code_2 = -1, frame_number = -1;
@@ -209,7 +210,7 @@ static int dx_parse_code(struct zint_symbol *symbol, const unsigned char *source
     }
 
     /* Build the binary output */
-    memcpy(binary_output, "101010", 6); /* Start pattern */
+    memcpy(binary_output, start_stop, 6); /* Start pattern */
     bp = z_bin_append_posn(dx_code_1, 7, binary_output, 6);
     binary_output[bp++] = '0'; /* Separator between DX part 1 and DX part 2 */
     bp = z_bin_append_posn(dx_code_2, 4, binary_output, bp);
@@ -242,7 +243,7 @@ static int dx_parse_code(struct zint_symbol *symbol, const unsigned char *source
     }
     binary_output[bp++] = parity_bit ? '1' : '0';
 
-    memcpy(binary_output + bp, "0101", 4); /* Stop pattern */
+    memcpy(binary_output + bp, start_stop + 1, 4); /* Stop pattern */
     bp += 4;
 
     *output_length = bp;

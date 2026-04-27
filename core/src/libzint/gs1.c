@@ -55,10 +55,13 @@ static int gs1_err_msg_cpy_nochk(char err_msg[50], const char *msg) {
 ZINT_FORMAT_PRINTF(2, 3) static int gs1_err_msg_printf_nochk(char err_msg[50], const char *fmt, ...) {
     va_list ap;
     int size;
-
     va_start(ap, fmt);
 
+#ifdef ZINT_IS_C89
     size = vsprintf(err_msg, fmt, ap);
+#else
+    size = vsnprintf(err_msg, 50, fmt, ap);
+#endif
 
     (void)size;
     assert(size >= 0);
@@ -1668,9 +1671,14 @@ static void gs1se_gs_caret_sub(const unsigned char *src, const int length, unsig
 /* Use GS1 Syntax Engine to verify */
 static int gs1se_verify(struct zint_symbol *symbol, const unsigned char source[], const int length,
                 unsigned char reduced[], int *p_reduced_length) {
+    static const char linear_dummies[3][19] = {
+        { '[','0','1',']','1','2','3','4','5','6','7','8','9','0','1','2','3','1','|' }, /* Normal */
+        { '(','0','1',')','1','2','3','4','5','6','7','8','9','0','1','2','3','1','|' }, /* Parens */
+        { '^','0','1','1','2','3','4','5','6','7','8','9','0','1','2','3','1','|','^' }, /* Raw/caret */
+    };
     int i, j;
     const int primary_len = z_is_composite(symbol->symbology) ? (int) strlen(symbol->primary) : 0;
-    const int gs1parens_mode = symbol->input_mode & GS1PARENS_MODE;
+    const int gs1parens_mode = !!(symbol->input_mode & GS1PARENS_MODE);
     const int gs1raw_mode = !!(symbol->input_mode & GS1RAW_MODE);
     const int gs1_caret = source[0] == '^';
     const int is_digital_link = !primary_len && !gs1_caret && gs1_is_digital_link(source, length);
@@ -1739,7 +1747,7 @@ static int gs1se_verify(struct zint_symbol *symbol, const unsigned char source[]
         } else {
             /* Just use dummy "01" linear */
             if (gs1_caret || gs1raw_mode) {
-                memcpy(local_source_buf, "^0112345678901231|^", 18 + gs1raw_mode);
+                memcpy(local_source_buf, linear_dummies[2], 18 + gs1raw_mode);
                 if (gs1_caret) {
                     memcpy(local_source_buf + 18, source, length + 1); /* Include terminating NUL */
                 } else {
@@ -1747,7 +1755,7 @@ static int gs1se_verify(struct zint_symbol *symbol, const unsigned char source[]
                 }
                 local_length += 18 + gs1raw_mode;
             } else {
-                memcpy(local_source_buf, gs1parens_mode ? "(01)12345678901231|" : "[01]12345678901231|", 19);
+                memcpy(local_source_buf, linear_dummies[gs1parens_mode], 19);
                 memcpy(local_source_buf + 19, source, length + 1); /* Include terminating NUL */
                 local_length += 19;
             }

@@ -200,7 +200,7 @@ INTERNAL int zint_pharma_two(struct zint_symbol *symbol, unsigned char source[],
 /* Italian Pharmacode */
 INTERNAL int zint_code32(struct zint_symbol *symbol, unsigned char source[], int length) {
     static const unsigned char TABELLA[] = "0123456789BCDFGHJKLMNPQRSTUVWXYZ";
-    int i, zeroes, checksum, checkpart, checkdigit;
+    int i, checksum, checkpart, checkdigit;
     unsigned char local_source[10], risultante[7];
     unsigned int pharmacode, devisor;
     int codeword[6];
@@ -217,9 +217,7 @@ INTERNAL int zint_code32(struct zint_symbol *symbol, unsigned char source[], int
     }
 
     /* Add leading zeros as required */
-    zeroes = 8 - length;
-    memset(local_source, '0', zeroes);
-    memcpy(local_source + zeroes, source, length);
+    z_zero_fill(source, length, local_source, 8);
 
     /* Calculate the check digit */
     checksum = 0;
@@ -297,7 +295,7 @@ INTERNAL int zint_code32(struct zint_symbol *symbol, unsigned char source[], int
        IFA-Info_Check_Digit_Calculations_PZN_PPN_UDI_EN.pdf */
 INTERNAL int zint_pzn(struct zint_symbol *symbol, unsigned char source[], int length) {
 
-    int i, error_number, zeroes;
+    int i, error_number;
     int count, check_digit;
     unsigned char have_check_digit = '\0';
     unsigned char local_source[1 + 8]; /* '-' prefix + 8 digits */
@@ -318,10 +316,7 @@ INTERNAL int zint_pzn(struct zint_symbol *symbol, unsigned char source[], int le
     }
 
     local_source[0] = '-';
-    zeroes = 7 - pzn7 - length + 1;
-    for (i = 1; i < zeroes; i++)
-        local_source[i] = '0';
-    memcpy(local_source + zeroes, source, length);
+    z_zero_fill(source, length, local_source + 1, 7 - pzn7);
 
     count = 0;
     for (i = 1; i < 8 - pzn7; i++) {

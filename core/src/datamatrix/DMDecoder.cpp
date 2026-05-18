@@ -421,9 +421,9 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 	} catch (Error e) {
 		Diagnostics::fmt("FMTError(%s)", e.msg().c_str());
 		setError(std::move(e));
-	} catch (const std::exception& e) {
-		Diagnostics::fmt("FMTError(%s)", e.what());
-		setError(FormatError(e.what()));
+	} catch (std::out_of_range& e) { // see BitSource::readBits
+		Diagnostics::fmt("Truncated bit stream(%s)", e.what());
+		error = FormatError("Truncated bit stream");
 	}
 	if (bits.available() <= 0) Diagnostics::put("EOD");
 

@@ -327,9 +327,9 @@ DecoderResult Decode(const BitArray& bits, const CharacterSet optionsCharset)
 
 	try {
 		DecodeContent(bits, res, haveFNC1);
-	} catch (const std::exception&) { // see BitArrayView::readBits
-		fprintf(stderr, "FormatError\n");
-		return FormatError();
+	} catch (std::out_of_range&) { // see BitArrayView::readBits
+		fprintf(stderr, "Truncated bit stream\n");
+		return FormatError("Truncated bit stream");
 	}
 
 	#if 0

@@ -119,6 +119,15 @@ Value TransformReduce(const Container& c, Value s, UnaryOp op) {
 	return s;
 }
 
+template <typename T> bool IsUpper(T u) { return u >= 'A' && u <= 'Z'; }
+template <typename T> bool IsLower(T u) { return u >= 'a' && u <= 'z'; }
+template <typename T> bool IsAlpha(T u) { return IsUpper(u) || IsLower(u); }
+template <typename T> bool IsDigit(T u) { return u <= '9' && u >= '0'; }
+template <typename T> bool IsSpace(T u) { return u == ' ' || (u <= '\r' && u >= '\t'); }
+template <typename T> bool IsCntrl(T u) { return !(u & ~0x1F) || u == 127; }
+
+inline char ToLower(char u) { return IsUpper(u) ? u | 0x20 : u; }
+
 template <typename T = char>
 T ToDigit(int i)
 {
@@ -240,7 +249,7 @@ inline void ForEachToken(std::string_view str, std::string_view delimiters, FUNC
 inline bool IsEqualIgnoreCase(std::string_view a, std::string_view b)
 {
 	return a.size() == b.size()
-		   && std::equal(a.begin(), a.end(), b.begin(), [](uint8_t a, uint8_t b) { return std::tolower(a) == std::tolower(b); });
+		   && std::equal(a.begin(), a.end(), b.begin(), [](char a, char b) { return ToLower(a) == ToLower(b); });
 }
 
 // Compare two strings ignoring case and specified whitespace characters
@@ -252,7 +261,7 @@ inline bool IsEqualIgnoreCaseAnd(std::string_view a, std::string_view b, const c
 			++i;
 		else if (Contains(ws, *j))
 			++j;
-		else if (std::tolower(static_cast<uint8_t>(*i)) != std::tolower(static_cast<uint8_t>(*j)))
+		else if (ToLower(*i) != ToLower(*j))
 			return false;
 		else
 			++i, ++j;

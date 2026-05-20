@@ -16,7 +16,6 @@
 
 #include "Diagnostics.h"
 #include "ZXAlgorithms.h"
-#include "ZXCType.h"
 
 #include <cstdarg>
 #include <iomanip>
@@ -189,7 +188,7 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 						haveDecode = true;
 						s << " ";
 					} else if (haveDecode) {
-						if (zx_iscntrl(value.back())) {
+						if (IsCntrl(value.back())) {
 							s << "<" << ascii_nongraphs[value.back() == 127 ? 33 : value.back()] << ">";
 						} else {
 							s << value;
@@ -210,7 +209,7 @@ std::string print(const std::list<std::string>* p_diagnostics, bool skipToDecode
 					if (value.find("Decode:") != std::string::npos) {
 						haveDecode = true;
 					}
-					if (haveDecode && zx_iscntrl(value.back())) {
+					if (haveDecode && IsCntrl(value.back())) {
 						s << "<" << ascii_nongraphs[value.back() == 127 ? 33 : value.back()] << ">";
 					} else {
 						s << value;

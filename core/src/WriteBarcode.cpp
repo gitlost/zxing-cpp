@@ -15,7 +15,6 @@
 
 #ifdef ZXING_USE_ZINT
 #include "TextEncoder.h"
-#include "ZXCType.h"
 #include "qrcode/QRVersion.h"
 #include <zint.h>
 #endif // ZXING_USE_ZINT

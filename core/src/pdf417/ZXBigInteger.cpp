@@ -6,7 +6,6 @@
 #include "ZXBigInteger.h"
 
 #include "ZXAlgorithms.h"
-#include "ZXCType.h"
 
 #include <algorithm>
 #include <cassert>
@@ -365,7 +364,7 @@ static bool ParseFromString(const StrT& str, std::vector<Block>& mag, bool& nega
 {
 	auto iter = str.begin();
 	auto end = str.end();
-	while (iter != end && zx_isspace(*iter)) ++iter;
+	while (iter != end && IsSpace(*iter)) ++iter;
 	if (iter != end) {
 		mag.clear();
 		negative = false;
@@ -379,7 +378,7 @@ static bool ParseFromString(const StrT& str, std::vector<Block>& mag, bool& nega
 
 		Magnitude ten{10};
 		Magnitude tmp{0};
-		for (int c; iter != end && zx_isdigit(c = *iter); ++iter) {
+		for (int c; iter != end && IsDigit(c = *iter); ++iter) {
 			tmp[0] = c - '0';
 			MulMag(mag, ten, mag);
 			AddMag(mag, tmp, mag);

@@ -162,7 +162,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			}
 			CharacterSet cs;
 			std::string argvi(argv[i]);
-			if (std::find_if_not(argvi.begin(), argvi.end(), zx_isdigit) == argvi.end()) { // Allow numeric ECI
+			if (std::find_if_not(argvi.begin(), argvi.end(), IsDigit<char>) == argvi.end()) { // Allow numeric ECI
 				cs = ToCharacterSet(ECI(std::stoi((argvi))));
 			} else {
 				cs = CharacterSetFromString(argvi);

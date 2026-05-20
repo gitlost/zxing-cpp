@@ -3,6 +3,7 @@
 */
 // SPDX-License-Identifier: Apache-2.0
 
+#include "ZXAlgorithms.h"
 #include "ZXCType.h"
 
 #include "gtest/gtest.h"
@@ -24,7 +25,7 @@ TEST(ZXCTypeTest, IsWGraph)
 	for (unsigned int u = 0x0; u <= 0x10FFFF; u++) {
 		int zx = zx_iswgraph(u);
 		EXPECT_TRUE(zx == 1 || zx == 0);
-		EXPECT_TRUE(zx == 0 || (zx == 1 && !zx_isspace(u)));
+		EXPECT_TRUE(zx == 0 || (zx == 1 && !IsSpace(u)));
 	}
 
 	// Spaces

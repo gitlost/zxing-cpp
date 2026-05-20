@@ -13,7 +13,6 @@
 #include "JSON.h"
 #include "SymbologyIdentifier.h"
 #include "ZXAlgorithms.h"
-#include "ZXCType.h"
 
 #include <array>
 #include <cstddef>
@@ -58,8 +57,8 @@ void Code128Decoder::fnc1(const bool isCodeSetC)
 		_symbologyIdentifier.aiFlag = AIFlag::GS1;
 		_havePositionFNC1 = true;
 	}
-	else if (!_havePositionFNC1 && ((!isCodeSetC && txt.size() == 1 && zx_isalpha(txt[0]))
-									|| (isCodeSetC && txt.size() == 2 && zx_isdigit(txt[0]) && zx_isdigit(txt[1])))) {
+	else if (!_havePositionFNC1 && ((!isCodeSetC && txt.size() == 1 && IsAlpha(txt[0]))
+									|| (isCodeSetC && txt.size() == 2 && IsDigit(txt[0]) && IsDigit(txt[1])))) {
 		// ISO/IEC 15417:2007 Annex B.2
 		// FNC1 in second position following Code Set C "00-99" or Code Set A/B "A-Za-z" - AIM
 		_symbologyIdentifier.modifier = '2';

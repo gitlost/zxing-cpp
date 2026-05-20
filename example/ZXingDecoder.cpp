@@ -23,7 +23,7 @@
 #include "TextDecoder.h"
 #include "ThresholdBinarizer.h"
 #include "Utf.h"
-#include "ZXCType.h"
+#include "ZXAlgorithms.h"
 
 #include "aztec/AZReader.h"
 #include "codablockf/CBFReader.h"
@@ -269,7 +269,7 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 			}
 			CharacterSet cs;
 			std::string argvi(argv[i]);
-			if (std::find_if_not(argvi.begin(), argvi.end(), zx_isdigit) == argvi.end()) { // Allow numeric ECI
+			if (std::find_if_not(argvi.begin(), argvi.end(), IsDigit<char>) == argvi.end()) { // Allow numeric ECI
 				cs = ToCharacterSet(ECI(std::stoi((argvi))));
 			} else {
 				cs = CharacterSetFromString(argvi);

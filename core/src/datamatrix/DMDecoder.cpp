@@ -18,7 +18,6 @@
 #include "GenericGF.h"
 #include "ReedSolomonDecoder.h"
 #include "ZXAlgorithms.h"
-#include "ZXCType.h"
 #include "ZXTestSupport.h"
 
 #include <algorithm>
@@ -357,8 +356,8 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 				// however Code 128 (FNC1-originator) says in ISO/IEC 15417:2007 Annex B.2 that permissible characters are
 				// A-Z, a-z and 00-99 so enforcing that here
 				} else if (bits.byteOffset() == firstFNC1Position + 1
-							&& ((Size(result.bytes) == 1 && zx_isalpha(result.bytes[0]))
-								|| (Size(result.bytes) == 2 && zx_isdigit(result.bytes[0]) && zx_isdigit(result.bytes[1])))) {
+							&& ((Size(result.bytes) == 1 && IsAlpha(result.bytes[0]))
+								|| (Size(result.bytes) == 2 && IsDigit(result.bytes[0]) && IsDigit(result.bytes[1])))) {
 					result.symbology.modifier = '3';
 					Diagnostics::put("=FNC1(2ndPos)");
 				} else {

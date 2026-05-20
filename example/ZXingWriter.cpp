@@ -21,7 +21,6 @@
 #include "BitMatrix.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -223,7 +222,7 @@ static std::string escape(std::string_view input)
 				throw std::runtime_error("single backslash at end");
 			if ((esc_ch = strchr(escs, input[i])) != NULL)
 				output.push_back(vals[esc_ch - escs]);
-			else if (i + 2 < len && input[i] == 'x' && std::isxdigit(input[i + 1]) && std::isxdigit(input[i + 2]))
+			else if (i + 2 < len && input[i] == 'x' && IsXDigit(input[i + 1]) && IsXDigit(input[i + 2]))
 				output.push_back((xtoi(input[i + 1]) << 4) | xtoi(input[i + 2])), i += 2;
 			else if (i + 3 < len && input[i] == 'o' && isodigit(input[i + 1]) && isodigit(input[i + 2]) && isodigit(input[i + 3]))
 				output.push_back((otoi(input[i + 1]) << 6) | (otoi(input[i + 2]) << 3) | otoi(input[i + 3])), i += 3;

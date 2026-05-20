@@ -4,13 +4,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "BarcodeFormat.h"
+#include "ZXAlgorithms.h"
 
 #include <version>
 #ifdef __cpp_lib_format
 
 #include "StdPrint.h"
 
-#include <cctype>
 #include <cstring>
 #include <format>
 #include <functional>
@@ -53,29 +53,29 @@ int main(int argc, char* argv[])
 	} else if (is("Swift")) {
 		auto swiftName = [](const char* name) {
 			std::string sv(name);
-			std::string ret = (char)std::tolower(sv[0]) + sv.substr(1);
+			std::string ret = ZXing::ToLower(sv[0]) + sv.substr(1);
 			// Convert to camelCase, but keep uppercase letters if they are followed by a lowercase letter
 			// (e.g. QRCode -> qrCode). This is a bit hacky, but it works for the current set of names and avoids the
 			// need for a manual mapping. This ensures that the generated Swift code follows typical naming patterns.
-			for (int i = 2; i < ret.size() && (std::isupper(ret[i]) || std::isdigit(ret[i])); ++i)
-				ret[i - 1] = std::tolower(ret[i - 1]);
-			ret.back() = std::tolower(ret.back());
+			for (int i = 2; i < ret.size() && (ZXing::IsUpper(ret[i]) || ZXing::IsDigit(ret[i])); ++i)
+				ret[i - 1] = ZXing::ToLower(ret[i - 1]);
+			ret.back() = ZXing::ToLower(ret.back());
 			return ret == "eanupc" ? "eanUPC" : ret == "upca" ? "upcA" : ret == "upce" ? "upcE" : ret;
 		};
 		PrintBFs("	public static let {:15} = BarcodeFormat(rawValue: 0x{:04X})", swiftName);
 	} else if (is("Android")) {
 		auto androidName = [](const char* name) {
 			std::string sv(name);
-			std::string ret = std::string(1, (char)std::toupper(sv[0]));
+			std::string ret = std::string(1, ZXing::ToUpper(sv[0]));
 
 			for (size_t i = 1; i < sv.size(); ++i) {
 				const int c = sv[i];
 				const int prev = sv[i - 1];
 				const int next = i + 1 < sv.size() ? sv[i + 1] : 0;
-				if ((std::isdigit(c) != std::isdigit(prev)) || (std::isupper(c) && std::islower(prev))
-					|| (std::isupper(c) && std::isupper(prev) && next != 0 && std::islower(next)))
+				if ((ZXing::IsDigit(c) != ZXing::IsDigit(prev)) || (ZXing::IsUpper(c) && ZXing::IsLower(prev))
+					|| (ZXing::IsUpper(c) && ZXing::IsUpper(prev) && next != 0 && ZXing::IsLower(next)))
 					ret.push_back('_');
-				ret.push_back(static_cast<char>(std::toupper(c)));
+				ret.push_back(ZXing::ToUpper(c));
 			}
 
 			return ret == "EANUPC"     ? "EAN_UPC"

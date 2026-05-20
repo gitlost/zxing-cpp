@@ -90,6 +90,14 @@ TEST(ODCode128ReaderTest, SymbologyIdentifier)
 		EXPECT_EQ(result.symbologyIdentifier(), "]C1");
 		EXPECT_EQ(result.text(), "<GS>");
 	}
+
+	{
+		// AIM "A FNC1 FNC1" - only drop first (AIM) not both
+		PatternRow row({ 1, 1, 1, 3, 2, 3, 4, 1, 1, 1, 3, 1, 4, 1, 1, 1, 3, 1, 3, 2, 2, 2, 1, 1 });
+		auto result = parse('B', row);
+		EXPECT_EQ(result.symbologyIdentifier(), "]C2");
+		EXPECT_EQ(result.text(), "A<GS>");
+	}
 }
 
 TEST(ODCode128ReaderTest, ReaderInit)

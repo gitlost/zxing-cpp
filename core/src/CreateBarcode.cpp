@@ -502,6 +502,9 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (auto val = opts.rotate(); val)
 		rotate = *val;
 
+	if (opts.format() == BarcodeFormat::Telepen && (std::all_of((const char*)data, (const char*)data + size, IsDigit<char>)))
+		zint->symbology = BARCODE_TELEPEN_NUM;
+
 	int warning;
 	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, rotate), warning);
 

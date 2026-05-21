@@ -13,6 +13,7 @@
 #include "DetectorResult.h"
 #include "JSON.h"
 #include "Version.h"
+#include "ZXAlgorithms.h"
 
 #ifdef ZXING_READERS
 #include "ReadBarcode.h"
@@ -88,7 +89,7 @@ CreatorOptions& CreatorOptions::operator=(CreatorOptions&&) noexcept = default;
 
 inline bool IsAscii(ByteView bv)
 {
-	return std::all_of(bv.begin(), bv.end(), [](uint8_t c) { return c <= 127; });
+	return std::all_of(bv.begin(), bv.end(), IsAscii<uint8_t>);
 }
 
 #ifdef ZXING_WRITERS
@@ -487,7 +488,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (auto val = opts.eci(); val && ZBarcode_Cap(zint->symbology, ZINT_CAP_ECI)) {
 		if (auto cs = CharacterSetFromString(*val); cs != CharacterSet::Unknown) {
 			eci = ToECI(cs);
-		} else if (std::all_of(val->begin(), val->end(), [](char c) { return std::isdigit(c); })) {
+		} else if (std::all_of(val->begin(), val->end(), IsDigit<char>)) {
 			eci = ToECI(std::stoi(*val));
 		}
 		if (eci != ECI::Unknown)

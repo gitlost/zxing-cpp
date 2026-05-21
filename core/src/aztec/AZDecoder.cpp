@@ -17,8 +17,6 @@
 #include "ZXTestSupport.h"
 #include "ZXAlgorithms.h"
 
-#include <algorithm>
-#include <cstdint>
 #include <cstring>
 #include <numeric>
 #include <string>

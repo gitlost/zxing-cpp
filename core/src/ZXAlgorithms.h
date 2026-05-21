@@ -119,16 +119,67 @@ Value TransformReduce(const Container& c, Value s, UnaryOp op) {
 	return s;
 }
 
-template <typename T> bool IsUpper(T u) { return u >= 'A' && u <= 'Z'; }
-template <typename T> bool IsLower(T u) { return u >= 'a' && u <= 'z'; }
-template <typename T> bool IsAlpha(T u) { return IsUpper(u) || IsLower(u); }
-template <typename T> bool IsDigit(T u) { return u <= '9' && u >= '0'; }
-template <typename T> bool IsXDigit(T u) { return (u <= '9' && u >= '0') || (u >= 'A' && u <= 'F') || (u >= 'a' && u <= 'f'); }
-template <typename T> bool IsSpace(T u) { return u == ' ' || (u <= '\r' && u >= '\t'); }
-template <typename T> bool IsCntrl(T u) { return !(u & ~0x1F) || u == 127; }
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsUpper(T v) noexcept
+{
+	return 'A' <= v && v <= 'Z';
+}
 
-inline char ToLower(char u) { return IsUpper(u) ? u | 0x20 : u; }
-inline char ToUpper(char u) { return IsLower(u) ? u & 0x5F : u; }
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsLower(T v) noexcept
+{
+	return 'a' <= v && v <= 'z';
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsAlpha(T v) noexcept
+{
+	return IsUpper(v) || IsLower(v);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsDigit(T v) noexcept
+{
+	return '0' <= v && v <= '9';
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsXDigit(T v) noexcept
+{
+	return IsDigit(v) || ('A' <= v && v <= 'F') || ('a' <= v && v <= 'f');
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsSpace(T v) noexcept
+{
+	// Matches the standard ASCII whitespace characters:
+    // ' ', '\t', '\n', '\v', '\f', '\r'
+	return v == ' ' || ('\t' <= v && v <= '\r');
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsAscii(T v) noexcept
+{
+	return !(v & ~0x7F);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr bool IsCntrl(T v) noexcept
+{
+	return !(v & ~0x1F) || v == 127;
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr T ToLower(T v) noexcept
+{
+	return IsUpper(v) ? static_cast<T>(v | 0x20) : v;
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+constexpr T ToUpper(T v) noexcept
+{
+	return IsLower(v) ? static_cast<T>(v & 0x5F) : v;
+}
 
 template <typename T = char>
 T ToDigit(int i)

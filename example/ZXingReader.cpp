@@ -17,7 +17,6 @@
 #endif
 #include "TextDecoder.h"
 #include "Utf.h"
-#include "ZXCType.h"
 
 #include <chrono>
 #include <cstring>

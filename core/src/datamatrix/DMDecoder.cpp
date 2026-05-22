@@ -353,8 +353,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 					result.symbology.modifier = '2'; // GS1
 					Diagnostics::put("=FNC1(GS1)");
 				// 2nd position AIM, note no AIM Application Indicator format defined in ISO/IEC 16022:2006 11.2
-				// however Code 128 (FNC1-originator) says in ISO/IEC 15417:2007 Annex B.2 that permissible characters are
-				// A-Z, a-z and 00-99 so enforcing that here
+				// however FNC1-originator Code 128 restricts ids to A-Z, a-z, 00-99 so enforcing that here
 				} else if (bits.byteOffset() == firstFNC1Position + 1
 							&& ((Size(result.bytes) == 1 && IsAlpha(result.bytes[0]))
 								|| (Size(result.bytes) == 2 && IsDigit(result.bytes[0]) && IsDigit(result.bytes[1])))) {

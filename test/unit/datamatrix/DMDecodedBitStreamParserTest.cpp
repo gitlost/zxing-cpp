@@ -176,6 +176,10 @@ TEST(DMDecodeTest, SymbologyIdentifier)
 	EXPECT_EQ(id({66, 232, 67}), "]d3");
 	EXPECT_EQ(decode({66, 232, 67}), L"AB");
 
+	// AIM "a FNC1 B"
+	EXPECT_EQ(id({98, 232, 67}), "]d3");
+	EXPECT_EQ(decode({98, 232, 67}), L"aB");
+
 	// "9 FNC1 A" (single digit before FNC1 not recognized as AIM)
 	EXPECT_EQ(id({58, 232, 66}), "]d1");
 	EXPECT_EQ(decode({58, 232, 66}), L"9\u001DA");
@@ -218,6 +222,10 @@ TEST(DMDecodeTest, DMRESymbologyIdentifier)
 	// AIM "A FNC1 B"
 	EXPECT_EQ(id({66, 232, 67}, true /*isDMRE*/), "]d9");
 	EXPECT_EQ(decode({66, 232, 67}, true /*isDMRE*/), L"AB");
+
+	// AIM "a FNC1 B"
+	EXPECT_EQ(id({98, 232, 67}, true /*isDMRE*/), "]d9");
+	EXPECT_EQ(decode({98, 232, 67}, true /*isDMRE*/), L"aB");
 
 	// "9 FNC1 A" (single digit before FNC1 not recognized as AIM - see `SymbologyIdentifier()` above)
 	EXPECT_EQ(id({58, 232, 66}, true /*isDMRE*/), "]d7");

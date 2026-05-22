@@ -84,7 +84,7 @@ static char az_get_next_mode(const char modes[], const int length, int i) {
 
 #define AZ_DOUBLE_PUNCT_NO_LEN_CHECK(s, i) \
     (((s)[i] == '\r' && (s)[(i) + 1] == '\n') \
-    || ((s)[(i) + 1] == ' ' && ((s)[i] == '.' || (s)[i] == ',' || (s)[i] == ':')))
+        || ((s)[(i) + 1] == ' ' && ((s)[i] == '.' || (s)[i] == ',' || (s)[i] == ':')))
 
 #define AZ_DOUBLE_PUNCT(s, l, i) ((i) + 1 < (l) && AZ_DOUBLE_PUNCT_NO_LEN_CHECK(s, i))
 
@@ -489,7 +489,7 @@ static void az_state_free(struct az_state *state) {
 
 /* Check that there's enough room for `extra` more tokens in `state` */
 static int az_tokens_add_chk(struct az_state *state, const int extra) {
-    assert(extra < AZ_MIN_TOKENS_SIZE);
+    assert(extra > 0 && extra < AZ_MIN_TOKENS_SIZE);
     if (!state->tokens.tokens) {
         const unsigned short size = AZ_MIN_TOKENS_SIZE;
         if (!(state->tokens.tokens = (struct az_token *) malloc(sizeof(struct az_token) * size))) {
@@ -497,7 +497,7 @@ static int az_tokens_add_chk(struct az_state *state, const int extra) {
         }
         state->tokens.size = size;
         state->tokens.used = 0;
-    } else if (state->tokens.used + extra >= state->tokens.size) {
+    } else if (state->tokens.used >= state->tokens.size - extra) { /* Compare this way to avoid possible overflow */
         struct az_token *tokens;
         const unsigned short size = state->tokens.size * 2;
         if (size <= state->tokens.size /* Overflow */
@@ -980,7 +980,8 @@ static int az_binary_string(const unsigned char source[], const int length, int 
     const int entry_bp = bp;
 #endif
 
-    if (!az_state_list_init(list, length)) {
+    assert(length < USHRT_MAX);
+    if (!az_state_list_init(list, (unsigned short) length)) {
         return 0;
     }
     memset(list->states, 0, sizeof(struct az_state));
@@ -1028,7 +1029,7 @@ static int az_binary_string(const unsigned char source[], const int length, int 
     }
 
     for (i = 0; i < stateEnd.tokens.used; i++) {
-        const struct az_token *token = stateEnd.tokens.tokens + i;
+        const struct az_token *const token = stateEnd.tokens.tokens + i;
         const int count = token->count;
         if (count < 0) {
             bp = z_bin_append_posn(token->value, -count, binary_string, bp);
@@ -1165,7 +1166,7 @@ static int az_text_process(unsigned char *source, const int length, int bp, char
     char current_mode = p_current_mode ? *p_current_mode : AZ_U;
     const char initial_mode = current_mode;
     const int initial_bp = bp;
-    const int all_byte_only_or_uld = az_all_byte_only_or_uld(source, length); /* -1 if not */
+    const int all_byte_only_or_uld = length > 1 ? az_all_byte_only_or_uld(source, length) : -1; /* -1 if not */
     const int debug_print = debug & ZINT_DEBUG_PRINT;
 #ifdef ZINT_TEST
     const int debug_skip_all = debug & 2048; /* ZINT_DEBUG_TEST_AZTEC_SKIP_ALL - skip using `all_byte_only_or_uld` */
@@ -1317,10 +1318,6 @@ static int az_text_process(unsigned char *source, const int length, int bp, char
         }
     }
 
-    if (debug_print) {
-        printf("Binary String (%d): %.*s\n", bp, bp, binary_string);
-    }
-
     *data_length = bp;
     if (p_current_mode) {
         *p_current_mode = current_mode;
@@ -1343,6 +1340,7 @@ static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs
     /* Raw text dealt with by `ZBarcode_Encode_Segs()`, except for `eci` feedback.
        Note not updating `eci` for GS1 mode as not converted */
     const int content_segs = !gs1 && (symbol->output_options & BARCODE_CONTENT_SEGS);
+    const int debug_print = symbol->debug & ZINT_DEBUG_PRINT;
 
     if (gs1 || (extra_escape_mode
                     && (position_fnc1 = z_extra_escape_position_fnc1(segs[0].source, segs[0].length)))) {
@@ -1350,7 +1348,11 @@ static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs
         const int length = segs[0].length;
         if (position_fnc1) {
             if (position_fnc1 == 4) {
-                bp = z_bin_append_posn(AztecChar[AZ_U][source[0]], 5, binary_string, bp);
+                if (z_islower(source[0])) {
+                    current_mode = AZ_L;
+                    bp = z_bin_append_posn(28, 5, binary_string, bp); /* L/L */
+                }
+                bp = z_bin_append_posn(AztecChar[(int) current_mode][source[0]], 5, binary_string, bp);
             } else if (position_fnc1 == 5) {
                 current_mode = AZ_D;
                 bp = z_bin_append_posn(30, 5, binary_string, bp); /* D/L */
@@ -1360,7 +1362,7 @@ static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs
             have_extra_escapes = 1;
         }
         if (gs1 || (position_fnc1 <= 4 && length > position_fnc1 && z_isdigit(source[position_fnc1]))) {
-            assert(current_mode == AZ_U);
+            assert(current_mode == AZ_U || current_mode == AZ_L);
             /* Latch to D/L to save a bit */
             current_mode = AZ_D;
             bp = z_bin_append_posn(30, 5, binary_string, bp); /* D/L */
@@ -1403,6 +1405,9 @@ static int az_text_process_segs(struct zint_symbol *symbol, struct zint_seg segs
                                                 &current_mode, &bp, symbol->debug))) {
                 return error_number;
             }
+        }
+        if (debug_print) {
+            printf("Binary String (%d): %.*s\n", bp, bp, binary_string);
         }
         if (content_segs) {
             if (have_extra_escapes) {

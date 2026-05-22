@@ -57,7 +57,7 @@ ZINT_FORMAT_PRINTF(2, 3) static int gs1_err_msg_printf_nochk(char err_msg[50], c
     int size;
     va_start(ap, fmt);
 
-#ifdef ZINT_IS_C89
+#ifdef Z_NO_VSNPRINTF
     size = vsprintf(err_msg, fmt, ap);
 #else
     size = vsnprintf(err_msg, 50, fmt, ap);
@@ -1694,8 +1694,8 @@ static int gs1se_verify(struct zint_symbol *symbol, const unsigned char source[]
     char msgBuf[120];
     gs1_encoder_init_status_t status = GS1_ENCODERS_INIT_SUCCESS;
     gs1_encoder_init_opts_t opts = {
-        /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) suppress clang-tidy-21 warning OR-ing enums */
-        sizeof(gs1_encoder_init_opts_t), gs1_encoder_iNO_SYNDICT | gs1_encoder_iQUIET, &status, msgBuf, sizeof(msgBuf)
+        sizeof(gs1_encoder_init_opts_t), gs1_encoder_iDEFAULT, &status, msgBuf, sizeof(msgBuf),
+        NULL /*syntaxDictionary*/
     };
     gs1_encoder *ctx;
     int gs1se_ret;

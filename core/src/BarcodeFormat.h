@@ -56,6 +56,8 @@
 	X(Telepen,          'B', ' ', "lr  I",  32, ZXING_ENABLE_1D,         "Telepen") \
 	X(TelepenAlpha,     'B', '0', "lr  I",  32, ZXING_ENABLE_1D,         "Telepen Alpha") \
 	X(TelepenNumeric,   'B', '1', "lr  I",  87, ZXING_ENABLE_1D,         "Telepen Numeric") \
+	X(TelepenNumAlpha,  'B', '2', "lr  I",  87, ZXING_ENABLE_1D,         "Telepen Numeric+Alpha") \
+	X(TelepenAlphaNum,  'B', '4', "lr  I",  32, ZXING_ENABLE_1D,         "Telepen Alpha+Numeric") \
 	X(OtherBarcode,     'X', ' ', " r   ",   0, ZXING_ENABLE_1D,         "Other barcode") /* see ISO/IEC 15424:2025 */ \
 	X(DXFilmEdge,       'X', 'x', "lr   ", 147, ZXING_ENABLE_1D,         "DX Film Edge") \
 	X(PDF417,           'L', ' ', "mrw  ",  55, ZXING_ENABLE_PDF417,     "PDF417") \

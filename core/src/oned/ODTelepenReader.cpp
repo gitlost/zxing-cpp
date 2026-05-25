@@ -44,13 +44,37 @@ static std::string DecodeNumeric(std::string_view encoded)
 	return decoded;
 }
 
+// AIM Europe USS Telepen (1991)
+static std::string DecodeAIMNumeric(std::string_view encoded)
+{
+	std::string decoded;
+	decoded.reserve(encoded.size() * 2);
+
+	for (uint8_t codeword : encoded) {
+		if (17 <= codeword && codeword < 27) {
+			decoded += ToDigit(codeword - 17);
+			decoded += 'X';
+		} else if (27 <= codeword && codeword < 127)
+			decoded += ToString(codeword - 27, 2);
+		else
+			decoded += codeword; // Defined for <= 16 and 127
+	}
+
+	return decoded;
+}
+
 BarcodeData TelepenReader::decodePattern(int rowNumber, PatternView& next, std::unique_ptr<RowReader::DecodingState>&) const
 {
 	constexpr int minCharCount = 1; // TODO
 	constexpr int minQuietZone = 5; // spec requires 10
 	constexpr int minCharLength = 16 / 3;
-	constexpr auto startPattern = FixedPattern<12, 16>{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3};
-	constexpr auto endPattern = FixedPattern<11, 15>{3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+	constexpr auto start1Pattern = FixedPattern<12, 16>{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3};
+	constexpr auto start2Pattern = FixedPattern<12, 16>{1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 3};
+	constexpr auto start3Pattern = FixedPattern<12, 16>{1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 3};
+	constexpr auto end1Pattern = FixedPattern<11, 15>{3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+	constexpr auto end2Pattern = FixedPattern<11, 15>{3, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1};
+	constexpr auto end3Pattern = FixedPattern<11, 15>{3, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1};
+	char modifier = '0';
 
 #if 0 // use fast 1:1:1:1 start pattern plausibility check, then E2E check for the whole start pattern
 	next = FindLeftGuard<12>(next, 2 * 12 + minCharCount * minCharLength, [=](const PatternView& view, int spaceInPixel) {
@@ -64,7 +88,22 @@ BarcodeData TelepenReader::decodePattern(int rowNumber, PatternView& next, std::
 			   && IsPattern<true>(view, startPattern, spaceInPixel, minQuietZone);
 	});
 #else
-	next = FindLeftGuard<true>(next, 2 * 12 + minCharCount * minCharLength, startPattern, minQuietZone);
+	auto nextTry = FindLeftGuard<true>(next, 2 * 12 + minCharCount * minCharLength, start1Pattern, minQuietZone);
+	if (nextTry.isValid()) {
+		next = nextTry;
+	} else {
+		nextTry = FindLeftGuard<true>(next, 2 * 12 + minCharCount * minCharLength, start2Pattern, minQuietZone);
+		if (nextTry.isValid()) {
+			modifier = '2'; // Compressed Numeric (+ Full ASCII)
+			next = nextTry;
+		} else {
+			next = FindLeftGuard<true>(next, 2 * 12 + minCharCount * minCharLength, start3Pattern, minQuietZone);
+			if (next.isValid())
+				modifier = '4'; // Full ASCII + Compressed Numeric
+		}
+	}
+	const auto &startPattern = modifier == '0' ? start1Pattern : modifier == '2' ? start2Pattern : start3Pattern;
+	const auto &endPattern = modifier == '0' ? end1Pattern : modifier == '2' ? end2Pattern : end3Pattern;
 #endif
 	if (!next.isValid())
 		return {};
@@ -130,20 +169,28 @@ BarcodeData TelepenReader::decodePattern(int rowNumber, PatternView& next, std::
 	auto checkSum = (127 - (Reduce(txt, 0) % 127)) % 127;
 	Error error = checkSum != raw.back() ? Error::Checksum : Error{};
 
-	SymbologyIdentifier symbologyIdentifier = {'B', '0'};
-
-	if (readNumeric && (!readAlpha || std::ranges::any_of(txt, [](uint8_t c) { return c < 32; }))) {
+	if (modifier == '2' || modifier == '4') {
+		// AIM Europe USS Telepen (1991)
+		const auto dle = IndexOf(txt, '\x10');
+		if (modifier == '2')
+			txt = dle == -1 ? DecodeAIMNumeric(txt) : DecodeAIMNumeric(txt.substr(0, dle)) + txt.substr(dle + 1);
+		else if (dle != -1)
+			txt = txt.substr(0, dle) + DecodeAIMNumeric(txt.substr(dle + 1));
+	} else if (readNumeric && (!readAlpha || std::ranges::any_of(txt, IsCntrl<char>))) {
 		if (auto decoded = DecodeNumeric(txt); !decoded.empty()) {
 			// see ISO/IEC 15424:2025 4.4.3
-			symbologyIdentifier.modifier = std::ranges::any_of(txt, [](uint8_t c) { return c == 16; }) ? '2' : '1';
+			modifier = std::ranges::any_of(txt, [](uint8_t c) { return c == 16; }) ? '2' : '1';
 			txt = std::move(decoded);
 		}
 		else if (!readAlpha)
 			return {};
 	}
 
+	SymbologyIdentifier symbologyIdentifier = {'B', modifier};
+
 	int xStop = next.pixelsTillEnd();
-	auto format = symbologyIdentifier.modifier == '1' ? BarcodeFormat::TelepenNumeric : BarcodeFormat::TelepenAlpha;
+	auto format = modifier == '0' ? BarcodeFormat::TelepenAlpha : modifier == '1' ? BarcodeFormat::TelepenNumeric
+								  : modifier == '2' ? BarcodeFormat::TelepenNumAlpha : BarcodeFormat::TelepenAlphaNum;
 	printf("line: %d, raw: %s, txt: %s, checksum: %d\n", rowNumber, raw.c_str(), txt.c_str(), checkSum);
 
 	return LinearBarcode(format, txt, rowNumber, xStart, xStop, symbologyIdentifier, error);

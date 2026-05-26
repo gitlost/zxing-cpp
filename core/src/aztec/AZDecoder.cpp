@@ -8,6 +8,7 @@
 #include "AZDecoder.h"
 
 #include "AZDetectorResult.h"
+#include "Barcode.h"
 #include "BitArray.h"
 #include "BitMatrix.h"
 #include "DecoderResult.h"
@@ -20,6 +21,7 @@
 #include <cstring>
 #include <numeric>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -119,7 +121,7 @@ static BitArray ExtractBits(const DetectorResult& ddata)
 /**
 * @brief Performs RS error correction on an array of bits.
 */
-static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const BitArray& rawbits)
+static std::tuple<BitArray, int, double> CorrectBits(const DetectorResult& ddata, const BitArray& rawbits)
 {
 	const GenericGF* gf = nullptr;
 	int codewordSize;
@@ -146,8 +148,9 @@ static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const B
 		throw FormatError("Invalid number of code words");
 
 	auto dataWords = ToInts<int>(rawbits, codewordSize, numCodewords, Size(rawbits) % codewordSize);
+	auto uec = ReedSolomonDecode(*gf, dataWords, numECCodewords);
 
-	if (!ReedSolomonDecode(*gf, dataWords, numECCodewords))
+	if (!uec)
 		throw ChecksumError();
 
 	// drop the ECCodewords from the dataWords array
@@ -167,7 +170,7 @@ static std::pair<BitArray, int> CorrectBits(const DetectorResult& ddata, const B
 			correctedBits.appendBits(dataWord, codewordSize);
 	}
 
-	return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords};
+	return {std::move(correctedBits), (numECCodewords - 3) * 100 / numCodewords, *uec};
 }
 
 /**
@@ -388,7 +391,7 @@ DecoderResult Decode(const DetectorResult& detectorResult, const CharacterSet op
 			return DecodeRune(detectorResult);
 		}
 		auto rawBits = ExtractBits(detectorResult);
-		auto [bits, ecLevel] = CorrectBits(detectorResult, rawBits);
+		auto [bits, ecLevel, uec] = CorrectBits(detectorResult, rawBits);
 
 		const int layers = detectorResult.nbLayers();
 		const int codewordSize = layers <= 2 ? 6 : layers <= 8 ? 8 : layers <= 22 ? 10 : 12;
@@ -402,8 +405,10 @@ DecoderResult Decode(const DetectorResult& detectorResult, const CharacterSet op
 		Diagnostics::put("  Decode:      ");
 
 		auto result = Decode(bits, optionsCharset);
-		if (result.isValid())
+		if (result.isValid()) {
 			result.setEcLevel(std::to_string(ecLevel) + "%");
+			result.addExtra(BarcodeExtra::UEC, uec);
+		}
 		return result;
 	} catch (Error e) {
 		return e;

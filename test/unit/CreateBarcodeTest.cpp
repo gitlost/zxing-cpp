@@ -51,6 +51,14 @@ namespace {
 			EXPECT_EQ(barcode.extra("DataMask"), std::to_string(dataMask)) << "line:" << line;
 	}
 
+	static std::string remove(std::string str, std::string_view what)
+	{
+		if (auto&& pos = str.find(what); pos != std::string::npos) {
+			str.erase(pos, what.length());
+		}
+		return str;
+	}
+
 	static void check_same(int line, const Barcode& b1, const Barcode& b2,
 						   bool cmpPosition = true, bool cmpBits = true, bool cmpEcLevel = true)
 	{
@@ -72,7 +80,7 @@ namespace {
 			EXPECT_EQ(b1.ecLevel(), b2.ecLevel()) << "line:" << line;
 		EXPECT_EQ(b1.version(), b2.version()) << "line:" << line;
 		if (cmpEcLevel || b1.extra("ECLevel").empty())
-			EXPECT_EQ(b1.extra(), b2.extra()) << "line:" << line;
+			EXPECT_EQ(b1.extra(), remove(b2.extra(), "\"UEC\":1.0,")) << "line:" << line;
 
 		EXPECT_EQ(b1.ECIs(), b2.ECIs()) << "line:" << line;
 		EXPECT_EQ(b1.orientation(), b2.orientation()) << "line:" << line;
@@ -1427,7 +1435,18 @@ TEST(CreateBarcodeTest, CreatorOptions)
 
 	bc = CreateBarcodeFromText("12345abcdefghijklmnopqr", {DataMatrix, "forceSquare"});
 	EXPECT_EQ(bc.symbol().height(), bc.symbol().width());
+#if defined(ZXING_READERS)
+	bc = CreateBarcodeFromText("12345", {DataMatrix});
+	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(DataMatrix).isPure(true).binarizer(Binarizer::BoolCast));
+	EXPECT_EQ(bc.extra("UEC"), "1.0");
+#endif
 #endif // ZXING_ENABLE_DATAMATRIX
+
+#if defined(ZXING_READERS) && ZXING_ENABLE_AZTEC
+	bc = CreateBarcodeFromText("12345", {Aztec});
+	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(Aztec).isPure(true).binarizer(Binarizer::BoolCast));
+	EXPECT_EQ(bc.extra("UEC"), "1.0");
+#endif
 
 #if ZXING_ENABLE_QRCODE
 	bc = CreateBarcodeFromText("12345", {QRCode, "version=5"});
@@ -1438,6 +1457,7 @@ TEST(CreateBarcodeTest, CreatorOptions)
 	bc = CreateBarcodeFromText("12345", {QRCode, "dataMask=0"});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
 	EXPECT_EQ(bc.extra("dataMask"), "0");
+	EXPECT_EQ(bc.extra("UEC"), "1.0");
 #endif // ZXING_READERS
 }
 

@@ -1625,7 +1625,8 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
             return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 806, "Cannot use Extra Escape mode in GS1 mode");
         }
         if (reader_init) {
-            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 807, "Cannot use Reader Initialisation in Extra Escape mode");
+            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 807,
+                            "Cannot use Reader Initialisation in Extra Escape mode");
         }
     }
 

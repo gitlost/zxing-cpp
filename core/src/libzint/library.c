@@ -716,13 +716,18 @@ static int esc_base(struct zint_symbol *symbol, const unsigned char *input_strin
 /* Helper to parse escape sequences. If `escaped_string` NULL, calculates length only */
 static int escape_char_process(struct zint_symbol *symbol, const unsigned char *input_string, int *p_length,
             unsigned char *escaped_string) {
-                               /* NUL   EOT   BEL   BS    HT    LF    VT    FF    CR    ESC   GS    RS   \ */
-    static const char escs[] = {  '0',  'E',  'a',  'b',  't',  'n',  'v',  'f',  'r',  'e',  'G',  'R', '\\', '\0' };
-    static const char vals[] = { 0x00, 0x04, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x1B, 0x1D, 0x1E, 0x5C };
+    /* NOTE: if add escape character, must also update regex `escRE` in "frontend_qt/datawindow.php" */
+    static const char escs[] = {
+      /* NUL   EOT   BEL   BS    HT    LF    VT    FF    CR    DLE   ESC   FS    GS    RS   US   \ */
+         '0',  'E',  'a',  'b',  't',  'n',  'v',  'f',  'r',  'L',  'e',  'F',  'G',  'R', 'N', '\\', '\0'
+    };
+    static const char vals[] = {
+        0x00, 0x04, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x10, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x5C
+    };
     const int length = *p_length;
     int in_posn = 0, out_posn = 0;
     unsigned char ch;
-    int val;
+    int val, esc_posn;
     int i;
     unsigned int unicode;
     const int extra_escape_mode = symbol->input_mode & EXTRA_ESCAPE_MODE;
@@ -736,135 +741,123 @@ static int escape_char_process(struct zint_symbol *symbol, const unsigned char *
                 return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 236, "Incomplete escape character in input");
             }
             ch = input_string[in_posn + 1];
-            /* NOTE: if add escape character, must also update regex in "frontend_qt/datawindow.php" */
-            switch (ch) {
-                case '0':
-                case 'E':
-                case 'a':
-                case 'b':
-                case 't':
-                case 'n':
-                case 'v':
-                case 'f':
-                case 'r':
-                case 'e':
-                case 'G':
-                case 'R':
-                case '\\':
-                    if (escaped_string) escaped_string[out_posn] = vals[z_posn(escs, ch)];
-                    in_posn += 2;
-                    /* Note: if given double backslash following by caret "\\^" then will be passed through as "\^",
-                       i.e. the start of an extra escape sequence, avoiding the check below, so each symbology needs
-                       to also check themselves */
-                    break;
-                case '^': /* Symbology specific */
-                    if (!extra_escape_mode || !can_extra_escape) {
-                        if (!extra_escape_mode) {
-                            return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 798,
-                                            "Escape '\\^' only valid in Extra Escape mode");
+            if ((esc_posn = z_posn(escs, ch)) != -1) {
+                if (escaped_string) escaped_string[out_posn] = vals[esc_posn];
+                in_posn += 2;
+                /* Note: if given double backslash following by caret "\\^" then will be passed through as "\^",
+                   i.e. the start of an extra escape sequence, avoiding the check below, so each symbology needs
+                   to also check themselves */
+            } else {
+                switch (ch) {
+                    case '^': /* Symbology specific */
+                        if (!extra_escape_mode || !can_extra_escape) {
+                            if (!extra_escape_mode) {
+                                return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 798,
+                                                "Escape '\\^' only valid in Extra Escape mode");
+                            }
+                            return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 213,
+                                            "Extra escape '\\^' not valid for this symbology and/or input mode");
                         }
-                        return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 213,
-                                        "Extra escape '\\^' not valid for this symbology and/or input mode");
-                    }
-                    /* Pass thru unaltered */
-                    if (escaped_string) {
-                        escaped_string[out_posn++] = '\\';
-                        escaped_string[out_posn] = '^';
-                    } else {
-                        out_posn++;
-                    }
-                    in_posn += 2;
-                    if (in_posn < length) { /* Note allowing '\\^' on its own at end */
+                        /* Pass thru unaltered */
                         if (escaped_string) {
-                            escaped_string[++out_posn] = input_string[in_posn++];
-                        } else {
-                            ++out_posn;
-                            in_posn++;
-                        }
-                    }
-                    break;
-                case '(':
-                case ')':
-                    if (!escape_parens) {
-                        return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 853,
-                                        "Escaped parentheses only valid in GS1 mode with GS1 parentheses flag");
-                    }
-                    /* Pass through unaltered */
-                    if (escaped_string) {
-                        escaped_string[out_posn++] = '\\';
-                        escaped_string[out_posn] = ch;
-                    } else {
-                        out_posn++;
-                    }
-                    in_posn += 2;
-                    break;
-                case 'd':
-                case 'o':
-                case 'x':
-                    if ((val = esc_base(symbol, input_string, length, in_posn + 2, ch)) == -1) {
-                        return ZINT_ERROR_INVALID_DATA;
-                    }
-                    if (escaped_string) escaped_string[out_posn] = val;
-                    in_posn += 4 + (ch != 'x');
-                    break;
-                case 'u':
-                case 'U':
-                    if (in_posn + 6 > length || (ch == 'U' && in_posn + 8 > length)) {
-                        return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 209,
-                                        "Incomplete '\\%c' escape sequence in input", ch);
-                    }
-                    unicode = 0;
-                    for (i = 0; i < 6; i++) {
-                        if ((val = z_ctoi(input_string[in_posn + i + 2])) == -1) {
-                            return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 211,
-                                        "Invalid character for '\\%c' escape sequence in input (hexadecimal only)",
-                                        ch);
-                        }
-                        unicode = (unicode << 4) | val;
-                        if (i == 3 && ch == 'u') {
-                            break;
-                        }
-                    }
-                    /* Exclude reversed BOM and surrogates and out-of-range */
-                    if (unicode == 0xFFFE || (unicode >= 0xD800 && unicode < 0xE000) || unicode > 0x10FFFF) {
-                        return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 216,
-                                        "Value of escape sequence '%.*s' in input out of range",
-                                        ch == 'u' ? 6 : 8, input_string + in_posn);
-                    }
-                    if (unicode < 0x80) {
-                        if (escaped_string) escaped_string[out_posn] = (unsigned char) unicode;
-                    } else if (unicode < 0x800) {
-                        if (escaped_string) {
-                            escaped_string[out_posn++] = (unsigned char) (0xC0 | (unicode >> 6));
-                            escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
+                            escaped_string[out_posn++] = '\\';
+                            escaped_string[out_posn] = '^';
                         } else {
                             out_posn++;
                         }
-                    } else if (unicode < 0x10000) {
-                        if (escaped_string) {
-                            escaped_string[out_posn++] = (unsigned char) (0xE0 | (unicode >> 12));
-                            escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 6) & 0x3F));
-                            escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
-                        } else {
-                            out_posn += 2;
+                        in_posn += 2;
+                        if (in_posn < length) { /* Note allowing '\\^' on its own at end */
+                            if (escaped_string) {
+                                escaped_string[++out_posn] = input_string[in_posn++];
+                            } else {
+                                ++out_posn;
+                                in_posn++;
+                            }
                         }
-                    } else {
-                        if (escaped_string) {
-                            escaped_string[out_posn++] = (unsigned char) (0xF0 | (unicode >> 18));
-                            escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 12) & 0x3F));
-                            escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 6) & 0x3F));
-                            escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
-                        } else {
-                            out_posn += 3;
+                        break;
+                    case '(':
+                    case ')':
+                        if (!escape_parens) {
+                            return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 853,
+                                            "Escaped parentheses only valid in GS1 mode with GS1 parentheses flag");
                         }
-                    }
-                    in_posn += 6 + (ch == 'U') * 2;
-                    break;
-                default:
-                    return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 234,
-                                    "Unrecognised escape character '\\%c' in input",
-                                    !z_isascii(ch) || z_iscntrl(ch) ? '?' : ch);
-                    break;
+                        /* Pass through unaltered */
+                        if (escaped_string) {
+                            escaped_string[out_posn++] = '\\';
+                            escaped_string[out_posn] = ch;
+                        } else {
+                            out_posn++;
+                        }
+                        in_posn += 2;
+                        break;
+                    case 'd':
+                    case 'o':
+                    case 'x':
+                        if ((val = esc_base(symbol, input_string, length, in_posn + 2, ch)) == -1) {
+                            return ZINT_ERROR_INVALID_DATA;
+                        }
+                        if (escaped_string) escaped_string[out_posn] = val;
+                        in_posn += 4 + (ch != 'x');
+                        break;
+                    case 'u':
+                    case 'U':
+                        if (in_posn + 6 > length || (ch == 'U' && in_posn + 8 > length)) {
+                            return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 209,
+                                            "Incomplete '\\%c' escape sequence in input", ch);
+                        }
+                        unicode = 0;
+                        for (i = 0; i < 6; i++) {
+                            if ((val = z_ctoi(input_string[in_posn + i + 2])) == -1) {
+                                return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 211,
+                                        "Invalid character for '\\%c' escape sequence in input (hexadecimal only)",
+                                        ch);
+                            }
+                            unicode = (unicode << 4) | val;
+                            if (i == 3 && ch == 'u') {
+                                break;
+                            }
+                        }
+                        /* Exclude reversed BOM and surrogates and out-of-range */
+                        if (unicode == 0xFFFE || (unicode >= 0xD800 && unicode < 0xE000) || unicode > 0x10FFFF) {
+                            return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 216,
+                                            "Value of escape sequence '%.*s' in input out of range",
+                                            ch == 'u' ? 6 : 8, input_string + in_posn);
+                        }
+                        if (unicode < 0x80) {
+                            if (escaped_string) escaped_string[out_posn] = (unsigned char) unicode;
+                        } else if (unicode < 0x800) {
+                            if (escaped_string) {
+                                escaped_string[out_posn++] = (unsigned char) (0xC0 | (unicode >> 6));
+                                escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
+                            } else {
+                                out_posn++;
+                            }
+                        } else if (unicode < 0x10000) {
+                            if (escaped_string) {
+                                escaped_string[out_posn++] = (unsigned char) (0xE0 | (unicode >> 12));
+                                escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 6) & 0x3F));
+                                escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
+                            } else {
+                                out_posn += 2;
+                            }
+                        } else {
+                            if (escaped_string) {
+                                escaped_string[out_posn++] = (unsigned char) (0xF0 | (unicode >> 18));
+                                escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 12) & 0x3F));
+                                escaped_string[out_posn++] = (unsigned char) (0x80 | ((unicode >> 6) & 0x3F));
+                                escaped_string[out_posn] = (unsigned char) (0x80 | (unicode & 0x3F));
+                            } else {
+                                out_posn += 3;
+                            }
+                        }
+                        in_posn += 6 + (ch == 'U') * 2;
+                        break;
+                    default:
+                        return z_errtxtf(ZINT_ERROR_INVALID_DATA, symbol, 234,
+                                        "Unrecognised escape character '\\%c' in input",
+                                        !z_isascii(ch) || z_iscntrl(ch) ? '?' : ch);
+                        break;
+                }
             }
         } else {
             if (escaped_string) escaped_string[out_posn] = input_string[in_posn];
@@ -2096,7 +2089,7 @@ float ZBarcode_Scale_From_XdimDp(int symbol_id, float x_dim_mm, float dpmm, cons
         return 0.0f;
     }
     if (filetype && *filetype) {
-        if ((i = filetype_idx(filetype)) < 0 || filetypes[i].filetype == 0) { /* Not found or TXT */
+        if ((i = filetype_idx(filetype)) < 0) { /* Not found */
             return 0.0f;
         }
     } else {

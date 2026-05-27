@@ -486,8 +486,7 @@ static int out_quiet_zones(const struct zint_symbol *symbol, const int hide_text
 
         case BARCODE_TELEPEN:
         case BARCODE_TELEPEN_NUM:
-            /* Appears to be ~10X from diagram in Telepen Barcode Symbology information and History */
-            /* TODO: Find better doc */
+            /* AIM Europe USS Telepen - 10X */
             *left = *right = 10.0f;
             done = 1;
             break;

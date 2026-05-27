@@ -1771,7 +1771,8 @@ static int dm_encode_segs(struct zint_symbol *symbol, struct zint_seg segs[], co
                             "Cannot have Structured Append and Reader Initialisation at the same time");
         }
         if (extra_escape_mode) {
-            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 847, "Cannot use Reader Initialisation in Extra Escape mode");
+            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 847,
+                            "Cannot use Reader Initialisation in Extra Escape mode");
         }
         target[tp++] = 234; /* Reader Programming */
         if (debug_print) fputs("RP ", stdout);

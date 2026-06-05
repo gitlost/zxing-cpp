@@ -755,6 +755,14 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 3, 3, 0   },
 		});
 
+		runTests("micropdf417-1", MicroPDF417, 5, {
+			{ 4, 4, 0   },
+			{ 0, 4, 90  },
+			{ 4, 4, 180 },
+			{ 0, 4, 270 },
+			{ 1, 0, pure },
+		});
+
 		runTests("falsepositives-1", None, 27, {
 			// <fast minPassCount> <slow minPassCount> <fast maxMisReads> <slow maxMisReads> <rotation>
 			{ 0, 0, 0, 0, 0   },

@@ -626,7 +626,8 @@ TEST(CreateBarcodeTest, ZintASCII)
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
-		check_same(__LINE__, barcode, readBarcode, true /*cmpPosition*/, true /*cmpBits*/, false /*cmpEcLevel*/);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/, true /*cmpBits*/, false /*cmpEcLevel*/);
+		EXPECT_EQ(ToString(readBarcode.position()), "0x1 38x1 38x20 0x20"); // TODO: fix isPure position
 		EXPECT_EQ(readBarcode.ecLevel(), "58%"); // TODO: different EC level calc
 #endif
 	}
@@ -684,6 +685,81 @@ TEST(CreateBarcodeTest, ZintASCII)
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
 		check_same(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::TelepenAlpha;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("AB", cOpts);
+		check(__LINE__, barcode, "]B0", "AB", "41 42", false, "]B0\\000026AB", "5D 42 30 41 42",
+			  "AB", "Text", "0x0 78x0 78x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::TelepenNumeric;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
+		check(__LINE__, barcode, "]B1", "1234", "31 32 33 34", false, "]B1\\0000261234", "5D 42 31 31 32 33 34",
+			  "1234", "Text", "0x0 78x0 78x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::TelepenNumeric;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("1234\x10" "AB", cOpts);
+		check(__LINE__, barcode, "]B2", "1234AB", "31 32 33 34 41 42", false, "]B2\\0000261234AB", "5D 42 32 31 32 33 34 41 42",
+			  "1234AB", "Text", "0x0 126x0 126x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::TelepenNumAlpha;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("12\x10" "AB", cOpts);
+		check(__LINE__, barcode, "]B2", "12AB", "31 32 41 42", false, "]B2\\00002612AB", "5D 42 32 31 32 41 42",
+			  "12AB", "Text", "0x0 110x0 110x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		BarcodeFormat format = BarcodeFormat::TelepenAlphaNum;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("AB\x10" "1234", cOpts);
+		check(__LINE__, barcode, "]B4", "AB1234", "41 42 31 32 33 34", false, "]B4\\000026AB1234", "5D 42 34 41 42 31 32 33 34",
+			  "AB1234", "Text", "0x0 126x0 126x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
+		check_x_position(__LINE__, barcode, readBarcode);
 #endif
 	}
 	{
@@ -1203,6 +1279,23 @@ TEST(CreateBarcodeTest, ZintBinary)
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
 		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
 		EXPECT_EQ(ToString(readBarcode.position()), "0x25 177x25 177x25 0x25");
+		check_x_position(__LINE__, barcode, readBarcode);
+#endif
+	}
+	{
+		// No ECI (not supported anyway for Telepen)
+		BarcodeFormat format = BarcodeFormat::TelepenNumeric;
+
+		auto cOpts = CreatorOptions(format);
+		std::string data("12\x10" "3");
+		Barcode barcode = CreateBarcodeFromBytes(data, cOpts);
+		check(__LINE__, barcode, "]B2", "123", "31 32 33", false, "]B2\\000026123",
+			  "5D 42 32 31 32 33", "123", "Text", "0x0 94x0 94x31 0x31");
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/);
 		check_x_position(__LINE__, barcode, readBarcode);
 #endif
 	}

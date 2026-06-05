@@ -32,6 +32,7 @@
 #include "pdf417/MicroPDFReader.h"
 #ifdef ZXING_ENABLE_PDF417
 #include "pdf417/PDFReader.h"
+#include "pdf417/MicroPDFReader.h"
 #endif
 #if ZXING_ENABLE_QRCODE
 #include "qrcode/QRReader.h"
@@ -64,8 +65,10 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 		_readers.emplace_back(new Aztec::Reader(opts, true));
 #endif
 #if ZXING_ENABLE_PDF417
-	if (opts.hasFormat(PDF417)|| opts.hasFormat(CompactPDF417))
+	if (opts.hasFormat(PDF417 | CompactPDF417))
 		_readers.emplace_back(new Pdf417::Reader(opts));
+	if (opts.hasFormat(MicroPDF417))
+		_readers.emplace_back(new MicroPdf417::Reader(opts));
 #endif
 #if ZXING_ENABLE_MAXICODE
 	if (opts.hasAnyFormat(MaxiCode))
@@ -80,8 +83,6 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 		_readers.emplace_back(new DotCode::Reader(opts));
 	if (opts.hasFormat(HanXin))
 		_readers.emplace_back(new HanXin::Reader(opts));
-	if (opts.hasFormat(MicroPDF417))
-		_readers.emplace_back(new MicroPdf417::Reader(opts));
 	#endif
 
 	// At end in "try harder" mode

@@ -1,6 +1,5 @@
 /*
-* Copyright 2016 Nu-book Inc.
-* Copyright 2016 ZXing authors
+* Copyright 2026 Axel Waggershauser
 */
 // SPDX-License-Identifier: Apache-2.0
 
@@ -8,20 +7,17 @@
 
 #include "Reader.h"
 
-namespace ZXing {
+namespace ZXing::MicroPdf417 {
 
-class ReaderOptions;
-
-namespace MicroPdf417 {
-
+/**
+* This implementation can detect and decode Micro PDF417 codes in an image.
+*/
 class Reader : public ZXing::Reader
 {
-	bool _formatSpecified;
-
 public:
-	explicit Reader(const ReaderOptions& options);
+	using ZXing::Reader::Reader;
+
 	BarcodesData read(const BinaryBitmap& image, int maxSymbols) const override;
 };
 
-} // MicroPdf417
-} // ZXing
+} // namespace ZXing::MicroPdf417

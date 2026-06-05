@@ -439,7 +439,14 @@ int main(int argc, char* argv[])
 
 	} else if (format == BarcodeFormat::MicroPDF417) {
 		MicroPdf417::Reader reader(opts);
-		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
+		int height = bits.height() * 2;
+		if (height >= 1) {
+			while (height < 10) { // BARCODE_MIN_HEIGHT in "pdf417/PDFDetector.cpp"
+				height *= 2;
+			}
+		}
+		auto ivbits = InflateXY(bits.copy(), bits.width(), height);
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
 	} else if (format == BarcodeFormat::DXFilmEdge) {
 		OneD::Reader reader(opts);

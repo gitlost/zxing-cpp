@@ -186,9 +186,13 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::PDF417, {'L', '2', -1}},
 	{BarcodeFormat::QRCode, {'Q', '1', 1}}, // '3' GS1, '5' AIM
 	{BarcodeFormat::RMQRCode, {'Q', '1', 1}}, // '3' GS1, '5' AIM
+	{BarcodeFormat::TelepenAlpha, {'B', '0'}},
+	{BarcodeFormat::TelepenNumeric, {'B', '1'}},
+	{BarcodeFormat::TelepenNumAlpha, {'B', '2'}},
+	{BarcodeFormat::TelepenAlphaNum, {'B', '4'}},
 };
 
-static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, const ByteArray& ba, std::string_view &eanAddOn)
+static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& opts, const ByteArray& ba, const bool hasTelepenDLE, std::string_view &eanAddOn)
 {
 	using enum BarcodeFormat;
 
@@ -210,6 +214,8 @@ static SymbologyIdentifier SymbologyIdentifierZint2ZXing(const CreatorOptions& o
 		else if (format & (QRCode | RMQRCode))
 			ret.modifier = '3';
 		ret.aiFlag = AIFlag::GS1;
+	} else if (format == TelepenNumeric && hasTelepenDLE) {
+		ret.modifier = '2';
 	}
 
 	return ret;
@@ -502,8 +508,16 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (auto val = opts.rotate(); val)
 		rotate = *val;
 
+	bool hasTelepenDLE = false;
 	if (opts.format() == BarcodeFormat::Telepen && (std::all_of((const char*)data, (const char*)data + size, IsDigit<char>)))
 		zint->symbology = BARCODE_TELEPEN_NUM;
+	else if (opts.format() == BarcodeFormat::TelepenNumAlpha) {
+		zint->symbology = BARCODE_TELEPEN_NUM;
+		zint->option_2 = 1;
+	} else if (opts.format() == BarcodeFormat::TelepenAlphaNum) {
+		zint->symbology = BARCODE_TELEPEN;
+		zint->option_2 = 1;
+	}
 
 	int warning;
 	CHECK_WARN(ZBarcode_Encode_and_Buffer(zint, src, size, rotate), warning);
@@ -518,7 +532,9 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	assert(zint->content_seg_count == 1);
 	const auto& content_seg = zint->content_segs[0];
 	const size_t content_seg_len =
-		static_cast<size_t>(content_seg.length - (opts.format() == BarcodeFormat::Code93 && content_seg.length >= 2 ? 2 : 0));
+		static_cast<size_t>(content_seg.length
+							- (opts.format() == BarcodeFormat::Code93 && content_seg.length >= 2 ? 2
+							   : (opts.format() & BarcodeFormat::Telepen) && content_seg.length >= 1 ? 1 : 0));
 
 	Content content;
 
@@ -527,22 +543,37 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	else
 		content.switchEncoding(ToCharacterSet(ECI(content_seg.eci)));
 
+	const bool checkForDLE = zint->symbology == BARCODE_TELEPEN_NUM || (zint->symbology == BARCODE_TELEPEN && zint->option_2 == 1);
 	if ((zint->input_mode & 0x07) == UNICODE_MODE) {
 		// `content_segs` returned as UTF-8
 		std::string utf8(reinterpret_cast<const char *>(content_seg.source), content_seg_len);
+		if (checkForDLE) {
+			if (const auto dle = IndexOf(utf8, '\x10'); dle != -1) {
+				utf8.erase(dle, 1);
+				hasTelepenDLE = true;
+			}
+		}
 		content.append(TextEncoder::FromUnicode(utf8, ToCharacterSet(ECI(content_seg.eci))));
 #ifndef ZXING_READERS
 		content.utf8Cache.push_back(std::move(utf8));
 #endif
 	} else {
-		content.append({content_seg.source, content_seg_len});
+		if (checkForDLE) {
+			if (const unsigned char *dle = reinterpret_cast<const unsigned char *>(memchr(content_seg.source, '\x10', content_seg_len)); dle) {
+				content.append({content_seg.source, static_cast<size_t>(dle - content_seg.source)});
+				content.append({dle + 1, content_seg_len - static_cast<size_t>(dle + 1 - content_seg.source)});
+				hasTelepenDLE = true;
+			}
+		} else {
+			content.append({content_seg.source, content_seg_len});
+		}
 #ifndef ZXING_READERS
 		content.utf8Cache.push_back(BinaryToUtf8(content.bytes));
 #endif
 	}
 
 	std::string_view eanAddOn;
-	content.symbology = SymbologyIdentifierZint2ZXing(opts, content.bytes, eanAddOn);
+	content.symbology = SymbologyIdentifierZint2ZXing(opts, content.bytes, hasTelepenDLE, eanAddOn);
 
 	DecoderResult decRes(std::move(content));
 	decRes.setEcLevel(ECLevelZint2ZXing(zint));

@@ -13,8 +13,7 @@
 #include "BitMatrix.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "GenericGF.h"
-#include "ReedSolomonDecoder.h"
+#include "ReedSolomon.h"
 #include "ZXTestSupport.h"
 #include "ZXAlgorithms.h"
 
@@ -123,21 +122,16 @@ static BitArray ExtractBits(const DetectorResult& ddata)
 */
 static std::tuple<BitArray, int, double> CorrectBits(const DetectorResult& ddata, const BitArray& rawbits)
 {
-	const GenericGF* gf = nullptr;
-	int codewordSize;
+	int codewordSize = 0;
 
 	if (ddata.nbLayers() <= 2) {
 		codewordSize = 6;
-		gf = &GenericGF::AztecData6();
 	} else if (ddata.nbLayers() <= 8) {
 		codewordSize = 8;
-		gf = &GenericGF::AztecData8();
 	} else if (ddata.nbLayers() <= 22) {
 		codewordSize = 10;
-		gf = &GenericGF::AztecData10();
 	} else {
 		codewordSize = 12;
-		gf = &GenericGF::AztecData12();
 	}
 
 	int numCodewords = Size(rawbits) / codewordSize;
@@ -148,7 +142,7 @@ static std::tuple<BitArray, int, double> CorrectBits(const DetectorResult& ddata
 		throw FormatError("Invalid number of code words");
 
 	auto dataWords = ToInts<int>(rawbits, codewordSize, numCodewords, Size(rawbits) % codewordSize);
-	auto uec = ReedSolomonDecode(*gf, dataWords, numECCodewords);
+	auto uec = ReedSolomonDecode(GF2nAztec(codewordSize), dataWords, numECCodewords);
 
 	if (!uec)
 		throw ChecksumError();
@@ -407,7 +401,7 @@ DecoderResult Decode(const DetectorResult& detectorResult, const CharacterSet op
 		auto result = Decode(bits, optionsCharset);
 		if (result.isValid()) {
 			result.setEcLevel(std::to_string(ecLevel) + "%");
-			result.addExtra(BarcodeExtra::UEC, uec);
+			result.addExtra(BarcodeExtra::UEC, uec, -1.0);
 		}
 		return result;
 	} catch (Error e) {

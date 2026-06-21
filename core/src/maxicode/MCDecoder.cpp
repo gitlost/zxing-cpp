@@ -10,9 +10,8 @@
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "GenericGF.h"
 #include "MCBitMatrixParser.h"
-#include "ReedSolomonDecoder.h"
+#include "ReedSolomon.h"
 #include "ZXTestSupport.h"
 
 #include <algorithm>
@@ -42,7 +41,7 @@ static bool CorrectErrors(ByteArray& codewordBytes, int start, int dataCodewords
 			codewordsInts[i / divisor] = codewordBytes[i + start];
 	}
 
-	if (!ReedSolomonDecode(GenericGF::MaxiCodeField64(), codewordsInts, ecCodewords / divisor))
+	if (!ReedSolomonDecode(RSField::MaxiCode, codewordsInts, ecCodewords / divisor))
 		return false;
 
 	// Copy back into array of bytes -- only need to worry about the bytes that were data

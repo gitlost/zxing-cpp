@@ -23,11 +23,10 @@
 #include "Content.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "GenericGF.h"
 #include "HXBitMatrixParser.h"
 #include "HXDataBlock.h"
 #include "JSON.h"
-#include "ReedSolomonDecoder.h"
+#include "ReedSolomon.h"
 #include "ZXTestSupport.h"
 
 #include <vector>
@@ -336,7 +335,7 @@ CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 	std::vector<int> codewordsInts(codewordBytes.begin(), codewordBytes.end());
 	int numECCodewords = Size(codewordBytes) - numDataCodewords;
 
-	if (!ReedSolomonDecode(GenericGF::HanXinField256(), codewordsInts, numECCodewords)) {
+	if (!ReedSolomonDecode(RSField::HanXin, codewordsInts, numECCodewords)) {
 		Diagnostics::put("Fail(RSDecode)");
 		return false;
 	}

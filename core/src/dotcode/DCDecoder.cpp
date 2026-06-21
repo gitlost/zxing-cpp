@@ -21,12 +21,10 @@
 #include "Content.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
-#include "GenericGF.h"
 #include "DCBitMatrixParser.h"
 #include "DCDataBlock.h"
-#include "DCGField.h"
 #include "JSON.h"
-#include "ReedSolomonDecoder.h"
+#include "ReedSolomon.h"
 #include "ZXTestSupport.h"
 
 #include <vector>
@@ -539,7 +537,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset)
 } // DecodedBitStreamParser
 
 static bool
-CorrectErrors(const GField& field, ByteArray& codewordBytes, int numDataCodewords)
+CorrectErrors(ByteArray& codewordBytes, int numDataCodewords)
 {
 	// First read into an array of ints
 	std::vector<int> codewordsInts(codewordBytes.begin(), codewordBytes.end());
@@ -548,7 +546,7 @@ CorrectErrors(const GField& field, ByteArray& codewordBytes, int numDataCodeword
 	Diagnostics::fmt("  DataCodewords: (%d)", numDataCodewords); Diagnostics::dump(codewordsInts, "\n", 0, numDataCodewords);
 	Diagnostics::fmt("  ECCodewords:   (%d)", numECCodewords); Diagnostics::dump(codewordsInts, "\n", numDataCodewords);
 
-	if (!ReedSolomonDecode(field, codewordsInts, numECCodewords)) {
+	if (!ReedSolomonDecode(RSField::DotCode, codewordsInts, numECCodewords)) {
 		Diagnostics::put("Fail(RSDecode)");
 		return false;
 	}
@@ -570,11 +568,11 @@ Unmask(ByteArray& codewords, int& mask)
 		const int factor = mask == 1 ? 3 : mask == 2 ? 7 : 17;
 		for (int i = 1; i < Size(codewords); i++) {
 			if (codewords[i] < weight) {
-				codewords[i] += GField::GF - weight;
+				codewords[i] += 113 - weight;
 			} else {
 				codewords[i] -= weight;
 			}
-			weight = (weight + factor) % GField::GF;
+			weight = (weight + factor) % 113;
 		}
 	}
 }
@@ -582,7 +580,6 @@ Unmask(ByteArray& codewords, int& mask)
 DecoderResult
 Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 {
-	static GField field;
 	std::vector<int> erasureLocs;
 
 	ByteArray codewords = BitMatrixParser::ReadCodewords(bits, erasureLocs);
@@ -605,7 +602,7 @@ Decoder::Decode(const BitMatrix& bits, const CharacterSet optionsCharset)
 		auto& dataBlock = dataBlocks[j];
 		ByteArray& codewordBytes = dataBlock.codewords;
 		const int numDataCodewords = dataBlock.numDataCodewords;
-		if (!CorrectErrors(field, codewordBytes, numDataCodewords)) {
+		if (!CorrectErrors(codewordBytes, numDataCodewords)) {
 			//fprintf(stderr, " checksum fail\n");
 			return {};
 		}

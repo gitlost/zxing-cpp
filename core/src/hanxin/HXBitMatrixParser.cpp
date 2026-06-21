@@ -19,8 +19,7 @@
 #include "BitMatrix.h"
 #include "ByteArray.h"
 #include "Diagnostics.h"
-#include "GenericGF.h"
-#include "ReedSolomonDecoder.h"
+#include "ReedSolomon.h"
 
 namespace ZXing::HanXin {
 
@@ -309,7 +308,7 @@ static bool getFunctionalInfo(const BitMatrix& image, const int size, int &versi
 	fprintf(stderr, "\n");
 	#endif
 
-	if (!ReedSolomonDecode(GenericGF::HanXinFuncInfo(), funcInfo, 4)) {
+	if (!ReedSolomonDecode(RSField::HanXinFuncInfo, funcInfo, 4)) {
 		version = ecLevel = mask = 0;
 		return false;
 	}

@@ -18,14 +18,13 @@
 
 #include "BitMatrix.h"
 #include "ByteArray.h"
-#include "DCGField.h"
 #include "Diagnostics.h"
 
 namespace ZXing::DotCode {
 
 static int lookupPattern(int pattern)
 {
-	static const unsigned short dot_patterns[GField::GF][2] = {
+	static const unsigned short dot_patterns[113][2] = {
 		{ 0x02f, 93 },
 		{ 0x037, 94 },
 		{ 0x03b, 95 },
@@ -141,7 +140,7 @@ static int lookupPattern(int pattern)
 		{ 0x1d4, 62 },
 	};
 
-	int s = 0, e = GField::GF - 1;
+	int s = 0, e = 113 - 1;
 
 	while (s <= e) {
 		int m = (s + e) / 2;

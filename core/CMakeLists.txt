@@ -392,7 +392,6 @@ if ((ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS) AND ZXING_ENABLE_1D
         src/oned/ODUPCEANCommon.cpp
         src/oned/ODCode93Patterns.h
         src/oned/ODCode128Patterns.h
-        src/oned/ODCode128Patterns.cpp
     )
 endif()
 if (ZXING_READERS AND ZXING_ENABLE_1D)

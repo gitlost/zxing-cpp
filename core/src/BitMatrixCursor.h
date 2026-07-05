@@ -75,9 +75,9 @@ public:
 	// From POV of current direction, so if going right then front() points right, back() points left,
 	// left() points up & right() points down
 	POINT front() const noexcept { return d; }
-	POINT back() const noexcept { return {-d.x, -d.y}; }
-	POINT left() const noexcept { return {d.y, -d.x}; }
-	POINT right() const noexcept { return {-d.y, d.x}; }
+	POINT back() const noexcept { return -d; }
+	POINT left() const noexcept { return ZXing::left(d); }
+	POINT right() const noexcept { return ZXing::right(d); }
 	POINT direction(Direction dir) const noexcept { return static_cast<int>(dir) * right(); } // LEFT or RIGHT
 
 	void turnBack() noexcept { d = back(); }

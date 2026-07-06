@@ -77,6 +77,7 @@
 	X(CodablockF,       'O', ' ', "xrw  ",  74, 1,                       "Codablock-F") \
 	X(Code16K,          'K', ' ', "xrwG ",  23, 1,                       "Code 16K") \
 	X(DotCode,          'J', ' ', "xrwG ", 115, 1,                       "DotCode") \
+	X(GridMatrix,       'g', ' ', "xrw  ", 142, 1,                       "Grid Matrix") \
 	X(HanXin,           'h', ' ', "xrw  ", 116, 1,                       "Han Xin") \
 // clang-format on
 

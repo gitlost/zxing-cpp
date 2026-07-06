@@ -25,9 +25,21 @@ inline Direction opposite(Direction dir) noexcept
  *
  * The current position and direction is a PointT<T>. So depending on the type it can be used to traverse the image
  * in a Bresenham style (PointF) or in a discrete way (step only horizontal/vertical/diagonal (PointI)).
- *
- * Direction right {1, 0}, left {-1, 0}, down {0, 1}, up {0, -1} south-east {1, 1} etc.
  */
+constexpr PointI CURI_LEFT  = PointI{1, 0};
+constexpr PointI CURI_DOWN  = PointI{0, 1};
+constexpr PointI CURI_RIGHT = PointI{-1, 0};
+constexpr PointI CURI_UP    = PointI{0, -1};
+
+constexpr PointI CURI_E  = PointI{1, 0};
+constexpr PointI CURI_S  = PointI{0, 1};
+constexpr PointI CURI_W  = PointI{-1, 0};
+constexpr PointI CURI_N  = PointI{0, -1};
+constexpr PointI CURI_SE = PointI{1, 1};
+constexpr PointI CURI_SW = PointI{-1, 1};
+constexpr PointI CURI_NW = PointI{-1, -1};
+constexpr PointI CURI_NE = PointI{1, -1};
+
 template<typename POINT>
 class BitMatrixCursor
 {

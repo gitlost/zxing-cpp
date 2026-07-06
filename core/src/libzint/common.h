@@ -142,12 +142,13 @@ typedef unsigned __int64 uint64_t;
 #define z_isfintf(arg) (fmodf(arg, 1.0f) == 0.0f)
 
 /* Simple versions of <ctype.h> functions with no dependence on locale */
-#define z_isdigit(ch) ((ch) <= '9' && (ch) >= '0')
-#define z_isupper(ch) ((ch) >= 'A' && (ch) <= 'Z')
-#define z_islower(ch) ((ch) >= 'a' && (ch) <= 'z')
-#define z_isalpha(ch) (z_isupper(ch) || z_islower(ch))
-#define z_isascii(ch) (!((ch) & ~0x7F))
-#define z_iscntrl(ch) (!((ch) & ~0x1F) || (ch) == 127)
+#define z_isdigit(ch)   ((ch) <= '9' && (ch) >= '0')
+#define z_isxdigit(ch)  (z_isdigit(ch) || (((ch) | 0x20) >= 'a' && ((ch) | 0x20) <= 'f'))
+#define z_isupper(ch)   ((ch) >= 'A' && (ch) <= 'Z')
+#define z_islower(ch)   ((ch) >= 'a' && (ch) <= 'z')
+#define z_isalpha(ch)   z_islower(ch | 0x20)
+#define z_isascii(ch)   (!((ch) & ~0x7F))
+#define z_iscntrl(ch)   (!((ch) & ~0x1F) || (ch) == 127)
 
 /* Shorthands to cast away char pointer signedness */
 #define ZUCP(p)     ((unsigned char *) (p))
@@ -355,6 +356,12 @@ INTERNAL void z_hrt_printf_nochk(struct zint_symbol *symbol, const char *fmt, ..
 INTERNAL void z_hrt_conv_gs1_brackets_nochk(struct zint_symbol *symbol, const unsigned char source[],
                 const int length);
 
+#ifdef ZINT_TEST
+/* For testing content segment `calloc()`/`malloc()` failures */
+#define Z_CT_FAIL_ID_INIT_SEGS      1
+#define Z_CT_FAIL_ID_INIT_SEG_SRC   2
+INTERNAL void zint_test_ct_set_fail(const int id, const int at);
+#endif
 
 /* Initialize `content_segs` for `seg_count` segments. On error sets `errtxt`, returning BARCODE_ERROR_MEMORY */
 INTERNAL int z_ct_init_segs(struct zint_symbol *symbol, const int seg_count);

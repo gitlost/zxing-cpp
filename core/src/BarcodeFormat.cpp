@@ -236,6 +236,7 @@ static const BarcodeFormatName NAMES[] = {
 	{BarcodeFormat::DXFilmEdge, "DXFilmEdge"},
 	{BarcodeFormat::EAN8, "EAN-8"},
 	{BarcodeFormat::EAN13, "EAN-13"},
+	{BarcodeFormat::GridMatrix, "GridMatrix"},
 	{BarcodeFormat::HanXin, "HanXin"},
 	{BarcodeFormat::ITF, "ITF"},
 	{BarcodeFormat::MaxiCode, "MaxiCode"},

@@ -46,7 +46,7 @@ INTERNAL_DATA_EXTERN const unsigned short zint_pdf_coefrs[1022];
 INTERNAL_DATA_EXTERN const unsigned short zint_pdf_bitpattern[2787]; /* 2787 = 929 * 3 */
 
 /* Left RAP, Centre RAP, Right RAP and Start Cluster from ISO/IEC 15438:2015 Tables 10, 11 and 12 */
-INTERNAL_DATA_EXTERN const char zint_pdf_RAPTable[136]; /* 34 * 4 */
+INTERNAL_DATA_EXTERN const char zint_pdf_RAPTable[4][34];
 
 /* Left and Right Row Address Pattern from ISO/IEC 15438:2015 Table 2 */
 INTERNAL_DATA_EXTERN const unsigned short zint_pdf_rap_side[52];
@@ -57,12 +57,15 @@ INTERNAL_DATA_EXTERN const unsigned short zint_pdf_rap_centre[52];
 /* MicroPDF417 coefficients from ISO/IEC 24728:2006 Annex F */
 INTERNAL_DATA_EXTERN const unsigned short zint_pdf_Microcoeffs[344];
 
-/* Number of Data Columns (1st 34), Number of Rows (2nd 34), Number of EC CWs (3rd 34) from ISO/IEC 24728:2006 Table 1
-   and k-offsets (4th 34) into `zint_pdf_Microcoeffs[]` above */
-INTERNAL_DATA_EXTERN const unsigned short zint_pdf_MicroVariants[136]; /* 34 * 4 */
+/* Number of Data Columns (row 0), Number of Rows (1), Number of EC CWs (2) from ISO/IEC 24728:2006 Table 1
+   and k-offsets (3) into `zint_pdf_Microcoeffs[]` above */
+INTERNAL_DATA_EXTERN const unsigned short zint_pdf_MicroVariants[4][34];
 
 INTERNAL void zint_pdf_byteprocess(short *chainemc, int *p_mclength, const unsigned char chaine[], int start,
                 const int length, const int lastmode);
+
+INTERNAL void zint_micropdf_expand(struct zint_symbol *symbol, short *chainemc, int mclength, char *pattern,
+                const int cols, const int variant, const int debug_print);
 
 #ifdef __cplusplus
 }

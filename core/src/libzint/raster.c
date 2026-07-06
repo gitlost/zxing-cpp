@@ -53,6 +53,54 @@
 #define ZFONT_HALIGN_RIGHT  2
 #define ZFONT_UPCEAN_TEXT   4   /* Helper flag to indicate dealing with EAN/UPC */
 
+#ifdef ZINT_TEST
+/* For testing `malloc()` failure */
+
+static int raster_fail_id = 0; /* RAST_FAIL_ID_XXX below */
+static int raster_fail_at = 0; /* Number of times before failure */
+
+INTERNAL void zint_test_raster_set_fail(const int id, const int at) {
+    raster_fail_id = id;
+    raster_fail_at = at;
+}
+
+/* TODO: add new "raster.h" & put these in it */
+#define RAST_FAIL_ID_BITMAP         1
+#define RAST_FAIL_ID_ALPHA          2
+#define RAST_FAIL_ID_ROTATED        3
+#define RAST_FAIL_ID_MC_PIXELBUF    4
+#define RAST_FAIL_ID_MC_HEXAGON     5
+#define RAST_FAIL_ID_DOTTY_SCALED   6
+#define RAST_FAIL_ID_PIXELBUF       7
+#define RAST_FAIL_ID_SCALED         8
+
+#define rast_malloc(id, sz) (raster_fail_at > 0 && raster_fail_id == (id) && --raster_fail_at == 0 \
+                                ? NULL : malloc(sz))
+
+#define raster_malloc_bitmap(sz, psz)       raster_malloc(RAST_FAIL_ID_BITMAP, sz, psz)
+#define raster_malloc_alpha(sz, psz)        raster_malloc(RAST_FAIL_ID_ALPHA, sz, psz)
+#define raster_malloc_rotated(sz, psz)      raster_malloc(RAST_FAIL_ID_ROTATED, sz, psz)
+#define raster_malloc_mc_pixelbuf(sz, psz)  raster_malloc(RAST_FAIL_ID_MC_PIXELBUF, sz, psz)
+#define raster_malloc_mc_hexagon(sz, psz)   raster_malloc(RAST_FAIL_ID_MC_HEXAGON, sz, psz)
+#define raster_malloc_dotty_scaled(sz, psz) raster_malloc(RAST_FAIL_ID_DOTTY_SCALED, sz, psz)
+#define raster_malloc_pixelbuf(sz, psz)     raster_malloc(RAST_FAIL_ID_PIXELBUF, sz, psz)
+#define raster_malloc_scaled(sz, psz)       raster_malloc(RAST_FAIL_ID_SCALED, sz, psz)
+
+#else
+
+#define rast_malloc(id, sz) malloc(sz)
+
+#define raster_malloc_bitmap(sz, psz)       raster_malloc(sz, psz)
+#define raster_malloc_alpha(sz, psz)        raster_malloc(sz, psz)
+#define raster_malloc_rotated(sz, psz)      raster_malloc(sz, psz)
+#define raster_malloc_mc_pixelbuf(sz, psz)  raster_malloc(sz, psz)
+#define raster_malloc_mc_hexagon(sz, psz)   raster_malloc(sz, psz)
+#define raster_malloc_dotty_scaled(sz, psz) raster_malloc(sz, psz)
+#define raster_malloc_pixelbuf(sz, psz)     raster_malloc(sz, psz)
+#define raster_malloc_scaled(sz, psz)       raster_malloc(sz, psz)
+
+#endif
+
 #ifndef ZINT_NO_PNG
 INTERNAL int zint_png_pixel_plot(struct zint_symbol *symbol, const unsigned char *pixelbuf);
 #endif /* ZINT_NO_PNG */
@@ -64,14 +112,18 @@ INTERNAL int zint_tif_pixel_plot(struct zint_symbol *symbol, const unsigned char
 static const char ultra_colour[] = "0CBMRYGKW";
 
 /* Wrapper to pre-check `size` on `malloc()` isn't too big (`prev_size` given if doing 2nd `malloc()` in a row) */
+#ifdef ZINT_TEST
+static void *raster_malloc(const int id, size_t size, size_t prev_size) {
+#else
 static void *raster_malloc(size_t size, size_t prev_size) {
+#endif
     /* Check for large image `malloc`s, which produce very large files most systems can't handle anyway */
     /* Also `malloc()` on Linux will (usually) succeed regardless of request, and then get untrappably killed on
        access by OOM killer if too much, so this is a crude mitigation */
     if (size + prev_size < size /*Overflow check*/ || size + prev_size > 0x40000000 /*1GB*/) {
         return NULL;
     }
-    return malloc(size);
+    return rast_malloc(id, size);
 }
 
 static int buffer_plot(struct zint_symbol *symbol, const unsigned char *pixelbuf) {
@@ -112,7 +164,7 @@ static int buffer_plot(struct zint_symbol *symbol, const unsigned char *pixelbuf
         symbol->alphamap = NULL;
     }
 
-    if (!(symbol->bitmap = (unsigned char *) raster_malloc(bm_bitmap_size, 0 /*prev_size*/))) {
+    if (!(symbol->bitmap = (unsigned char *) raster_malloc_bitmap(bm_bitmap_size, 0 /*prev_size*/))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 661, "Insufficient memory for bitmap buffer");
     }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -121,7 +173,7 @@ static int buffer_plot(struct zint_symbol *symbol, const unsigned char *pixelbuf
 
     if (plot_alpha) {
         const size_t alpha_size = (size_t) symbol->bitmap_width * symbol->bitmap_height;
-        if (!(symbol->alphamap = (unsigned char *) raster_malloc(alpha_size, bm_bitmap_size))) {
+        if (!(symbol->alphamap = (unsigned char *) raster_malloc_alpha(alpha_size, bm_bitmap_size))) {
             return z_errtxt(ZINT_ERROR_MEMORY, symbol, 662, "Insufficient memory for alphamap buffer");
         }
         for (row = 0; row < symbol->bitmap_height; row++) {
@@ -182,7 +234,7 @@ static int save_raster_image_to_file(struct zint_symbol *symbol, const int image
 
     if (rotate_angle) {
         size_t image_size = (size_t) image_width * image_height;
-        if (!(rotated_pixbuf = (unsigned char *) raster_malloc((size_t) image_size, 0 /*prev_size*/))) {
+        if (!(rotated_pixbuf = (unsigned char *) raster_malloc_rotated((size_t) image_size, 0 /*prev_size*/))) {
             return z_errtxt(ZINT_ERROR_MEMORY, symbol, 650, "Insufficient memory for pixel buffer");
         }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -799,13 +851,13 @@ static int plot_raster_maxicode(struct zint_symbol *symbol, const int rotate_ang
     assert(image_width && image_height);
     image_size = (size_t) image_width * image_height;
 
-    if (!(pixelbuf = (unsigned char *) raster_malloc(image_size, 0 /*prev_size*/))) {
+    if (!(pixelbuf = (unsigned char *) raster_malloc_mc_pixelbuf(image_size, 0 /*prev_size*/))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 655, "Insufficient memory for pixel buffer");
     }
     memset(pixelbuf, DEFAULT_PAPER, image_size);
 
     hex_size = (size_t) hex_width * hex_height;
-    if (!(scaled_hexagon = (unsigned char *) raster_malloc(hex_size, image_size))) {
+    if (!(scaled_hexagon = (unsigned char *) raster_malloc_mc_hexagon(hex_size, image_size))) {
         free(pixelbuf);
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 656, "Insufficient memory for pixel buffer");
     }
@@ -893,7 +945,7 @@ static int plot_raster_dotty(struct zint_symbol *symbol, const int rotate_angle,
     scale_size = (size_t) scale_width * scale_height;
 
     /* Apply scale options by creating pixel buffer */
-    if (!(scaled_pixelbuf = (unsigned char *) raster_malloc(scale_size, 0 /*prev_size*/))) {
+    if (!(scaled_pixelbuf = (unsigned char *) raster_malloc_dotty_scaled(scale_size, 0 /*prev_size*/))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 657, "Insufficient memory for pixel buffer");
     }
     memset(scaled_pixelbuf, DEFAULT_PAPER, scale_size);
@@ -1068,7 +1120,7 @@ static int plot_raster_default(struct zint_symbol *symbol, const int rotate_angl
     assert(image_width && image_height);
     image_size = (size_t) image_width * image_height;
 
-    if (!(pixelbuf = (unsigned char *) raster_malloc(image_size, 0 /*prev_size*/))) {
+    if (!(pixelbuf = (unsigned char *) raster_malloc_pixelbuf(image_size, 0 /*prev_size*/))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 658, "Insufficient memory for pixel buffer");
     }
     memset(pixelbuf, DEFAULT_PAPER, image_size);
@@ -1407,7 +1459,8 @@ static int plot_raster_default(struct zint_symbol *symbol, const int rotate_angl
         const int scale_height = (int) z_stripf(image_height * scaler);
 
         /* Apply scale options by creating another pixel buffer */
-        if (!(scaled_pixelbuf = (unsigned char *) raster_malloc((size_t) scale_width * scale_height, image_size))) {
+        if (!(scaled_pixelbuf = (unsigned char *) raster_malloc_scaled((size_t) scale_width * scale_height,
+                                                                        image_size))) {
             free(pixelbuf);
             return z_errtxt(ZINT_ERROR_MEMORY, symbol, 659, "Insufficient memory for scaled pixel buffer");
         }

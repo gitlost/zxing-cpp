@@ -36,6 +36,43 @@
 #include "output.h"
 #include "zfiletypes.h"
 
+#ifdef ZINT_TEST
+/* For testing `malloc()` failure */
+
+static int vector_fail_id = 0; /* VECT_FAIL_ID_XXX below */
+static int vector_fail_at = 0; /* Number of times before failure */
+
+INTERNAL void zint_test_vector_set_fail(const int id, const int at) {
+    vector_fail_id = id;
+    vector_fail_at = at;
+}
+
+/* TODO: add new "vector.h" & put these in it */
+#define VECT_FAIL_ID_RECT     1
+#define VECT_FAIL_ID_HEXAGON  2
+#define VECT_FAIL_ID_CIRCLE   3
+#define VECT_FAIL_ID_STR      4
+#define VECT_FAIL_ID_SUBSTR   5
+#define VECT_FAIL_ID_HDR      6
+
+#define vect_malloc(id, sz)     (vector_fail_at > 0 && vector_fail_id == (id) && --vector_fail_at == 0 \
+                                    ? NULL : malloc(sz))
+
+#define vect_malloc_rect(sz)    vect_malloc(VECT_FAIL_ID_RECT, sz)
+#define vect_malloc_hexagon(sz) vect_malloc(VECT_FAIL_ID_HEXAGON, sz)
+#define vect_malloc_circle(sz)  vect_malloc(VECT_FAIL_ID_CIRCLE, sz)
+#define vect_malloc_str(sz)     vect_malloc(VECT_FAIL_ID_STR, sz)
+#define vect_malloc_substr(sz)  vect_malloc(VECT_FAIL_ID_SUBSTR, sz)
+#define vect_malloc_hdr(sz)     vect_malloc(VECT_FAIL_ID_HDR, sz)
+#else
+#define vect_malloc_rect(sz)    malloc(sz)
+#define vect_malloc_hexagon(sz) malloc(sz)
+#define vect_malloc_circle(sz)  malloc(sz)
+#define vect_malloc_str(sz)     malloc(sz)
+#define vect_malloc_substr(sz)  malloc(sz)
+#define vect_malloc_hdr(sz)     malloc(sz)
+#endif
+
 INTERNAL int zint_ps_plot(struct zint_symbol *symbol);
 INTERNAL int zint_svg_plot(struct zint_symbol *symbol);
 INTERNAL int zint_emf_plot(struct zint_symbol *symbol, int rotate_angle);
@@ -49,7 +86,7 @@ static int vector_add_rect(struct zint_symbol *symbol, const float x, const floa
     assert(width >= 0.0f);
     assert(height >= 0.0f);
 
-    if (!(rect = (struct zint_vector_rect *) malloc(sizeof(struct zint_vector_rect)))) {
+    if (!(rect = (struct zint_vector_rect *) vect_malloc_rect(sizeof(struct zint_vector_rect)))) {
         /* NOTE: clang-tidy-20 gets confused about return value of function returning a function unfortunately,
            so put on 2 lines (see also "postal.c" `postnet_enc()` & `planet_enc()`, same issue) */
         z_errtxt(0, symbol, 691, "Insufficient memory for vector rectangle");
@@ -84,7 +121,7 @@ static int vector_add_hexagon(struct zint_symbol *symbol, const float x, const f
     assert(y >= 0.0f);
     assert(diameter >= 0.0f);
 
-    if (!(hexagon = (struct zint_vector_hexagon *) malloc(sizeof(struct zint_vector_hexagon)))) {
+    if (!(hexagon = (struct zint_vector_hexagon *) vect_malloc_hexagon(sizeof(struct zint_vector_hexagon)))) {
         return z_errtxt(0, symbol, 692, "Insufficient memory for vector hexagon");
     }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -107,7 +144,7 @@ static int vector_add_hexagon(struct zint_symbol *symbol, const float x, const f
 }
 
 static int vector_add_circle(struct zint_symbol *symbol, const float x, const float y, const float diameter,
-            const float width, const int colour, struct zint_vector_circle **last_circle) {
+            const float width, struct zint_vector_circle **last_circle) {
     struct zint_vector_circle *circle;
 
     assert(x >= 0.0f);
@@ -115,7 +152,7 @@ static int vector_add_circle(struct zint_symbol *symbol, const float x, const fl
     assert(diameter >= 0.0f);
     assert(width >= 0.0f);
 
-    if (!(circle = (struct zint_vector_circle *) malloc(sizeof(struct zint_vector_circle)))) {
+    if (!(circle = (struct zint_vector_circle *) vect_malloc_circle(sizeof(struct zint_vector_circle)))) {
         return z_errtxt(0, symbol, 693, "Insufficient memory for vector circle");
     }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -126,7 +163,7 @@ static int vector_add_circle(struct zint_symbol *symbol, const float x, const fl
     circle->y = y;
     circle->diameter = diameter;
     circle->width = width;
-    circle->colour = colour;
+    circle->colour = 0; /* Legacy (was zero for draw with foreground colour (else draw with background colour) */
 
     if (*last_circle)
         (*last_circle)->next = circle;
@@ -147,7 +184,7 @@ static int vector_add_string(struct zint_symbol *symbol, const unsigned char *te
     assert(y >= 0.0f);
     assert(width >= 0.0f);
 
-    if (!(string = (struct zint_vector_string *) malloc(sizeof(struct zint_vector_string)))) {
+    if (!(string = (struct zint_vector_string *) vect_malloc_str(sizeof(struct zint_vector_string)))) {
         return z_errtxt(0, symbol, 694, "Insufficient memory for vector string");
     }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -161,7 +198,7 @@ static int vector_add_string(struct zint_symbol *symbol, const unsigned char *te
     string->length = length == -1 ? (int) z_ustrlen(text) : length;
     string->rotation = 0;
     string->halign = halign;
-    if (!(string->text = (unsigned char *) malloc(string->length + 1))) {
+    if (!(string->text = (unsigned char *) vect_malloc_substr(string->length + 1))) {
         free(string);
         return z_errtxt(0, symbol, 695, "Insufficient memory for vector string text");
     }
@@ -478,7 +515,7 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
     }
 
     /* Allocate memory */
-    if (!(vector = symbol->vector = (struct zint_vector *) malloc(sizeof(struct zint_vector)))) {
+    if (!(vector = symbol->vector = (struct zint_vector *) vect_malloc_hdr(sizeof(struct zint_vector)))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 696, "Insufficient memory for vector header");
     }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -562,9 +599,7 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
 
     if (addon_len && large_bar_height + textoffset - (font_height + text_gap_antialias) < 1.0f) {
         addon_min_row_height = 1.0f - (large_bar_height + textoffset - (font_height + text_gap_antialias));
-        if (addon_min_row_height > 1.0f) {
-            addon_min_row_height = 1.0f;
-        }
+        assert(addon_min_row_height <= 1.0f); /* Due to checks above */
     }
 
     vector->height = symbol->height + textoffset + addon_min_row_height + dot_overspill + (yoffset + boffset);
@@ -593,15 +628,15 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
         bull_d_incr = (hex_diameter * 9 - hex_ydiameter) / 5.0f;
         bull_width = bull_d_incr / 2.0f;
 
-        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr * 5 - bull_width, bull_width, 0,
+        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr * 5 - bull_width, bull_width,
                                 &last_circle)) {
             return ZINT_ERROR_MEMORY;
         }
-        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr * 3 - bull_width, bull_width, 0,
+        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr * 3 - bull_width, bull_width,
                                 &last_circle)) {
             return ZINT_ERROR_MEMORY;
         }
-        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr - bull_width, bull_width, 0,
+        if (!vector_add_circle(symbol, bull_x, bull_y, hex_ydiameter + bull_d_incr - bull_width, bull_width,
                                 &last_circle)) {
             return ZINT_ERROR_MEMORY;
         }
@@ -626,7 +661,7 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
             for (i = 0; i < symbol->width; i++) {
                 if (z_module_is_set(symbol, r, i)) {
                     if (!vector_add_circle(symbol, i + dot_offset + xoffset, r + dot_offset + yoffset,
-                                            symbol->dot_size, 0, 0, &last_circle)) {
+                                            symbol->dot_size, 0 /*diameter*/, &last_circle)) {
                         return ZINT_ERROR_MEMORY;
                     }
                 }
@@ -666,9 +701,7 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
 
                 if (r == symbol->rows - 1 && i > main_width && addon_latch == 0) {
                     addon_text_yposn = yposn + font_height - digit_ascender;
-                    if (addon_text_yposn < 0.0f) {
-                        addon_text_yposn = 0.0f;
-                    }
+                    assert(addon_text_yposn >= 0.0f);
                     addon_row_yposn = yposn + font_height + text_gap_antialias;
                     addon_row_height = row_height - (addon_row_yposn - yposn);
                     /* Following ISO/IEC 15420:2009 Figure 5 — UPC-A bar code symbol with 2-digit add-on (contrary to

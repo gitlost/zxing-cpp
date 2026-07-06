@@ -90,6 +90,25 @@ INTERNAL int zint_fm_error(struct filemem *restrict const fmp);
    NOTE: don't use, included only for libpng compatibility */
 INTERNAL int zint_fm_flush(struct filemem *restrict const fmp);
 
+#ifdef ZINT_TEST
+/* For testing `malloc()`/`realloc()` failures */
+#define FM_FAIL_ID_OPEN     1
+#define FM_FAIL_ID_WRITE    2
+#define FM_FAIL_ID_PUTC     3
+#define FM_FAIL_ID_PUTS     4
+#define FM_FAIL_ID_PRINTF   5
+#define FM_FAIL_ID_PUTSF    6
+#define FM_FAIL_ID_CLOSE    7
+#define FM_FAIL_ID_SEEK     8
+#define FM_FAIL_ID_TELL     9
+#define FM_FAIL_ID_FLUSH    10
+#define FM_FAIL_ID_MALLOC   11
+#define FM_FAIL_ID_REALLOC  12
+
+INTERNAL void zint_test_fm_set_fail(const int id, const int at);
+INTERNAL void zint_test_fm_set_alloc_fail(const int id, const int at);
+#endif
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

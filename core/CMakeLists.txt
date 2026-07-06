@@ -354,6 +354,24 @@ if (ZXING_READERS)
 endif()
 
 
+set (GRIDMATRIX_FILES
+)
+if (ZXING_READERS)
+    set (GRIDMATRIX_FILES ${GRIDMATRIX_FILES}
+        src/gridmatrix/GMBitMatrixParser.h
+        src/gridmatrix/GMBitMatrixParser.cpp
+        src/gridmatrix/GMDataBlock.h
+        src/gridmatrix/GMDataBlock.cpp
+        src/gridmatrix/GMDecoder.h
+        src/gridmatrix/GMDecoder.cpp
+        src/gridmatrix/GMDetector.h
+        src/gridmatrix/GMDetector.cpp
+        src/gridmatrix/GMReader.h
+        src/gridmatrix/GMReader.cpp
+    )
+endif()
+
+
 set (HANXIN_FILES
 )
 if (ZXING_READERS)
@@ -548,6 +566,7 @@ source_group (Sources\\codablockf FILES ${CODABLOCKF_FILES})
 source_group (Sources\\code16k FILES ${CODE16K_FILES})
 source_group (Sources\\datamatrix FILES ${DATAMATRIX_FILES})
 source_group (Sources\\dotcode FILES ${DOTCODE_FILES})
+source_group (Sources\\gridmatrix FILES ${GRIDMATRIX_FILES})
 source_group (Sources\\hanxin FILES ${HANXIN_FILES})
 source_group (Sources\\maxicode FILES ${MAXICODE_FILES})
 source_group (Sources\\oned FILES ${ONED_FILES})
@@ -567,6 +586,7 @@ add_library (ZXing
     ${CODE16K_FILES}
     ${DATAMATRIX_FILES}
     ${DOTCODE_FILES}
+    ${GRIDMATRIX_FILES}
     ${HANXIN_FILES}
     ${MAXICODE_FILES}
     ${ONED_FILES}
@@ -707,6 +727,7 @@ if (ZXING_WRITERS_NEW)
             src/libzint/codablock.c
             src/libzint/code16k.c
             src/libzint/dotcode.c
+            src/libzint/gridmtx.c
             src/libzint/hanxin.c
         )
         set_source_files_properties(${LIBZINT_FILES} PROPERTIES SKIP_PRECOMPILE_HEADERS ON COMPILE_OPTIONS -DZINT_NO_PNG)

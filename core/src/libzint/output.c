@@ -189,7 +189,7 @@ INTERNAL int zint_out_colour_get_cmyk(const char *colour, int *cyan, int *magent
     return 1 + have_alpha;
 }
 
-/* Convert internal colour chars "WCBMRYGK" to RGB */
+/* Convert internal colour chars "WCBMRYGK" to RGB. Returns 1 on success, else 0 */
 INTERNAL int zint_out_colour_char_to_rgb(const unsigned char ch, unsigned char *red, unsigned char *green,
                 unsigned char *blue) {
     static const char chars[] = "WCBMRYGK";
@@ -954,6 +954,12 @@ static int out_maybe_mkdir(const char *path) {
 
     return 0;
 }
+
+#ifdef ZINT_TEST /* Wrapper for direct testing */
+INTERNAL int zint_test_out_maybe_mkdir(const char *path) {
+    return out_maybe_mkdir(path);
+}
+#endif
 
 /* Create output file, creating sub-directories if necessary. Returns `fopen()` FILE pointer */
 INTERNAL FILE *zint_out_fopen(char filename[256], const char *mode) {

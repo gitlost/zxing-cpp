@@ -71,6 +71,13 @@ INTERNAL void zint_rs_uint_encode(const rs_uint_t *rs_uint, const int datalen, c
                 unsigned int *res);
 INTERNAL void zint_rs_uint_free(rs_uint_t *rs_uint);
 
+#ifdef ZINT_TEST
+/* For testing `calloc()` failure */
+#define RS_FAIL_ID_LOGT 1
+#define RS_FAIL_ID_ALOG 2
+INTERNAL void zint_test_rs_set_fail(const int id);
+#endif
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

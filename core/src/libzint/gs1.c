@@ -78,9 +78,8 @@ static int gs1_numeric(const unsigned char *data, int data_len, int offset, int 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (data_len) {
         const unsigned char *d = data + offset;
@@ -128,9 +127,8 @@ static int gs1_cset82(const unsigned char *data, int data_len, int offset, int m
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (data_len) {
         const unsigned char *d = data + offset;
@@ -155,9 +153,8 @@ static int gs1_cset39(const unsigned char *data, int data_len, int offset, int m
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (data_len) {
         const unsigned char *d = data + offset;
@@ -182,9 +179,8 @@ static int gs1_cset64(const unsigned char *data, int data_len, int offset, int m
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (data_len) {
         const unsigned char *d = data + offset;
@@ -215,9 +211,8 @@ static int gs1_csum(const unsigned char *data, int data_len, int offset, int min
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -250,9 +245,9 @@ static int gs1_csumalpha(const unsigned char *data, int data_len, int offset, in
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
+
     /* Do this check separately for backward compatibility */
     if (data_len && data_len < 2) {
         *p_err_no = 4;
@@ -294,9 +289,9 @@ static int gs1_gcppos1(const unsigned char *data, int data_len, int offset, int 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
+
     /* Do this check separately for backward compatibility */
     if (data_len && data_len < 2) {
         *p_err_no = 4;
@@ -652,13 +647,10 @@ static int gs1_iso4217(const unsigned char *data, int data_len, int offset, int 
 static int gs1_pcenc(const unsigned char *data, int data_len, int offset, int min, int max, int *p_err_no,
             int *p_err_posn, char err_msg[50], const int length_only) {
 
-    static const char hex_chars[] = "0123456789ABCDEFabcdef";
-
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -671,7 +663,8 @@ static int gs1_pcenc(const unsigned char *data, int data_len, int offset, int mi
                     *p_err_posn = (int) (d - data) + 1;
                     return gs1_err_msg_cpy_nochk(err_msg, "Invalid % escape");
                 }
-                if (strchr(hex_chars, *(++d)) == NULL || strchr(hex_chars, *(++d)) == NULL) {
+                d += 2;
+                if (!z_isxdigit(*(d - 1)) || !z_isxdigit(*d)) {
                     *p_err_no = 3;
                     *p_err_posn = (int) (d - data) + 1;
                     return gs1_err_msg_cpy_nochk(err_msg, "Invalid character for percent encoding");
@@ -690,9 +683,8 @@ static int gs1_yesno(const unsigned char *data, int data_len, int offset, int mi
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         if (data[offset] != '0' && data[offset] != '1') {
@@ -713,9 +705,8 @@ static int gs1_importeridx(const unsigned char *data, int data_len, int offset, 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -737,9 +728,8 @@ static int gs1_nonzero(const unsigned char *data, int data_len, int offset, int 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const int val = z_to_int(data + offset, data_len > max ? max : data_len);
@@ -761,9 +751,8 @@ static int gs1_winding(const unsigned char *data, int data_len, int offset, int 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         if (data[offset] != '0' && data[offset] != '1' && data[offset] != '9') {
@@ -783,9 +772,8 @@ static int gs1_zero(const unsigned char *data, int data_len, int offset, int min
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         if (data[offset] != '0') {
@@ -843,9 +831,9 @@ static int gs1_iban(const unsigned char *data, int data_len, int offset, int min
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
+
     /* Do this check separately for backward compatibility */
     if (data_len && data_len < 5) {
         *p_err_no = 4;
@@ -920,9 +908,8 @@ static int gs1_nozeroprefix(const unsigned char *data, int data_len, int offset,
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         /* GS1 General Specifications Release 26.0 3.9.11 "The C/P serial number SHALL NOT begin with a "0" digit,
@@ -1026,9 +1013,9 @@ static int gs1_couponcode(const unsigned char *data, int data_len, int offset, i
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
+
     /* Do separately for backward compatibility */
     if (data_len && data_len < min_req_len) {
         *p_err_no = 4;
@@ -1232,9 +1219,9 @@ static int gs1_couponposoffer(const unsigned char *data, int data_len, int offse
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
+
     /* Do separately for backward compatibility */
     if (data_len && (data_len < min_len || data_len > max_len)) {
         *p_err_no = 4;
@@ -1365,9 +1352,8 @@ static int gs1_hyphen(const unsigned char *data, int data_len, int offset, int m
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -1392,9 +1378,8 @@ static int gs1_iso5218(const unsigned char *data, int data_len, int offset, int 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         /* 0 = Not known, 1 = Male, 2 = Female, 9 = Not applicable */
@@ -1414,9 +1399,8 @@ static int gs1_posinseqslash(const unsigned char *data, int data_len, int offset
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -1478,9 +1462,8 @@ static int gs1_hasnondigit(const unsigned char *data, int data_len, int offset, 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         const unsigned char *d = data + offset;
@@ -1561,9 +1544,8 @@ static int gs1_packagetype(const unsigned char *data, int data_len, int offset, 
 
     data_len = data_len < offset ? 0 : data_len - offset;
 
-    if (data_len < min) {
-        return 0;
-    }
+    (void)min;
+    assert(data_len >= min); /* Min checked before being called */
 
     if (!length_only && data_len) {
         /* Adapted from GS1 Syntax Dictionary and Linters

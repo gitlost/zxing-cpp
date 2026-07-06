@@ -31,6 +31,7 @@
 #include "datamatrix/DMReader.h"
 #include "dotcode/DCReader.h"
 #include "hanxin/HXReader.h"
+#include "gridmatrix/GMReader.h"
 #include "maxicode/MCReader.h"
 #include "oned/ODReader.h"
 #include "pdf417/MicroPDFReader.h"
@@ -407,6 +408,10 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 2, bits.height() * 2);
 		//fprintf(stderr, "ivbits width %d, height %d\n", ivbits.width(), ivbits.height());
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
+
+	} else if (format == BarcodeFormat::GridMatrix) {
+		GridMatrix::Reader reader(opts);
+		data = reader.read(ThresholdBinarizer(getImageView(buf, bits), 127), 1);
 
 	} else if (format == BarcodeFormat::HanXin) {
 		HanXin::Reader reader(opts);

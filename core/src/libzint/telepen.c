@@ -227,11 +227,13 @@ INTERNAL int zint_telepen(struct zint_symbol *symbol, unsigned char source[], in
     memcpy(d, TeleTable[check_digit], TeleLens[check_digit]);
     d += TeleLens[check_digit];
 
-    if (symbol->debug & ZINT_DEBUG_PRINT) printf("Check digit: %d\n", check_digit);
-
     /* Stop character */
     memcpy(d, TeleTable[asc_comp_num ? 0x83 : 0x7A], 12);
     d += 12;
+
+    if (symbol->debug & ZINT_DEBUG_PRINT) {
+        printf("Check digit: %d\nBinary (%d): %.*s\n", check_digit, (int) (d - dest), (int) (d - dest), dest);
+    }
 
     z_expand(symbol, dest, (int) (d - dest));
 
@@ -343,11 +345,13 @@ INTERNAL int zint_telepen_num(struct zint_symbol *symbol, unsigned char source[]
     memcpy(d, TeleTable[check_digit], TeleLens[check_digit]);
     d += TeleLens[check_digit];
 
-    if (symbol->debug & ZINT_DEBUG_PRINT) printf("Check digit: %d\n", check_digit);
-
     /* Stop character */
     memcpy(d, TeleTable[comp_num_asc ? 0x81 : 0x7A], 12);
     d += 12;
+
+    if (symbol->debug & ZINT_DEBUG_PRINT) {
+        printf("Check digit: %d\nBinary (%d): %.*s\n", check_digit, (int) (d - dest), (int) (d - dest), dest);
+    }
 
     z_expand(symbol, dest, (int) (d - dest));
 

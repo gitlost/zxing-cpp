@@ -77,7 +77,7 @@ extern "C" {
         float x, y;         /* Centre */
         float diameter;     /* Circle diameter. Does not include width (if any) */
         float width;        /* Width of circle perimeter (circumference). 0 for fill (disc) */
-        int colour;         /* Zero for draw with foreground colour (else draw with background colour (legacy)) */
+        int colour;         /* Legacy, no longer used (set to 0) */
         struct zint_vector_circle *next; /* Pointer to next circle */
     };
 
@@ -151,10 +151,8 @@ extern "C" {
     };
 
 /* Symbologies (`symbol->symbology`) */
-    /* Tbarcode 7 codes */
 #define BARCODE_CODE11          1   /* Code 11 */
 #define BARCODE_C25STANDARD     2   /* 2 of 5 Standard (Matrix) */
-#define BARCODE_C25MATRIX       2   /* Legacy */
 #define BARCODE_C25INTER        3   /* 2 of 5 Interleaved */
 #define BARCODE_C25IATA         4   /* 2 of 5 IATA */
 #define BARCODE_C25LOGIC        6   /* 2 of 5 Data Logic */
@@ -164,11 +162,10 @@ extern "C" {
 #define BARCODE_EAN8            10  /* EAN-8 (European Article Number) GTIN-8 */
 #define BARCODE_EAN_2ADDON      11  /* EAN/UPC 2-digit add-on (standalone) */
 #define BARCODE_EAN_5ADDON      12  /* EAN/UPC 5-digit add-on (standalone) */
-#define BARCODE_EANX            13  /* Legacy */
-#define BARCODE_EANX_CHK        14  /* Legacy */
+#define BARCODE_EANX            13  /* Legacy EAN-13/8/5/2 */
+#define BARCODE_EANX_CHK        14  /* Legacy EAN-13/8 with check digit */
 #define BARCODE_EAN13           15  /* EAN-13 (European Article Number) GTIN-13 */
 #define BARCODE_GS1_128         16  /* GS1-128 */
-#define BARCODE_EAN128          16  /* Legacy */
 #define BARCODE_CODABAR         18  /* Codabar */
 #define BARCODE_CODE128         20  /* Code 128 */
 #define BARCODE_DPLEIT          21  /* Deutsche Post Leitcode */
@@ -178,11 +175,8 @@ extern "C" {
 #define BARCODE_CODE93          25  /* Code 93 */
 #define BARCODE_FLAT            28  /* Flattermarken */
 #define BARCODE_DBAR_OMN        29  /* GS1 DataBar Omnidirectional */
-#define BARCODE_RSS14           29  /* Legacy */
 #define BARCODE_DBAR_LTD        30  /* GS1 DataBar Limited */
-#define BARCODE_RSS_LTD         30  /* Legacy */
 #define BARCODE_DBAR_EXP        31  /* GS1 DataBar Expanded */
-#define BARCODE_RSS_EXP         31  /* Legacy */
 #define BARCODE_TELEPEN         32  /* Telepen Alpha */
 #define BARCODE_UPCA            34  /* UPC-A */
 #define BARCODE_UPCA_CHK        35  /* UPC-A including check digit */
@@ -198,11 +192,9 @@ extern "C" {
 #define BARCODE_CEPNET          54  /* Brazilian CEPNet Postal Code */
 #define BARCODE_PDF417          55  /* PDF417 */
 #define BARCODE_PDF417COMP      56  /* Compact PDF417 (Truncated PDF417) */
-#define BARCODE_PDF417TRUNC     56  /* Legacy */
 #define BARCODE_MAXICODE        57  /* MaxiCode */
 #define BARCODE_QRCODE          58  /* QR Code */
 #define BARCODE_CODE128AB       60  /* Code 128 (Suppress Code Set C) */
-#define BARCODE_CODE128B        60  /* Legacy */
 #define BARCODE_AUSPOST         63  /* Australia Post Standard Customer */
 #define BARCODE_AUSREPLY        66  /* Australia Post Reply Paid */
 #define BARCODE_AUSROUTE        67  /* Australia Post Routing */
@@ -217,18 +209,12 @@ extern "C" {
 #define BARCODE_JAPANPOST       76  /* Japanese Postal Code */
 #define BARCODE_KOREAPOST       77  /* Korea Post */
 #define BARCODE_DBAR_STK        79  /* GS1 DataBar Stacked */
-#define BARCODE_RSS14STACK      79  /* Legacy */
 #define BARCODE_DBAR_OMNSTK     80  /* GS1 DataBar Stacked Omnidirectional */
-#define BARCODE_RSS14STACK_OMNI 80  /* Legacy */
 #define BARCODE_DBAR_EXPSTK     81  /* GS1 DataBar Expanded Stacked */
-#define BARCODE_RSS_EXPSTACK    81  /* Legacy */
 #define BARCODE_PLANET          82  /* USPS PLANET */
 #define BARCODE_MICROPDF417     84  /* MicroPDF417 */
 #define BARCODE_USPS_IMAIL      85  /* USPS Intelligent Mail (OneCode) */
-#define BARCODE_ONECODE         85  /* Legacy */
 #define BARCODE_PLESSEY         86  /* UK Plessey */
-
-    /* Tbarcode 8 codes */
 #define BARCODE_TELEPEN_NUM     87  /* Telepen Numeric */
 #define BARCODE_ITF14           89  /* ITF-14 */
 #define BARCODE_KIX             90  /* Dutch Post KIX Code */
@@ -236,8 +222,6 @@ extern "C" {
 #define BARCODE_DAFT            93  /* DAFT Code */
 #define BARCODE_DPD             96  /* DPD Code */
 #define BARCODE_MICROQR         97  /* Micro QR Code */
-
-    /* Tbarcode 9 codes */
 #define BARCODE_HIBC_128        98  /* HIBC (Health Industry Barcode) Code 128 */
 #define BARCODE_HIBC_39         99  /* HIBC Code 39 */
 #define BARCODE_HIBC_DM         102 /* HIBC Data Matrix */
@@ -246,37 +230,23 @@ extern "C" {
 #define BARCODE_HIBC_MICPDF     108 /* HIBC MicroPDF417 */
 #define BARCODE_HIBC_BLOCKF     110 /* HIBC Codablock F */
 #define BARCODE_HIBC_AZTEC      112 /* HIBC Aztec Code */
-
-    /* Tbarcode 10 codes */
 #define BARCODE_DOTCODE         115 /* DotCode */
 #define BARCODE_HANXIN          116 /* Han Xin (Chinese Sensible) Code */
-
-    /* Tbarcode 11 codes */
 #define BARCODE_MAILMARK_2D     119 /* Royal Mail 2D Mailmark (CMDM) (Data Matrix) */
 #define BARCODE_UPU_S10         120 /* Universal Postal Union S10 */
 #define BARCODE_MAILMARK_4S     121 /* Royal Mail 4-State Mailmark */
-#define BARCODE_MAILMARK        121 /* Legacy */
-
-    /* Zint specific */
 #define BARCODE_AZRUNE          128 /* Aztec Runes */
 #define BARCODE_CODE32          129 /* Code 32 */
-#define BARCODE_EANX_CC         130 /* Legacy */
+#define BARCODE_EANX_CC         130 /* Legacy EAN-13/8/5/2 Composite */
 #define BARCODE_GS1_128_CC      131 /* GS1-128 Composite */
-#define BARCODE_EAN128_CC       131 /* Legacy */
 #define BARCODE_DBAR_OMN_CC     132 /* GS1 DataBar Omnidirectional Composite */
-#define BARCODE_RSS14_CC        132 /* Legacy */
 #define BARCODE_DBAR_LTD_CC     133 /* GS1 DataBar Limited Composite */
-#define BARCODE_RSS_LTD_CC      133 /* Legacy */
 #define BARCODE_DBAR_EXP_CC     134 /* GS1 DataBar Expanded Composite */
-#define BARCODE_RSS_EXP_CC      134 /* Legacy */
 #define BARCODE_UPCA_CC         135 /* UPC-A Composite */
 #define BARCODE_UPCE_CC         136 /* UPC-E Composite */
 #define BARCODE_DBAR_STK_CC     137 /* GS1 DataBar Stacked Composite */
-#define BARCODE_RSS14STACK_CC   137 /* Legacy */
 #define BARCODE_DBAR_OMNSTK_CC  138 /* GS1 DataBar Stacked Omnidirectional Composite */
-#define BARCODE_RSS14_OMNI_CC   138 /* Legacy */
 #define BARCODE_DBAR_EXPSTK_CC  139 /* GS1 DataBar Expanded Stacked Composite */
-#define BARCODE_RSS_EXPSTACK_CC 139 /* Legacy */
 #define BARCODE_CHANNEL         140 /* Channel Code */
 #define BARCODE_CODEONE         141 /* Code One */
 #define BARCODE_GRIDMATRIX      142 /* Grid Matrix */
@@ -287,7 +257,29 @@ extern "C" {
 #define BARCODE_DXFILMEDGE      147 /* DX Film Edge Barcode on 35mm and APS films */
 #define BARCODE_EAN8_CC         148 /* EAN-8 Composite */
 #define BARCODE_EAN13_CC        149 /* EAN-13 Composite */
+
 #define BARCODE_LAST            149 /* Max barcode number marker, not barcode */
+
+/* Legacy names */
+#define BARCODE_C25MATRIX       BARCODE_C25STANDARD
+#define BARCODE_EAN128          BARCODE_GS1_128
+#define BARCODE_RSS14           BARCODE_DBAR_OMN
+#define BARCODE_RSS_LTD         BARCODE_DBAR_LTD
+#define BARCODE_RSS_EXP         BARCODE_DBAR_EXP
+#define BARCODE_PDF417TRUNC     BARCODE_PDF417COMP
+#define BARCODE_CODE128B        BARCODE_CODE128AB
+#define BARCODE_RSS14STACK      BARCODE_DBAR_STK
+#define BARCODE_RSS14STACK_OMNI BARCODE_DBAR_OMNSTK
+#define BARCODE_RSS_EXPSTACK    BARCODE_DBAR_EXPSTK
+#define BARCODE_ONECODE         BARCODE_USPS_IMAIL
+#define BARCODE_MAILMARK        BARCODE_MAILMARK_4S
+#define BARCODE_EAN128_CC       BARCODE_GS1_128_CC
+#define BARCODE_RSS14_CC        BARCODE_DBAR_OMN_CC
+#define BARCODE_RSS_LTD_CC      BARCODE_DBAR_LTD_CC
+#define BARCODE_RSS_EXP_CC      BARCODE_DBAR_EXP_CC
+#define BARCODE_RSS14STACK_CC   BARCODE_DBAR_STK_CC
+#define BARCODE_RSS14_OMNI_CC   BARCODE_DBAR_OMNSTK_CC
+#define BARCODE_RSS_EXPSTACK_CC BARCODE_DBAR_EXPSTK_CC
 
 /* Output options (`symbol->output_options`) */
 #define BARCODE_BIND_TOP        0x00001 /* Boundary bar above the symbol only (not below), does not affect stacking */
@@ -374,7 +366,6 @@ extern "C" {
 #define ZINT_CAP_HRT                0x0001  /* Prints Human Readable Text? */
 #define ZINT_CAP_STACKABLE          0x0002  /* Is stackable? */
 #define ZINT_CAP_EANUPC             0x0004  /* Is EAN/UPC? */
-#define ZINT_CAP_EXTENDABLE         0x0004  /* Legacy */
 #define ZINT_CAP_COMPOSITE          0x0008  /* Can have composite data? */
 #define ZINT_CAP_ECI                0x0010  /* Supports Extended Channel Interpretations? */
 #define ZINT_CAP_GS1                0x0020  /* Supports GS1 data? */
@@ -387,6 +378,9 @@ extern "C" {
 #define ZINT_CAP_STRUCTAPP          0x1000  /* Supports Structured Append? */
 #define ZINT_CAP_COMPLIANT_HEIGHT   0x2000  /* Has compliant height? */
 #define ZINT_CAP_BINDABLE           0x4000  /* Can set row separators? */
+
+/* Legacy capability flag name */
+#define ZINT_CAP_EXTENDABLE         ZINT_CAP_EANUPC
 
 /* The largest amount of data that can be encoded is 4350 4-byte UTF-8 chars in Han Xin Code */
 #define ZINT_MAX_DATA_LEN       17400

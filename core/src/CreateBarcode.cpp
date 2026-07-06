@@ -125,6 +125,7 @@ static int ParseECLevel(int symbology, std::string_view s)
 		case BARCODE_MICROQR: return findClosestECLevel({20, 37, 55}, res);
 		case BARCODE_RMQR: return res <= 46 ? 2 : 4;
 		case BARCODE_AZTEC: return findClosestECLevel({10, 23, 36, 50}, res);
+		case BARCODE_GRIDMATRIX: return findClosestECLevel({10, 20, 30, 40, 50}, res);
 		case BARCODE_HANXIN: return findClosestECLevel({8, 15, 23, 30}, res);
 		case BARCODE_PDF417:
 			// TODO: do something sensible with PDF417?
@@ -136,6 +137,10 @@ static int ParseECLevel(int symbology, std::string_view s)
 	switch (symbology) {
 	case BARCODE_AZTEC:
 	case BARCODE_QRCODE:
+	case BARCODE_GRIDMATRIX:
+		if (res >= 1 && res <= 5)
+			return res;
+		break;
 	case BARCODE_HANXIN:
 		if (res >= 1 && res <= 4)
 			return res;
@@ -178,6 +183,7 @@ static constexpr struct { BarcodeFormat format; SymbologyIdentifier si; } barcod
 	{BarcodeFormat::DXFilmEdge, {'X', 'F'}},
 	{BarcodeFormat::EAN8, {'E', '4'}},
 	{BarcodeFormat::EAN13, {'E', '0'}},
+	{BarcodeFormat::GridMatrix, {'g', '0', 1}}, // '2' GS1, '4' AIM
 	{BarcodeFormat::HanXin, {'h', '0', 1}}, // '2' GS1
 	{BarcodeFormat::ITF, {'I', '0'}}, // '1' check digit
 	{BarcodeFormat::MaxiCode, {'U', '0', 2}}, // '1' mode 2 or 3
@@ -259,6 +265,10 @@ static std::string ECLevelZint2ZXing(const zint_symbol* zint)
 		// Convert to L/M/Q/H
 		if (option_1 >= 1 && option_1 <= 4)
 			return {EC_LABELS_QR[option_1 - 1]};
+		break;
+	case BARCODE_GRIDMATRIX:
+		if (option_1 >= 1 && option_1 <= 5)
+			return "L" + std::to_string(option_1);
 		break;
 	case BARCODE_HANXIN:
 		if (option_1 >= 1 && option_1 <= 4)
@@ -347,6 +357,11 @@ static int VersionZint2ZXing(const zint_symbol* zint)
 	case BARCODE_RMQR:
 		// Same as Zint
 		if (option_2 >= 1 && option_2 <= 32)
+			return option_2;
+		break;
+	case BARCODE_GRIDMATRIX:
+		// Same as Zint
+		if (option_2 >= 1 && option_2 <= 13)
 			return option_2;
 		break;
 	case BARCODE_HANXIN:

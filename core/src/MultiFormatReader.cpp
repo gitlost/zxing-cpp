@@ -22,6 +22,7 @@
 #include "datamatrix/DMReader.h"
 #endif
 #include "dotcode/DCReader.h"
+#include "gridmatrix/GMReader.h"
 #include "hanxin/HXReader.h"
 #ifdef ZXING_ENABLE_MAXICODE
 #include "maxicode/MCReader.h"
@@ -81,6 +82,8 @@ MultiFormatReader::MultiFormatReader(const ReaderOptions& opts) : _opts(opts)
 		_readers.emplace_back(new Code16K::Reader(opts));
 	if (opts.hasFormat(DotCode))
 		_readers.emplace_back(new DotCode::Reader(opts));
+	if (opts.hasFormat(GridMatrix))
+		_readers.emplace_back(new GridMatrix::Reader(opts));
 	if (opts.hasFormat(HanXin))
 		_readers.emplace_back(new HanXin::Reader(opts));
 	#endif

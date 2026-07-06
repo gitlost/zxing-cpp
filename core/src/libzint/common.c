@@ -631,7 +631,8 @@ INTERNAL int z_is_upcean(const int symbology) {
 
 /* Whether `symbology` can have composite 2D component data */
 INTERNAL int z_is_composite(const int symbology) {
-    /* Note if change this must change "backend_qt/qzint.cpp" `takesGS1AIData()` also */
+    /* Note if change this must change "frontend/main.c" `is_composite()` and
+       "backend_qt/qzint.cpp" `takesGS1AIData()` also */
     return (symbology >= BARCODE_EANX_CC && symbology <= BARCODE_DBAR_EXPSTK_CC)
             || symbology == BARCODE_EAN8_CC || symbology == BARCODE_EAN13_CC;
 }
@@ -997,6 +998,24 @@ INTERNAL void z_hrt_conv_gs1_brackets_nochk(struct zint_symbol *symbol, const un
     symbol->text[length] = '\0';
 }
 
+#ifdef ZINT_TEST
+/* For testing content segment `calloc()`/`malloc()` failures */
+static int z_ct_fail_id = 0;
+static int z_ct_fail_at = 0;
+
+INTERNAL void zint_test_ct_set_fail(const int id, const int at) {
+    z_ct_fail_id = id;
+    z_ct_fail_at = at;
+}
+
+#define ct_calloc(id, num, sz)  (z_ct_fail_at > 0 && z_ct_fail_id == (id) && --z_ct_fail_at == 0 \
+                                    ? NULL : calloc(num, sz))
+#define ct_malloc(id, sz)       (z_ct_fail_at > 0 && z_ct_fail_id == (id) && --z_ct_fail_at == 0 ? NULL : malloc(sz))
+#else
+#define ct_calloc(id, num, sz)  calloc(num, sz)
+#define ct_malloc(id, sz)       malloc(sz)
+#endif
+
 /* Initialize `content_segs` for `seg_count` segments. On error sets `errtxt`, returning BARCODE_ERROR_MEMORY */
 INTERNAL int z_ct_init_segs(struct zint_symbol *symbol, const int seg_count) {
     int i;
@@ -1004,7 +1023,8 @@ INTERNAL int z_ct_init_segs(struct zint_symbol *symbol, const int seg_count) {
     if (symbol->content_segs) {
         z_ct_free_segs(symbol);
     }
-    if (!(symbol->content_segs = (struct zint_seg *) calloc((size_t) seg_count, sizeof(struct zint_seg)))) {
+    if (!(symbol->content_segs
+            = (struct zint_seg *) ct_calloc(Z_CT_FAIL_ID_INIT_SEGS, (size_t) seg_count, sizeof(struct zint_seg)))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 243, "Insufficient memory for content segs buffer");
     }
     for (i = 0; i < seg_count; i++) {
@@ -1038,7 +1058,8 @@ static int ct_init_seg_source(struct zint_symbol *symbol, const int seg_idx, con
     assert(!symbol->content_segs[seg_idx].source);
     assert(length > 0);
 
-    if (!(symbol->content_segs[seg_idx].source = (unsigned char *) malloc((size_t) length))) {
+    if (!(symbol->content_segs[seg_idx].source
+            = (unsigned char *) ct_malloc(Z_CT_FAIL_ID_INIT_SEG_SRC, (size_t) length))) {
         return z_errtxt(ZINT_ERROR_MEMORY, symbol, 245, "Insufficient memory for content segs source buffer");
     }
     return 0;

@@ -1,7 +1,7 @@
 /*  eci.c - Extended Channel Interpretations */
 /*
     libzint - the open source barcode library
-    Copyright (C) 2009-2025 Robin Stuart <rstuart114@gmail.com>
+    Copyright (C) 2009-2026 Robin Stuart <rstuart114@gmail.com>
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -658,23 +658,12 @@ static int u_gb18030(const unsigned int u, unsigned char *dest) {
 
 /* Main ECI stuff */
 
-/* Helper to count the number of chars in a string within a range */
-static int chr_range_cnt(const unsigned char string[], const int length, const unsigned char c1,
-            const unsigned char c2) {
+/* Helper to count the number of chars in a string less than or equal to `max` */
+static int chr_max_cnt(const unsigned char string[], const int length, const unsigned char max) {
     int count = 0;
     int i;
-    if (c1) {
-        for (i = 0; i < length; i++) {
-            if (string[i] >= c1 && string[i] <= c2) {
-                count++;
-            }
-        }
-    } else {
-        for (i = 0; i < length; i++) {
-            if (string[i] <= c2) {
-                count++;
-            }
-        }
+    for (i = 0; i < length; i++) {
+        count += string[i] <= max;
     }
     return count;
 }
@@ -708,7 +697,7 @@ INTERNAL int zint_get_eci_length(const int eci, const unsigned char source[], in
 
     } else if (eci == 25 || eci == 33) { /* UTF-16 */
         /* All ASCII chars take 2 bytes */
-        length += chr_range_cnt(source, length, 0, 0x7F);
+        length += chr_max_cnt(source, length, 0x7F);
         /* Surrogate pairs are 4 UTF-8 bytes long so fit */
 
     } else if (eci == 32) { /* GB 18030 */
@@ -717,7 +706,7 @@ INTERNAL int zint_get_eci_length(const int eci, const unsigned char source[], in
 
     } else if (eci == 34 || eci == 35) { /* UTF-32 */
         /* Quadruple-up ASCII and double-up non-ASCII */
-        length += chr_range_cnt(source, length, 0, 0x7F) * 2 + length;
+        length += chr_max_cnt(source, length, 0x7F) * 2 + length;
     }
 
     /* Big5, GB 2312, EUC-KR and GBK fit in UTF-8 length */

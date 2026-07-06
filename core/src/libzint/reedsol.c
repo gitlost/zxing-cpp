@@ -58,6 +58,20 @@
 #include "reedsol.h"
 #include "reedsol_logs.h"
 
+#ifdef ZINT_TEST
+/* For testing `calloc()` failure */
+
+static int rs_fail_id = 0; /* RS_FAIL_ID_XXX */
+
+INTERNAL void zint_test_rs_set_fail(const int id) {
+    rs_fail_id = id;
+}
+
+#define rs_calloc(id, num, sz)  (rs_fail_id == (id) ? NULL : calloc(num, sz))
+#else
+#define rs_calloc(id, num, sz)  calloc(num, sz)
+#endif
+
 /* rs_init_gf(&rs, prime_poly) initialises the parameters for the Galois Field.
    The symbol size is determined from the highest bit set in poly
    This implementation will support sizes up to 8 bits (see rs_uint_init_gf()
@@ -258,10 +272,10 @@ INTERNAL int zint_rs_uint_init_gf(rs_uint_t *rs_uint, const unsigned int prime_p
     rs_uint->logt = NULL;
     rs_uint->alog = NULL;
 
-    if (!(logt = (unsigned short *) calloc(b, sizeof(unsigned short)))) {
+    if (!(logt = (unsigned short *) rs_calloc(RS_FAIL_ID_LOGT, b, sizeof(unsigned short)))) {
         return 0;
     }
-    if (!(alog = (unsigned short *) calloc(b * 2, sizeof(unsigned short)))) {
+    if (!(alog = (unsigned short *) rs_calloc(RS_FAIL_ID_ALOG, b * 2, sizeof(unsigned short)))) {
         free(logt);
         return 0;
     }

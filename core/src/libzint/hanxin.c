@@ -1531,8 +1531,8 @@ INTERNAL int zint_hanxin(struct zint_symbol *symbol, struct zint_seg segs[], con
             if (!done) {
                 /* Try GB 18030 */
                 int error_number = zint_gb18030_utf8(symbol, local_segs[i].source, &local_segs[i].length, dd);
-                if (error_number != 0) {
-                    return error_number;
+                if (error_number != 0) { /* Shouldn't happen */
+                    return error_number; /* Not reached */
                 }
                 if (local_segs[i].eci != 32) {
                     warn_number = z_errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 543,

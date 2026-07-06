@@ -46,6 +46,29 @@
 
 #define AZ_BIN_CAP_CWDS_S   "1661" /* String version of (AZTEC_BIN_CAPACITY / 12) */
 
+#ifdef ZINT_TEST
+/* For testing `malloc()`/`realloc()` failures */
+static int az_fail_id = 0;
+static int az_fail_at = 0;
+
+INTERNAL void zint_test_az_set_fail(const int id, const int at) {
+    az_fail_id = id;
+    az_fail_at = at;
+}
+
+/* TODO: put these in "aztec.h" (& rename existing "aztec.h" to "aztec_tabs.h" */
+#define AZ_FAIL_ID_LIST_INIT    1
+#define AZ_FAIL_ID_CPY          2
+#define AZ_FAIL_ID_ADD_CHK      3
+#define AZ_FAIL_ID_LIST_ADD_CHK 4
+
+#define az_malloc(id, sz)       (az_fail_at > 0 && az_fail_id == (id) && --az_fail_at == 0 ? NULL : malloc(sz))
+#define az_realloc(id, ptr, sz) (az_fail_at > 0 && az_fail_id == (id) && --az_fail_at == 0 ? NULL : realloc(ptr, sz))
+#else
+#define az_malloc(id, sz)       malloc(sz)
+#define az_realloc(id, ptr, sz) realloc(ptr, sz)
+#endif
+
 /* Count number of consecutive (. SP) or (, SP) Punct mode doubles for comparison against Digit mode encoding */
 static int az_count_doubles(const unsigned char source[], const int length, const int position) {
     int i;
@@ -387,7 +410,7 @@ static int az_text_modes(char modes[], unsigned char source[], const int length,
 
 /* Cheapo to check if input all of one type of Byte-only, Upper, Lower or Digit, returning AZ_B, AZ_U, AZ_L or AZ_D
    resp., or -1 if not */
-static char az_all_byte_only_or_uld(const unsigned char source[], const int length) {
+static int az_all_byte_only_or_uld(const unsigned char source[], const int length) {
     int i;
     int byte_only, upper, lower, digit;
 
@@ -455,7 +478,7 @@ struct az_state_list {
 static int az_state_list_init(struct az_state_list *list, const unsigned short initial_size) {
     const unsigned short size = initial_size < AZ_MIN_STATES_SIZE ? AZ_MIN_STATES_SIZE : initial_size;
 
-    if (!(list->states = (struct az_state *) malloc(sizeof(struct az_state) * size))) {
+    if (!(list->states = (struct az_state *) az_malloc(AZ_FAIL_ID_LIST_INIT, sizeof(struct az_state) * size))) {
         list->used = list->size = 0;
         return 0;
     }
@@ -469,7 +492,7 @@ static int az_state_cpy(const struct az_state *src, struct az_state *dst) {
     const unsigned short size = src->tokens.size < AZ_MIN_TOKENS_SIZE ? AZ_MIN_TOKENS_SIZE : src->tokens.size;
 
     *dst = *src;
-    if (!(dst->tokens.tokens = (struct az_token *) malloc(sizeof(struct az_token) * size))) {
+    if (!(dst->tokens.tokens = (struct az_token *) az_malloc(AZ_FAIL_ID_CPY, sizeof(struct az_token) * size))) {
         return 0;
     }
     if (src->tokens.used) {
@@ -490,18 +513,13 @@ static void az_state_free(struct az_state *state) {
 /* Check that there's enough room for `extra` more tokens in `state` */
 static int az_tokens_add_chk(struct az_state *state, const int extra) {
     assert(extra > 0 && extra < AZ_MIN_TOKENS_SIZE);
-    if (!state->tokens.tokens) {
-        const unsigned short size = AZ_MIN_TOKENS_SIZE;
-        if (!(state->tokens.tokens = (struct az_token *) malloc(sizeof(struct az_token) * size))) {
-            return 0;
-        }
-        state->tokens.size = size;
-        state->tokens.used = 0;
-    } else if (state->tokens.used >= state->tokens.size - extra) { /* Compare this way to avoid possible overflow */
+    assert(state->tokens.tokens); /* Always called only after a successful `az_state_cpy()` */
+    if (state->tokens.used >= state->tokens.size - extra) { /* Compare this way to avoid possible overflow */
         struct az_token *tokens;
         const unsigned short size = state->tokens.size * 2;
         if (size <= state->tokens.size /* Overflow */
-                || !(tokens = (struct az_token *) realloc(state->tokens.tokens, sizeof(struct az_token) * size))) {
+                || !(tokens = (struct az_token *) az_realloc(AZ_FAIL_ID_ADD_CHK, state->tokens.tokens,
+                                                                sizeof(struct az_token) * size))) {
             return 0;
         }
         assert(size > state->tokens.used + extra);
@@ -517,7 +535,8 @@ static int az_state_list_add_chk(struct az_state_list *list) {
         struct az_state *states;
         const unsigned short size = list->size * 2;
         if (size <= list->size /* Overflow */
-                || !(states = (struct az_state *) realloc(list->states, sizeof(struct az_state) * size))) {
+                || !(states = (struct az_state *) az_realloc(AZ_FAIL_ID_LIST_ADD_CHK, list->states,
+                                                                sizeof(struct az_state) * size))) {
             return 0;
         }
         list->states = states;
@@ -526,8 +545,8 @@ static int az_state_list_add_chk(struct az_state_list *list) {
     return 1;
 }
 
-/* Free all states (including their tokens) of state list `list` */
-static void az_state_list_free(struct az_state_list *list) {
+/* Free all states (including their tokens) of state list `list` - returns 0 for convenience */
+static int az_state_list_free(struct az_state_list *list) {
     int i;
     if (list->states) {
         for (i = 0; i < list->used; i++) {
@@ -539,6 +558,7 @@ static void az_state_list_free(struct az_state_list *list) {
         list->states = NULL;
     }
     list->used = list->size = 0;
+    return 0;
 }
 
 #define AZ_FNC1_VAL 32          /* Pseudo-value for FNC1 - converted to 0 on setting token value */
@@ -919,13 +939,12 @@ static int az_UpdateStateListForPair(struct az_state_list *list, const int from,
     }
     for (i = 0; i < list->used; i++) {
         if (!az_UpdateStateForPair(list->states + i, from, pairCode, ret_list)) {
-            az_state_list_free(ret_list);
-            return 0;
+            return az_state_list_free(ret_list); /* Returns 0 */
         }
     }
     az_SimplifyStates(ret_list);
 
-    az_state_list_free(list);
+    (void) az_state_list_free(list);
     list->states = ret_list->states;
     list->size = ret_list->size;
     list->used = ret_list->used;
@@ -945,15 +964,14 @@ static int az_UpdateStateListForChar(struct az_state_list *list, const unsigned 
     }
     for (i = 0; i < list->used; i++) {
         if (!az_UpdateStateForChar(list->states + i, source, from, fnc1_if_gs, ret_list)) {
-            az_state_list_free(ret_list);
-            return 0;
+            return az_state_list_free(ret_list); /* Returns 0 */
         }
     }
     if (ret_list->used > 1) {
         az_SimplifyStates(ret_list);
     }
 
-    az_state_list_free(list);
+    (void) az_state_list_free(list);
     list->states = ret_list->states;
     list->size = ret_list->size;
     list->used = ret_list->used;
@@ -995,14 +1013,12 @@ static int az_binary_string(const unsigned char source[], const int length, int 
             /* (CR LF) -> 2, (. SP) -> 3, (, SP) -> 4, (: SP) -> 5 */
             const int pairCode = source[i] == '\r' ? 2 : 3 + 7 - ((source[i] & 0x0F) >> 1);
             if (!az_UpdateStateListForPair(list, i, pairCode)) {
-                az_state_list_free(list);
-                return 0;
+                return az_state_list_free(list); /* Returns 0 */
             }
             i++;
         } else {
             if (!az_UpdateStateListForChar(list, source, i, fncs[i])) {
-                az_state_list_free(list);
-                return 0;
+                return az_state_list_free(list); /* Returns 0 */
             }
         }
     }
@@ -1018,13 +1034,12 @@ static int az_binary_string(const unsigned char source[], const int length, int 
 
     if (!az_EndByteShift(list->states + minStateIdx, &stateEnd, length)) {
         az_state_free(&stateEnd);
-        az_state_list_free(list);
-        return 0;
+        return az_state_list_free(list); /* Returns 0 */
     }
 
     if (stateEnd.bitCount > AZTEC_BIN_CAPACITY) {
         az_state_free(&stateEnd);
-        az_state_list_free(list);
+        (void) az_state_list_free(list);
         return stateEnd.bitCount;
     }
 
@@ -1055,7 +1070,7 @@ static int az_binary_string(const unsigned char source[], const int length, int 
     *p_current_mode = stateEnd.mode;
 
     az_state_free(&stateEnd);
-    az_state_list_free(list);
+    (void) az_state_list_free(list);
 
     return bp;
 }
@@ -1586,7 +1601,7 @@ static int az_codeword_size(const int layers) {
 
 /* Encodes Aztec Code as specified in ISO/IEC 24778:2008 */
 INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], const int seg_count) {
-    int x, y, i, p, data_blocks, ecc_blocks, layers, total_bits;
+    int x, y, i, p, num_data_cws, num_ecc_cws, layers, total_bits;
     char bit_pattern[AZTEC_MAP_POSN_MAX + 1]; /* Note AZTEC_MAP_POSN_MAX > AZTEC_BIN_CAPACITY */
     /* To lessen stack usage, share binary_string buffer with bit_pattern, as accessed separately */
     char *binary_string = bit_pattern;
@@ -1693,7 +1708,7 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
 
     if (symbol->option_1 < -1 || symbol->option_1 > 4) {
         z_errtxtf(0, symbol, 503, "Error correction level '%d' out of range (1 to 4)", symbol->option_1);
-        if (symbol->warn_level == WARN_FAIL_ALL) {
+        if ((symbol->warn_level & 0xFF) == WARN_FAIL_ALL) {
             return ZINT_ERROR_INVALID_OPTION;
         }
         error_number = z_errtxt_adj(ZINT_WARN_INVALID_OPTION, symbol, "%1$s%2$s", ", ignoring");
@@ -1839,26 +1854,26 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
                         "Input too long for Reader Initialisation, requires %d layers (maximum 22)", layers);
     }
 
-    data_blocks = adjusted_length / codeword_size;
+    num_data_cws = adjusted_length / codeword_size;
 
     if (compact) {
-        ecc_blocks = AztecCompactSizes[layers - 1] - data_blocks;
-        if (layers == 4) { /* Can use spare blocks for ECC (76 available - 64 max data blocks) */
-            ecc_blocks += 12;
+        num_ecc_cws = AztecCompactSizes[layers - 1] - num_data_cws;
+        if (layers == 4) { /* Can use spare codewords for ECC (76 available - 64 max data codewords) */
+            num_ecc_cws += 12;
         }
     } else {
-        ecc_blocks = AztecSizes[layers - 1] - data_blocks;
+        num_ecc_cws = AztecSizes[layers - 1] - num_data_cws;
     }
-    if (ecc_blocks == 3) {
+    if (num_ecc_cws == 3) {
         ecc_ratio = 0.0f;
         error_number = z_errtxt(ZINT_WARN_NONCOMPLIANT, symbol, 706, "Number of ECC codewords 3 at minimum");
         symbol->option_1 = -1; /* Feedback options: indicate minimum 3 with -1 */
     } else {
-        ecc_ratio = z_stripf((float) (ecc_blocks - 3) / (data_blocks + ecc_blocks));
+        ecc_ratio = z_stripf((float) (num_ecc_cws - 3) / (num_data_cws + num_ecc_cws));
         if (ecc_ratio < 0.05f) {
             error_number = ZEXT z_errtxtf(ZINT_WARN_NONCOMPLIANT, symbol, 708,
                                             "Number of ECC codewords %1$d less than 5%% + 3 of data codewords %2$d",
-                                            ecc_blocks, data_blocks);
+                                            num_ecc_cws, num_data_cws);
             symbol->option_1 = 0; /* Feedback options: indicate < 5% + 3 with 0 */
         } else {
             /* Feedback options: 0.165 = (.1 + .23) / 2 etc */
@@ -1868,15 +1883,15 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
         symbol->option_1 |= ((int) z_stripf(ecc_ratio * 100.0f)) << 8;
     }
 
-    data_part = (unsigned int *) z_alloca(sizeof(unsigned int) * data_blocks);
-    ecc_part = (unsigned int *) z_alloca(sizeof(unsigned int) * ecc_blocks);
+    data_part = (unsigned int *) z_alloca(sizeof(unsigned int) * num_data_cws);
+    ecc_part = (unsigned int *) z_alloca(sizeof(unsigned int) * num_ecc_cws);
 
     /* Copy across data into separate integers */
-    memset(data_part, 0, sizeof(unsigned int) * data_blocks);
-    memset(ecc_part, 0, sizeof(unsigned int) * ecc_blocks);
+    memset(data_part, 0, sizeof(unsigned int) * num_data_cws);
+    memset(ecc_part, 0, sizeof(unsigned int) * num_ecc_cws);
 
     /* Split into codewords and calculate reed-solomon error correction codes */
-    for (i = 0; i < data_blocks; i++) {
+    for (i = 0; i < num_data_cws; i++) {
         for (p = 0; p < codeword_size; p++) {
             if (adjusted_string[i * codeword_size + p] == '1') {
                 data_part[i] |= 0x01 << (codeword_size - (p + 1));
@@ -1887,40 +1902,40 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
     switch (codeword_size) {
         case 6:
             zint_rs_init_gf(&rs, 0x43);
-            zint_rs_init_code(&rs, ecc_blocks, 1);
-            zint_rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
+            zint_rs_init_code(&rs, num_ecc_cws, 1);
+            zint_rs_encode_uint(&rs, num_data_cws, data_part, ecc_part);
             break;
         case 8:
             zint_rs_init_gf(&rs, 0x12d);
-            zint_rs_init_code(&rs, ecc_blocks, 1);
-            zint_rs_encode_uint(&rs, data_blocks, data_part, ecc_part);
+            zint_rs_init_code(&rs, num_ecc_cws, 1);
+            zint_rs_encode_uint(&rs, num_data_cws, data_part, ecc_part);
             break;
         case 10:
             if (!zint_rs_uint_init_gf(&rs_uint, 0x409, 1023)) { /* Can fail on malloc() */
                 return z_errtxt(ZINT_ERROR_MEMORY, symbol, 500, "Insufficient memory for Reed-Solomon log tables");
             }
-            zint_rs_uint_init_code(&rs_uint, ecc_blocks, 1);
-            zint_rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
+            zint_rs_uint_init_code(&rs_uint, num_ecc_cws, 1);
+            zint_rs_uint_encode(&rs_uint, num_data_cws, data_part, ecc_part);
             zint_rs_uint_free(&rs_uint);
             break;
         case 12:
             if (!zint_rs_uint_init_gf(&rs_uint, 0x1069, 4095)) { /* Can fail on malloc() */
                 return z_errtxt(ZINT_ERROR_MEMORY, symbol, 700, "Insufficient memory for Reed-Solomon log tables");
             }
-            zint_rs_uint_init_code(&rs_uint, ecc_blocks, 1);
-            zint_rs_uint_encode(&rs_uint, data_blocks, data_part, ecc_part);
+            zint_rs_uint_init_code(&rs_uint, num_ecc_cws, 1);
+            zint_rs_uint_encode(&rs_uint, num_data_cws, data_part, ecc_part);
             zint_rs_uint_free(&rs_uint);
             break;
     }
 
-    for (i = 0; i < ecc_blocks; i++) {
+    for (i = 0; i < num_ecc_cws; i++) {
         adjusted_length = z_bin_append_posn(ecc_part[i], codeword_size, adjusted_string, adjusted_length);
     }
 
     /* Invert the data so that actual data is on the outside and reed-solomon on the inside */
     memset(bit_pattern, '0', AZTEC_MAP_POSN_MAX + 1);
 
-    total_bits = (data_blocks + ecc_blocks) * codeword_size;
+    total_bits = (num_data_cws + num_ecc_cws) * codeword_size;
     for (i = 0; i < total_bits; i++) {
         bit_pattern[i] = adjusted_string[total_bits - i - 1];
     }
@@ -1941,10 +1956,10 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
         descriptor[0] = ((layers - 1) & 0x02) ? '1' : '0';
         descriptor[1] = ((layers - 1) & 0x01) ? '1' : '0';
 
-        /* The next 6 bits represent the number of data blocks minus 1 */
-        descriptor[2] = reader_init || ((data_blocks - 1) & 0x20) ? '1' : '0';
+        /* The next 6 bits represent the number of data codewords minus 1 */
+        descriptor[2] = reader_init || ((num_data_cws - 1) & 0x20) ? '1' : '0';
         for (i = 3; i < 8; i++) {
-            descriptor[i] = ((data_blocks - 1) & (0x10 >> (i - 3))) ? '1' : '0';
+            descriptor[i] = ((num_data_cws - 1) & (0x10 >> (i - 3))) ? '1' : '0';
         }
         if (debug_print) printf("Mode Message = %.8s\n", descriptor);
     } else {
@@ -1953,10 +1968,10 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
             descriptor[i] = ((layers - 1) & (0x10 >> i)) ? '1' : '0';
         }
 
-        /* The next 11 bits represent the number of data blocks minus 1 */
-        descriptor[5] = reader_init || ((data_blocks - 1) & 0x400) ? '1' : '0';
+        /* The next 11 bits represent the number of data codewords minus 1 */
+        descriptor[5] = reader_init || ((num_data_cws - 1) & 0x400) ? '1' : '0';
         for (i = 6; i < 16; i++) {
-            descriptor[i] = ((data_blocks - 1) & (0x200 >> (i - 6))) ? '1' : '0';
+            descriptor[i] = ((num_data_cws - 1) & (0x200 >> (i - 6))) ? '1' : '0';
         }
         if (debug_print) printf("Mode Message = %.16s\n", descriptor);
     }
@@ -2034,9 +2049,9 @@ INTERNAL int zint_aztec(struct zint_symbol *symbol, struct zint_seg segs[], cons
 
     if (debug_print) {
         printf("Generating a %dx%d %s symbol with %d layers\n", dim, dim, compact ? "compact" : "full-size", layers);
-        printf("Requires %d codewords of %d-bits\n", data_blocks + ecc_blocks, codeword_size);
+        printf("Requires %d codewords of %d-bits\n", num_data_cws + num_ecc_cws, codeword_size);
         printf("    (%d data words, %d ecc words, %.1f%%, output option_1 0x%X, option_2 %d)\n",
-                data_blocks, ecc_blocks, ecc_ratio * 100, symbol->option_1, symbol->option_2);
+                num_data_cws, num_ecc_cws, ecc_ratio * 100, symbol->option_1, symbol->option_2);
     }
 
     return error_number;

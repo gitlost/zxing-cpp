@@ -60,6 +60,33 @@
 #  endif
 #endif
 
+#ifdef ZINT_TEST
+/* For testing `malloc()`/`realloc()` failures */
+static int fm_fail_id = 0;
+static int fm_fail_at = 0;
+
+INTERNAL void zint_test_fm_set_fail(const int id, const int at) {
+    fm_fail_id = id;
+    fm_fail_at = at;
+}
+
+#define FM_FAIL(id, ret)            fm_fail_at > 0 && fm_fail_id == (id) && --fm_fail_at == 0 ? (ret) :
+#define FM_FAIL_ERRNO(id, eno, ret) fm_fail_at > 0 && fm_fail_id == (id) && --fm_fail_at == 0 \
+                                        ? (errno = (eno), (ret)) :
+#define FM_FAIL_SETERR(id, eno)     fm_fail_at > 0 && fm_fail_id == (id) && --fm_fail_at == 0 ? fm_seterr(fmp, eno) :
+
+#define fm_malloc(sz)               (FM_FAIL(FM_FAIL_ID_MALLOC, NULL) malloc(sz))
+#define fm_realloc(ptr, sz)         (FM_FAIL(FM_FAIL_ID_REALLOC, NULL) realloc(ptr, sz))
+
+#else
+#define FM_FAIL(id, ret)
+#define FM_FAIL_ERRNO(id, eno, ret)
+#define FM_FAIL_SETERR(id, eno)
+
+#define fm_malloc(sz)               malloc(sz)
+#define fm_realloc(ptr, sz)         realloc(ptr, sz)
+#endif
+
 /* Helper to set `err` only if not already set, returning 0 always for convenience */
 static int fm_seterr(struct filemem *restrict const fmp, const int err) {
     if (fmp->err == 0) {
@@ -103,9 +130,8 @@ INTERNAL int zint_fm_open(struct filemem *restrict const fmp, struct zint_symbol
 #ifdef Z_NO_VSNPRINTF
     fmp->fp_null = NULL;
 #endif
-
     if (fmp->flags & BARCODE_MEMORY_FILE) {
-        if (!(fmp->mem = (unsigned char *) malloc(FM_PAGE_SIZE))) {
+        if (!(fmp->mem = (unsigned char *) (FM_FAIL(FM_FAIL_ID_OPEN, NULL) fm_malloc(FM_PAGE_SIZE)))) {
             return fm_seterr(fmp, ENOMEM);
         }
 #ifdef ZINT_SANITIZEM /* Suppress clang -fsanitize=memory false positive */
@@ -128,7 +154,7 @@ INTERNAL int zint_fm_open(struct filemem *restrict const fmp, struct zint_symbol
         fmp->fp = stdout;
         return 1;
     }
-    if (!(fmp->fp = zint_out_fopen(symbol->outfile, mode))) {
+    if (!(fmp->fp = (FM_FAIL_ERRNO(FM_FAIL_ID_OPEN, EACCES, NULL) zint_out_fopen(symbol->outfile, mode)))) {
         return fm_seterr(fmp, errno);
     }
     return 1;
@@ -159,7 +185,7 @@ static int fm_mem_expand(struct filemem *restrict const fmp, const size_t size) 
         return fm_seterr(fmp, EOVERFLOW);
     }
     /* Protect against very large files & (Linux) OOM killer - cf `raster_malloc()` in "raster.c" */
-    if (new_size > 0x40000000 /*1GB*/ || !(new_mem = (unsigned char *) realloc(fmp->mem, new_size))) {
+    if (new_size > 0x40000000 /*1GB*/ || !(new_mem = (unsigned char *) fm_realloc(fmp->mem, new_size))) {
         fm_clear_mem(fmp);
         return fm_seterr(fmp, new_size > 0x40000000 ? EINVAL : ENOMEM);
     }
@@ -178,12 +204,13 @@ INTERNAL int zint_fm_write(const void *restrict ptr, const size_t size, const si
     if (fmp->err) {
         return 0;
     }
+
     if (size == 0 || nitems == 0) {
         return 1;
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
         const size_t tot_size = size * nitems;
-        if (tot_size / size != nitems) {
+        if ((FM_FAIL(FM_FAIL_ID_WRITE, 0) tot_size / size) != nitems) {
             return fm_seterr(fmp, EOVERFLOW);
         }
         if (!fm_mem_expand(fmp, tot_size)) {
@@ -193,7 +220,7 @@ INTERNAL int zint_fm_write(const void *restrict ptr, const size_t size, const si
         fm_setpos(fmp, fmp->mempos + tot_size);
         return 1;
     }
-    if (fwrite(ptr, size, nitems, fmp->fp) != nitems) {
+    if ((FM_FAIL_ERRNO(FM_FAIL_ID_WRITE, EIO, 0) fwrite(ptr, size, nitems, fmp->fp)) != nitems) {
         return fm_seterr(fmp, errno);
     }
     return 1;
@@ -206,14 +233,14 @@ INTERNAL int zint_fm_putc(const int ch, struct filemem *restrict const fmp) {
         return 0;
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
-        if (!fm_mem_expand(fmp, 1)) {
+        if (!(FM_FAIL_SETERR(FM_FAIL_ID_PUTC, EIO) fm_mem_expand(fmp, 1))) {
             return 0;
         }
         fmp->mem[fmp->mempos] = (unsigned char) ch;
         fm_setpos(fmp, fmp->mempos + 1);
         return 1;
     }
-    if (fputc(ch, fmp->fp) == EOF) {
+    if ((FM_FAIL_ERRNO(FM_FAIL_ID_PUTC, EIO, EOF) fputc(ch, fmp->fp)) == EOF) {
         return fm_seterr(fmp, errno);
     }
     return 1;
@@ -227,14 +254,14 @@ INTERNAL int zint_fm_puts(const char *str, struct filemem *restrict const fmp) {
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
         const size_t len = strlen(str);
-        if (!fm_mem_expand(fmp, len)) {
+        if (!(FM_FAIL_SETERR(FM_FAIL_ID_PUTS, EIO) fm_mem_expand(fmp, len))) {
             return 0;
         }
         memcpy(fmp->mem + fmp->mempos, str, len);
         fm_setpos(fmp, fmp->mempos + len);
         return 1;
     }
-    if (fputs(str, fmp->fp) == EOF) {
+    if ((FM_FAIL_ERRNO(FM_FAIL_ID_PUTS, EIO, EOF) fputs(str, fmp->fp)) == EOF) {
         return fm_seterr(fmp, errno);
     }
     return 1;
@@ -301,12 +328,12 @@ INTERNAL int zint_fm_printf(struct filemem *restrict const fmp, const char *fmt,
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
         va_start(ap, fmt);
-        ret = fm_vprintf(fmp, fmt, ap);
+        ret = (FM_FAIL_SETERR(FM_FAIL_ID_PRINTF, EIO) fm_vprintf(fmp, fmt, ap));
         va_end(ap);
         return ret;
     }
     va_start(ap, fmt);
-    ret = vfprintf(fmp->fp, fmt, ap) >= 0;
+    ret = (FM_FAIL_ERRNO(FM_FAIL_ID_PRINTF, EIO, -1) vfprintf(fmp->fp, fmt, ap)) >= 0;
     va_end(ap);
     return ret ? 1 : fm_seterr(fmp, errno);
 }
@@ -323,8 +350,8 @@ INTERNAL int zint_fm_putsf(const char *prefix, const int dp, const float arg, st
         return 0;
     }
     if (prefix && *prefix) {
-        if (!zint_fm_puts(prefix, fmp)) {
-            return 0;
+        if (!(FM_FAIL_ERRNO(FM_FAIL_ID_PUTSF, EIO, 0) zint_fm_puts(prefix, fmp))) {
+            return fm_seterr(fmp, errno);
         }
     }
 
@@ -345,7 +372,10 @@ INTERNAL int zint_fm_putsf(const char *prefix, const int dp, const float arg, st
         }
     }
 
-    return zint_fm_puts(buf, fmp);
+    if (!(FM_FAIL_ERRNO(FM_FAIL_ID_PUTSF, EIO, 0) zint_fm_puts(buf, fmp))) {
+        return fm_seterr(fmp, errno);
+    }
+    return 1;
 }
 
 /* `fclose()` if file, set `symbol->memfile` & `symbol->memfile_size` if memory, returning 1 on success, 0 on
@@ -358,7 +388,7 @@ INTERNAL int zint_fm_close(struct filemem *restrict const fmp, struct zint_symbo
             return fm_seterr(fmp, EINVAL);
         }
         symbol->memfile_size = (int) fmp->mempos;
-        if ((size_t) symbol->memfile_size != fmp->mempos) {
+        if ((size_t) (FM_FAIL(FM_FAIL_ID_CLOSE, 0) symbol->memfile_size) != fmp->mempos) {
             fm_clear_mem(fmp);
             symbol->memfile_size = 0;
             return fm_seterr(fmp, EINVAL);
@@ -375,12 +405,12 @@ INTERNAL int zint_fm_close(struct filemem *restrict const fmp, struct zint_symbo
         return fm_seterr(fmp, EINVAL);
     }
     if (fmp->flags & BARCODE_STDOUT) {
-        if (fflush(fmp->fp) != 0) {
+        if ((FM_FAIL_ERRNO(FM_FAIL_ID_CLOSE, EIO, EOF) fflush(fmp->fp)) != 0) {
             fmp->fp = NULL;
             return fm_seterr(fmp, errno);
         }
     } else {
-        if (fclose(fmp->fp) != 0) {
+        if ((FM_FAIL_ERRNO(FM_FAIL_ID_CLOSE, EIO, EOF) fclose(fmp->fp)) != 0) {
             fmp->fp = NULL;
             return fm_seterr(fmp, errno);
         }
@@ -398,7 +428,8 @@ INTERNAL int zint_fm_seek(struct filemem *restrict const fmp, const long offset,
     if (fmp->flags & BARCODE_MEMORY_FILE) {
         const size_t start = whence == SEEK_SET ? 0 : whence == SEEK_CUR ? fmp->mempos : fmp->memend;
         const size_t new_pos = start + offset;
-        if ((offset > 0 && new_pos <= start) || (offset < 0 && new_pos >= start)) { /* Check for over/underflow */
+        /* Check for over/underflow */
+        if ((FM_FAIL(FM_FAIL_ID_SEEK, 1) (offset > 0 && new_pos <= start) || (offset < 0 && new_pos >= start))) {
             return fm_seterr(fmp, EINVAL);
         }
         if (!fm_mem_expand(fmp, new_pos)) {
@@ -407,7 +438,7 @@ INTERNAL int zint_fm_seek(struct filemem *restrict const fmp, const long offset,
         fm_setpos(fmp, new_pos);
         return 1;
     }
-    if (fseek(fmp->fp, offset, whence) != 0) {
+    if ((FM_FAIL_ERRNO(FM_FAIL_ID_SEEK, EOVERFLOW, EOF) fseek(fmp->fp, offset, whence)) != 0) {
         return fm_seterr(fmp, errno);
     }
     return 1;
@@ -421,13 +452,13 @@ INTERNAL long zint_fm_tell(struct filemem *restrict const fmp) {
         return -1;
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
-        if (!fmp->mem) {
+        if (!(FM_FAIL(FM_FAIL_ID_TELL, NULL) fmp->mem)) {
             (void) fm_seterr(fmp, ENOMEM);
             return -1;
         }
         return (long) fmp->mempos;
     }
-    ret = ftell(fmp->fp);
+    ret = (FM_FAIL_ERRNO(FM_FAIL_ID_TELL, EOVERFLOW, -1) ftell(fmp->fp));
     /* On many Linux distros `ftell()` returns LONG_MAX not -1 on error */
     if (ret < 0 || ret == LONG_MAX) {
         (void) fm_seterr(fmp, errno);
@@ -453,12 +484,12 @@ INTERNAL int zint_fm_flush(struct filemem *restrict const fmp) {
         return 0;
     }
     if (fmp->flags & BARCODE_MEMORY_FILE) {
-        if (!fmp->mem) {
+        if (!(FM_FAIL(FM_FAIL_ID_FLUSH, 0) fmp->mem)) {
             return fm_seterr(fmp, EINVAL);
         }
         return 1;
     }
-    if (fflush(fmp->fp) == EOF) {
+    if ((FM_FAIL_ERRNO(FM_FAIL_ID_FLUSH, EIO, EOF) fflush(fmp->fp)) == EOF) {
         return fm_seterr(fmp, errno);
     }
     return 1;

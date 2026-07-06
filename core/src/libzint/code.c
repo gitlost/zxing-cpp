@@ -241,9 +241,9 @@ INTERNAL int zint_excode39(struct zint_symbol *symbol, unsigned char source[], i
     }
 
     /* Then send the buffer to the C39 function */
-    if ((error_number = zint_code39(symbol, buffer, (int) (b - buffer))) >= ZINT_ERROR) {
-        return error_number;
-    }
+    error_number = zint_code39(symbol, buffer, (int) (b - buffer));
+    /* Due to above checks & not using content segs, can only return warning (height) */
+    assert(error_number < ZINT_ERROR);
 
     if (saved_option_2 == 2) {
         symbol->option_2 = 2; /* Restore */

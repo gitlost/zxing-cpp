@@ -572,6 +572,20 @@ TEST(CreateBarcodeTest, ZintASCII)
 #endif
 	}
 	{
+		BarcodeFormat format = BarcodeFormat::GridMatrix;
+
+		auto cOpts = CreatorOptions(format);
+		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
+		check(__LINE__, barcode, "]g0", "1234", "31 32 33 34", false, "]g1\\0000261234", "5D 67 30 31 32 33 34", "1234", "Text",
+			  "0x0 17x0 17x17 0x17", "L5", "1" /*version*/);
+#ifdef ZXING_READERS
+		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
+		auto wOpts = WriterOptions().addQuietZones(false);
+		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
+		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/); // TODO: position for GridMatrix
+#endif
+	}
+	{
 		BarcodeFormat format = BarcodeFormat::HanXin;
 
 		auto cOpts = CreatorOptions(format);

@@ -23,6 +23,7 @@ const GF2nI& GetGF2n(RSField field)
 {
 	static GF2nI gf2n_4_1(0x0013, 1);      // x^4 + x + 1
 	static GF2nI gf2n_6_1(0x0043, 1);      // x^6 + x + 1
+	static GF2nI gf2n_7_3(0x0089, 1);      // x^7 + x^3 + 1
 	static GF2nI gf2n_8_5_3_2(0x012D, 1);  // x^8 + x^5 + x^3 + x^2 + 1 : DataMatrix
 	static GF2nI gf2n_8_4_3_2(0x011D, 0);  // x^8 + x^4 + x^3 + x^2 + 1 : QRCode
 	static GF2nI gf2n_8_6_5_1(0x0163, 1);  // x^8 + x^6 + x^5 + x + 1
@@ -36,6 +37,7 @@ const GF2nI& GetGF2n(RSField field)
 	case RSField::Aztec10: return gf2n_10_3;
 	case RSField::Aztec12: return gf2n_12_6_5_3;
 	case RSField::DataMatrix: return gf2n_8_5_3_2;
+	case RSField::GridMatrix: return gf2n_7_3;
 	case RSField::HanXin: return gf2n_8_6_5_1;
 	case RSField::HanXinFuncInfo: return gf2n_4_1;
 	case RSField::MaxiCode: return gf2n_6_1;

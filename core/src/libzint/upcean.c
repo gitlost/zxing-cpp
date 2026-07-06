@@ -559,9 +559,7 @@ static int isbnx(struct zint_symbol *symbol, unsigned char source[], const int l
     char check_digit;
 
     z_to_upper(source, length);
-    if (z_not_sane(ISBNX_SANE_F, source, length)) { /* As source has been zero-padded, don't report position */
-        return z_errtxt(ZINT_ERROR_INVALID_DATA, symbol, 277, "Invalid character in input (digits and \"X\" only)");
-    }
+    assert(!z_not_sane(ISBNX_SANE_F, source, length)); /* Prior checks ensure this */
 
     /* Input must be 9, 10 or 13 characters */
     if (length != 9 && length != 10 && length != 13) {
@@ -942,6 +940,9 @@ INTERNAL int zint_eanx_cc(struct zint_symbol *symbol, unsigned char source[], in
         case BARCODE_EANX:
         case BARCODE_EANX_CHK:
         case BARCODE_EAN13:
+            /* Checks in `zint_ean_leading_zeroes()` ensure following */
+            assert(first_part_len == 2 || first_part_len == 5 || first_part_len == 7 || first_part_len == 8
+                    || first_part_len == 12 || first_part_len == 13);
             switch (first_part_len) {
                 case 2:
                 case 5:
@@ -963,18 +964,15 @@ INTERNAL int zint_eanx_cc(struct zint_symbol *symbol, unsigned char source[], in
                 case 13:
                     error_number = ean13(symbol, first_part, first_part_len, dest);
                     break;
-                default:
-                    assert(symbol->symbology == BARCODE_EANX || symbol->symbology == BARCODE_EANX_CHK);
-                    return z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 286,
-                                    "Input length %d wrong (2, 5, 7, 8, 12 or 13 characters required)",
-                                    first_part_len);
-                    break;
             }
             break;
         case BARCODE_EANX_CC:
         case BARCODE_EAN8_CC:
         case BARCODE_EAN13_CC:
-            switch (first_part_len) { /* Adds vertical separator bars according to ISO/IEC 24723 section 11.4 */
+            /* Checks in `zint_ean_leading_zeroes()` ensure following */
+            assert(first_part_len == 7 || first_part_len == 8 || first_part_len == 12 || first_part_len == 13);
+            switch (first_part_len) {
+                /* Adds vertical separator bars according to ISO/IEC 24723 section 11.4 */
                 case 7:
                 case 8:
                     z_set_module(symbol, symbol->rows, 1);
@@ -1002,11 +1000,6 @@ INTERNAL int zint_eanx_cc(struct zint_symbol *symbol, unsigned char source[], in
                     symbol->row_height[symbol->rows + 2] = 2;
                     symbol->rows += 3;
                     error_number = ean13_cc(symbol, first_part, first_part_len, dest, cc_rows);
-                    break;
-                default:
-                    assert(symbol->symbology == BARCODE_EANX_CC);
-                    return z_errtxtf(ZINT_ERROR_TOO_LONG, symbol, 287,
-                                    "Input length %d wrong (7, 12 or 13 characters required)", first_part_len);
                     break;
             }
             break;

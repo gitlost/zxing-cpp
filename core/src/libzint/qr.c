@@ -2352,6 +2352,8 @@ INTERNAL int zint_upnqr(struct zint_symbol *symbol, unsigned char source[], int 
         user_mask = 0; /* Ignore */
     }
 
+    /* Can't be GS1_MODE as checked before being called */
+    assert((symbol->input_mode & 0x07) == DATA_MODE || (symbol->input_mode & 0x07) == UNICODE_MODE);
     switch (symbol->input_mode & 0x07) {
         case DATA_MODE:
             /* Input is already in ISO-8859-2 format */
@@ -2359,10 +2361,6 @@ INTERNAL int zint_upnqr(struct zint_symbol *symbol, unsigned char source[], int 
                 ddata[i] = source[i];
                 modes[i] = 'B';
             }
-            break;
-        case GS1_MODE: /* Should never happen as checked before being called */
-            return z_errtxt(ZINT_ERROR_INVALID_OPTION, symbol, 571,
-                            "UPNQR does not support GS1 data"); /* Not reached */
             break;
         case UNICODE_MODE:
             error_number = zint_utf8_to_eci(4, source, preprocessed, &length);

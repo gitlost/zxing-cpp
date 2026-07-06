@@ -30,6 +30,7 @@
  */
 /* SPDX-License-Identifier: BSD-3-Clause */
 
+#include <assert.h>
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
@@ -295,24 +296,14 @@ INTERNAL int zint_svg_plot(struct zint_symbol *symbol) {
         svg_put_fattrib(" cy=\"", 2, circle->y, fmp);
         svg_put_fattrib(" r=\"", circle->width ? 3 : 2, radius, fmp);
 
-        if (circle->colour) { /* Legacy - no longer used */
-            if (circle->width) {
-                zint_fm_printf(fmp, " stroke=\"#%s\"", bgcolour_string);
-                svg_put_fattrib(" stroke-width=\"", 3, circle->width, fmp);
-                zint_fm_puts(" fill=\"none\"", fmp);
-            } else {
-                zint_fm_printf(fmp, " fill=\"#%s\"", bgcolour_string);
-            }
-            /* This doesn't work how the user is likely to expect - more work needed! */
-            svg_put_opacity_close(bg_alpha, bg_alpha_opacity, 1 /*close*/, fmp);
-        } else {
-            if (circle->width) {
-                zint_fm_printf(fmp, " stroke=\"#%s\"", fgcolour_string);
-                svg_put_fattrib(" stroke-width=\"", 3, circle->width, fmp);
-                zint_fm_puts(" fill=\"none\"", fmp);
-            }
-            svg_put_opacity_close(fg_alpha, fg_alpha_opacity, 1 /*close*/, fmp);
+        assert(circle->colour == 0); /* Legacy - no longer used */
+        if (circle->width) {
+            zint_fm_printf(fmp, " stroke=\"#%s\"", fgcolour_string);
+            svg_put_fattrib(" stroke-width=\"", 3, circle->width, fmp);
+            zint_fm_puts(" fill=\"none\"", fmp);
         }
+        /* This doesn't work how the user is likely to expect - more work needed! */
+        svg_put_opacity_close(fg_alpha, fg_alpha_opacity, 1 /*close*/, fmp);
         circle = circle->next;
     }
 

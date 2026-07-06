@@ -49,7 +49,7 @@ INTERNAL int zint_out_colour_get_rgb(const char *colour, unsigned char *red, uns
 INTERNAL int zint_out_colour_get_cmyk(const char *colour, int *cyan, int *magenta, int *yellow, int *black,
                 unsigned char *rgb_alpha);
 
-/* Convert internal colour chars "WCBMRYGK" to RGB */
+/* Convert internal colour chars "WCBMRYGK" to RGB. Returns 1 on success, else 0 */
 INTERNAL int zint_out_colour_char_to_rgb(const unsigned char ch, unsigned char *red, unsigned char *green,
                 unsigned char *blue);
 

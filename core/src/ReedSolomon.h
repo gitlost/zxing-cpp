@@ -19,6 +19,7 @@ enum class RSField
 	Aztec12,
 	DataMatrix,
 	DotCode,
+	GridMatrix,
 	HanXin,
 	HanXinFuncInfo,
 	MaxiCode,

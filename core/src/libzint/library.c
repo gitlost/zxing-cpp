@@ -245,6 +245,26 @@ INTERNAL int zint_plot_raster(struct zint_symbol *symbol, int rotate_angle, int 
 /* Plot to EMF/EPS/SVG */
 INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int file_type);
 
+/* Helper to convert `error_number` based on `warn_level` */
+static int error_warn_level(int error_number, struct zint_symbol *symbol) {
+    if (error_number < ZINT_ERROR && (symbol->warn_level & 0xFF) == WARN_FAIL_ALL) {
+        /* Convert to error equivalent */
+        if (error_number == ZINT_WARN_NONCOMPLIANT) {
+            error_number = ZINT_ERROR_NONCOMPLIANT;
+        } else if (error_number == ZINT_WARN_USES_ECI) {
+            error_number = ZINT_ERROR_USES_ECI;
+        } else if (error_number == ZINT_WARN_INVALID_OPTION) {
+            error_number = ZINT_ERROR_INVALID_OPTION;
+        } else if (error_number == ZINT_WARN_HRT_TRUNCATED) {
+            error_number = ZINT_ERROR_HRT_TRUNCATED;
+        } else { /* Shouldn't happen */
+            assert(0); /* Not reached */
+            error_number = ZINT_ERROR_ENCODING_PROBLEM;
+        }
+    }
+    return error_number;
+}
+
 /* Prefix error message with Error/Warning */
 static int error_tag(int error_number, struct zint_symbol *symbol, const int err_id, const char *error_string) {
 
@@ -252,21 +272,7 @@ static int error_tag(int error_number, struct zint_symbol *symbol, const int err
         if (error_string) {
             z_errtxt(0, symbol, err_id, error_string);
         }
-        if (error_number < ZINT_ERROR && symbol->warn_level == WARN_FAIL_ALL) {
-            /* Convert to error equivalent */
-            if (error_number == ZINT_WARN_NONCOMPLIANT) {
-                error_number = ZINT_ERROR_NONCOMPLIANT;
-            } else if (error_number == ZINT_WARN_USES_ECI) {
-                error_number = ZINT_ERROR_USES_ECI;
-            } else if (error_number == ZINT_WARN_INVALID_OPTION) {
-                error_number = ZINT_ERROR_INVALID_OPTION;
-            } else if (error_number == ZINT_WARN_HRT_TRUNCATED) {
-                error_number = ZINT_ERROR_HRT_TRUNCATED;
-            } else { /* Shouldn't happen */
-                assert(0); /* Not reached */
-                error_number = ZINT_ERROR_ENCODING_PROBLEM;
-            }
-        }
+        error_number = error_warn_level(error_number, symbol);
         if (error_number >= ZINT_ERROR) {
             z_errtxt_adj(0, symbol, "Error %s", NULL);
         } else {
@@ -366,6 +372,7 @@ static int supports_non_iso8859_1(const int symbology) {
 
 /* Returns 1 if `symbol` can process EXTRA_ESCAPE_MODE */
 static int supports_extra_escape_mode(const struct zint_symbol *const symbol) {
+    /* Note if change this must change copy in "frontend/main.c" */
     return symbol->symbology == BARCODE_CODE128
                 || ((symbol->symbology == BARCODE_AZTEC || symbol->symbology == BARCODE_DATAMATRIX)
                     && (symbol->input_mode & 0x07) != GS1_MODE);
@@ -1206,50 +1213,48 @@ int ZBarcode_Encode_Segs(struct zint_symbol *symbol, const struct zint_seg segs[
     }
 
     if ((symbol->input_mode & 0x07) == GS1_MODE || check_force_gs1(symbol->symbology)) {
-        if (gs1_compliant(symbol->symbology)) {
-            /* Reduce input for composite and non-forced symbologies, others (GS1_128 and DBAR_EXP based) will
-               handle it themselves */
-            const int is_composite = z_is_composite(symbol->symbology);
+        /* Reduce input for composite and non-forced symbologies, others (GS1_128 and DBAR_EXP based) will
+           handle it themselves */
+        const int is_composite = z_is_composite(symbol->symbology);
 
-            /* Deal with any ECI first */
-            if (symbol->eci) {
-                /* Check that ECI is at least CSET82 (an ASCII Invariant subset) compatible */
-                if (symbol->eci == 25 || (symbol->eci >= 33 && symbol->eci <= 35)) { /* UTF-16/32 BE/LE */
-                    return error_tag(ZINT_ERROR_INVALID_OPTION, symbol, 856,
-                                    "In GS1 mode ECI must be ASCII compatible");
-                }
-                /* Note not warning here that ECI is not supported in GS1 mode, leaving it up to individual
-                   symbologies, as standards are inconsistent in mentioning it */
+        assert(gs1_compliant(symbol->symbology));
+
+        /* Deal with any ECI first */
+        if (symbol->eci) {
+            /* Check that ECI is at least CSET82 (an ASCII Invariant subset) compatible */
+            if (symbol->eci == 25 || (symbol->eci >= 33 && symbol->eci <= 35)) { /* UTF-16/32 BE/LE */
+                return error_tag(ZINT_ERROR_INVALID_OPTION, symbol, 856, "In GS1 mode ECI must be ASCII compatible");
             }
+            /* Note not warning here that ECI is not supported in GS1 mode, leaving it up to individual
+               symbologies, as standards are inconsistent in mentioning it */
+        }
 
-            if (is_composite || !check_force_gs1(symbol->symbology)) {
-                unsigned char *reduced = (unsigned char *) z_alloca(local_segs[0].length + 1);
-                error_number = zint_gs1_verify(symbol, local_segs[0].source, local_segs[0].length, reduced,
-                                                &local_segs[0].length, 0 /*set_hrt*/);
-                if (error_number) {
+        if (is_composite || !check_force_gs1(symbol->symbology)) {
+            unsigned char *reduced = (unsigned char *) z_alloca(local_segs[0].length + 1);
+            error_number = zint_gs1_verify(symbol, local_segs[0].source, local_segs[0].length, reduced,
+                                            &local_segs[0].length, 0 /*set_hrt*/);
+            if (error_number) {
 #ifdef ZINT_HAVE_GS1SE
-                    if (is_composite && !(symbol->input_mode & GS1SYNTAXENGINE_MODE)) {
-                        z_errtxt_adj(0, symbol, "%1$s%2$s", " (2D component)");
-                    }
+                if (is_composite && !(symbol->input_mode & GS1SYNTAXENGINE_MODE)) {
+                    z_errtxt_adj(0, symbol, "%1$s%2$s", " (2D component)");
+                }
 #else
-                    if (is_composite) {
-                        z_errtxt_adj(0, symbol, "%1$s%2$s", " (2D component)");
-                    }
+                if (is_composite) {
+                    z_errtxt_adj(0, symbol, "%1$s%2$s", " (2D component)");
+                }
 #endif
-                    error_number = error_tag(error_number, symbol, -1, NULL);
-                    if (error_number >= ZINT_ERROR) {
-                        return error_number;
-                    }
-                    warn_number = error_number; /* Override any previous warning (errtxt has been overwritten) */
+                error_number = error_warn_level(error_number, symbol);
+                if (error_number >= ZINT_ERROR) {
+                    return error_tag(error_number, symbol, -1, NULL);
                 }
-                memcpy(local_segs[0].source, reduced, local_segs[0].length + 1); /* Include terminating NUL */
-                /* Set content segs for non-composites (composites set their own content segs) */
-                if (!is_composite && content_segs && z_ct_cpy(symbol, reduced, local_segs[0].length)) {
-                    return error_tag(ZINT_ERROR_MEMORY, symbol, -1, NULL); /* `z_ct_cpy()` only fails with OOM */
-                }
+                warn_number = error_number; /* Override any previous warning (errtxt has been overwritten) */
+                symbol->warn_level |= (warn_number << 8); /* Hack to let `zint_composite()` know */
             }
-        } else {
-            return error_tag(ZINT_ERROR_INVALID_OPTION, symbol, 210, "Selected symbology does not support GS1 mode");
+            memcpy(local_segs[0].source, reduced, local_segs[0].length + 1); /* Include terminating NUL */
+            /* Set content segs for non-composites (composites set their own content segs) */
+            if (!is_composite && content_segs && z_ct_cpy(symbol, reduced, local_segs[0].length)) {
+                return error_tag(ZINT_ERROR_MEMORY, symbol, -1, NULL); /* `z_ct_cpy()` only fails with OOM */
+            }
         }
     } else if (content_segs && supports_non_iso8859_1(symbol->symbology)) {
         /* Copy these as-is. The content seg `eci` (& maybe `source`) will need to be updated individually */

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project (ZXing VERSION "3.1.0")
-set (ZXING_VERSION_SUFFIX "-rc1")
+set (ZXING_VERSION_SUFFIX "") # e.g. "-rc1"
 set (ZXING_SONAME 4) # see https://github.com/zxing-cpp/zxing-cpp/issues/333
 
 #add_definitions(-DPRINT_DEBUG=1)
@@ -479,6 +479,8 @@ if ((ZXING_READERS OR ZXING_WRITERS_OLD OR ZXING_UNIT_TESTS) AND ZXING_ENABLE_PD
 endif()
 if (ZXING_READERS AND ZXING_ENABLE_PDF417)
     set (PDF417_FILES ${PDF417_FILES}
+        src/pdf417/PDF417.h
+        src/pdf417/PDF417.cpp
         src/pdf417/PDFBarcodeMetadata.h
         src/pdf417/PDFBarcodeValue.h
         src/pdf417/PDFBarcodeValue.cpp

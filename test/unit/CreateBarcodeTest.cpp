@@ -641,7 +641,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 		auto wOpts = WriterOptions().addQuietZones(false);
 		Barcode readBarcode = ReadBarcode(WriteBarcodeToImage(barcode, wOpts), rOpts);
 		check_same(__LINE__, barcode, readBarcode, false /*cmpPosition*/, true /*cmpBits*/, false /*cmpEcLevel*/);
-		EXPECT_EQ(ToString(readBarcode.position()), "0x1 38x1 38x20 0x20"); // TODO: fix isPure position
+		EXPECT_EQ(ToString(readBarcode.position()), "0x0 38x0 38x22 0x22"); // TODO: fix isPure position
 		EXPECT_EQ(readBarcode.ecLevel(), "58%"); // TODO: different EC level calc
 #endif
 	}

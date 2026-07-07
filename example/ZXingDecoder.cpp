@@ -458,6 +458,11 @@ int main(int argc, char* argv[])
 		auto ivbits = InflateXY(bits.copy(), bits.width() * 6, bits.height() * 6, 7, 0);
 		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
 
+	} else if (format == BarcodeFormat::DataBar) {
+		OneD::Reader reader(opts);
+		auto ivbits = InflateXY(bits.copy(), bits.width(), bits.height() * 2);
+		data = reader.read(ThresholdBinarizer(getImageView(buf, ivbits), 127), 1);
+
 	} else if (format & BarcodeFormat::AllLinear) {
 		opts.setEanAddOnSymbol(EanAddOnSymbol::Read);
 		OneD::Reader reader(opts);

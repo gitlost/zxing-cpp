@@ -54,6 +54,8 @@ It was originally ported from the Java [ZXing library](https://github.com/zxing/
 
 ## Sponsors
 
+If you are interested in commercial support using `zxing-cpp`, please have a look [here](Commercial%20Support.md).
+
 You can sponsor this library at [GitHub Sponsors](https://github.com/sponsors/axxel).
 
 | | Named Sponsors: |
@@ -124,7 +126,7 @@ As an example for how to parameterize the process with `CreatorOptions` and `Wri
 
 ### Online API documentation
 
-The latest API documentation can be found here: https://zxing-cpp.github.io/zxing-cpp/docs/latest
+The latest API documentation can be found here: https://zxing-cpp.github.io/zxing-cpp/docs
 
 ## Web Demos
 - [Read barcodes](https://zxing-cpp.github.io/zxing-cpp/demo/demo_reader.html)

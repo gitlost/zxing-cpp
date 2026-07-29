@@ -18,6 +18,10 @@ namespace ZXing {
 
 std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 {
+#if 0
+	(void)eci;
+	return std::string(bytes.begin(), bytes.end());
+#else
 	constexpr unsigned int replacement = 0xFFFD;
 	const unsigned int flags = ZUECI_FLAG_SB_STRAIGHT_THRU | (sjisASCII ? ZUECI_FLAG_SJIS_STRAIGHT_THRU : 0);
 	int utf8_len;
@@ -49,6 +53,7 @@ std::string BytesToUtf8(ByteView bytes, ECI eci, bool sjisASCII)
 	assert(Size(utf8) == utf8_len);
 
 	return utf8;
+#endif
 }
 
 } // ZXing

@@ -15,6 +15,7 @@
 #include "DMVersion.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
+#include "Log.h"
 #include "ReedSolomon.h"
 #include "ZXAlgorithms.h"
 #include "ZXTestSupport.h"
@@ -486,10 +487,8 @@ retry:
 	//fprintf(stderr, " resultBytes after error-correction %d\n", Size(resultBytes));
 	Diagnostics::fmt("  ResultBytes:   (%d)", Size(resultBytes)); Diagnostics::dump(resultBytes, "\n");
 
-#ifdef PRINT_DEBUG
 	if (fix259)
-		printf("-> needed retry with fix259 for 144x144 symbol\n");
-#endif
+		log_l("-> needed retry with fix259 for 144x144 symbol");
 
 	// Decode the contents of that stream of bytes
 	return DecodedBitStreamParser::Decode(std::move(resultBytes), version->isDMRE(), optionsCharset)

@@ -15,6 +15,7 @@
 #include "DetectorResult.h"
 #include "Diagnostics.h"
 #include "JSON.h"
+#include "Log.h"
 #include "PDFCodewordDecoder.h"
 #include "PDFCustomData.h"
 #include "PDFDetector.h"
@@ -173,10 +174,6 @@ static int Row(CodeWord rowIndicator)
 
 constexpr FixedPattern<8, 17> START_PATTERN = { 8, 1, 1, 1, 1, 1, 1, 3 };
 
-#ifndef PRINT_DEBUG
-#define printf(...){}
-#endif
-
 template<typename POINT>
 SymbolInfo ReadSymbolInfo(BitMatrixCursor<POINT> topCur, POINT rowSkip, int colWidth, int width, int height)
 {
@@ -192,10 +189,7 @@ SymbolInfo ReadSymbolInfo(BitMatrixCursor<POINT> topCur, POINT rowSkip, int colW
 		if (!IsPattern(cur.template readPatternFromBlack<Pattern417>(1, colWidth + 2), START_PATTERN))
 			break;
 		auto cw = ReadCodeWord(cur);
-#ifdef PRINT_DEBUG
-		printf("%3dx%3d:%2d: %4d.%d \n", int(cur.p.x), int(cur.p.y), Row(cw), cw.code, cw.cluster);
-		fflush(stdout);
-#endif
+		log_l("%3dx%3d:%2d: %4d.%d ", int(cur.p.x), int(cur.p.y), Row(cw), cw.code, cw.cluster);
 		if (!cw)
 			continue;
 		if (res.firstRow == -1)
@@ -241,9 +235,9 @@ SymbolInfo DetectSymbol(BitMatrixCursor<POINT> topCur, int width, int height)
 template<typename POINT>
 std::vector<int> ReadCodeWords(BitMatrixCursor<POINT> topCur, SymbolInfo info)
 {
-	printf("rows: %d, cols: %d, rowHeight: %.1f, colWidth: %d, firstRow: %d, lastRow: %d, ecLevel: %d\n", info.nRows,
-		   info.nCols, info.rowHeight, info.colWidth, info.firstRow, info.lastRow, info.ecLevel);
-	auto print = [](CodeWord c [[maybe_unused]]) { printf("%4d.%d ", c.code, c.cluster); };
+	log_l("rows: %d, cols: %d, rowHeight: %.1f, colWidth: %d, firstRow: %d, lastRow: %d, ecLevel: %d", info.nRows, info.nCols,
+		  info.rowHeight, info.colWidth, info.firstRow, info.lastRow, info.ecLevel);
+	auto print = [](CodeWord c, const char* tail = "") { log_t("%4d.%d%s", c.code, c.cluster, tail); };
 
 	auto rowSkip = topCur.right();
 	if (info.firstRow > info.lastRow) {
@@ -261,7 +255,7 @@ std::vector<int> ReadCodeWords(BitMatrixCursor<POINT> topCur, SymbolInfo info)
 		cur.stepToEdge(8 + cur.isWhite(), maxColWidth);
 		// read off left row indicator column
 		auto cw [[maybe_unused]] = ReadCodeWord(cur, cluster);
-		printf("%3dx%3d:%2d: ", int(cur.p.x), int(cur.p.y), Row(cw));
+		log_t("%3dx%3d:%2d: ", int(cur.p.x), int(cur.p.y), Row(cw));
 		print(cw);
 
 		for (int col = 0; col < info.nCols && cur.isIn(); ++col) {
@@ -270,11 +264,7 @@ std::vector<int> ReadCodeWords(BitMatrixCursor<POINT> topCur, SymbolInfo info)
 			print(cw);
 		}
 
-#ifdef PRINT_DEBUG
-		print(ReadCodeWord(cur));
-		printf("\n");
-		fflush(stdout);
-#endif
+		print(ReadCodeWord(cur), "\n");
 	}
 
 	return codeWords;

@@ -12,6 +12,7 @@
 #include "DecoderResult.h"
 #include "DetectorResult.h"
 #include "JSON.h"
+#include "Log.h"
 #include "Version.h"
 #include "ZXAlgorithms.h"
 
@@ -425,9 +426,7 @@ zint_symbol* CreatorOptions::zint() const
 	auto& zint = d->zint;
 
 	if (!zint) {
-#ifdef PRINT_DEBUG
-//		printf("zint version: %d, sizeof(zint_symbol): %ld, options: %s\n", ZBarcode_Version(), sizeof(zint_symbol), options().c_str());
-#endif
+//		log_l("zint version: %d, sizeof(zint_symbol): %ld, options: %s", ZBarcode_Version(), sizeof(zint_symbol), options().c_str());
 		zint.reset(ZBarcode_Create());
 
 		switch (format()) {
@@ -540,9 +539,7 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (eci == ECI::Unknown && warning == ZINT_WARN_USES_ECI)
 		eci = ToECI(zint->content_segs[0].eci);
 
-#ifdef PRINT_DEBUG
-	printf("create symbol with size: %dx%d\n", zint->width, zint->rows);
-#endif
+	log_l("create symbol with size: %dx%d", zint->width, zint->rows);
 
 	assert(zint->content_seg_count == 1);
 	const auto& content_seg = zint->content_segs[0];

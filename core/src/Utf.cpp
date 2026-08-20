@@ -11,9 +11,7 @@
 #include "ZXAlgorithms.h"
 #include "ZXCType.h"
 
-#include <iomanip>
 #include <cstdint>
-#include <sstream>
 #include <string_view>
 
 using utf8_t = std::u8string_view;
@@ -235,6 +233,26 @@ std::string ToUtf8(std::wstring_view str)
 	return utf8;
 }
 
+// Appends "<U+XXXX>", val in uppercase hex zero-padded to len digits. This is std::format("<U+{:0{}X}>")
+// spelled out by hand: on Android, instantiating std::format at all links the libc++ locale facets and
+// costs ~395 KB, which is most of what dropping the ostringstreams here bought (see #1151).
+static void AppendUnicodeEscape(std::string& out, uint32_t val, int len)
+{
+	char buf[8]; // enough for any uint32_t
+	int n = 0;
+	do {
+		buf[n++] = "0123456789ABCDEF"[val & 0xf];
+		val >>= 4;
+	} while (val);
+	for (; n < len; ++n) // like std::format's width, a value needing more digits than len is not truncated
+		buf[n] = '0';
+
+	out += "<U+";
+	while (n--)
+		out += buf[n];
+	out += '>';
+}
+
 // Places non-graphical characters in angle brackets with text name
 std::string EscapeNonGraphical(std::string_view utf8)
 {
@@ -246,9 +264,7 @@ std::string EscapeNonGraphical(std::string_view utf8)
 		"DEL",
 	};
 
-	std::ostringstream oss;
-
-	oss.fill('0');
+	std::string s;
 
 	int count;
 	for (int posn = 0, len = narrow_cast<int>(utf8.length()); posn < len; posn += count) {
@@ -256,27 +272,30 @@ std::string EscapeNonGraphical(std::string_view utf8)
 		if (u == -1) { // Invalid UTF-8
 			// Write out each byte with "0x" prefix
 			for (int i = 0; i < count; i++) {
-				oss << "<0x" << std::setw(2) << std::uppercase << std::hex
-				   << static_cast<unsigned int>(utf8[posn + i] & 0xFF) << ">";
+				char val = utf8[posn + i];
+				s += "<0x";
+				s += "0123456789ABCDEF"[(val >> 4) & 0xf];
+				s += "0123456789ABCDEF"[val & 0xf];
+				s += '>';
 			}
 		} else if (u < 128) { // ASCII
 			if (u < 32 || u == 127) { // Non-graphical ASCII, excluding space
-				oss << "<" << ascii_nongraphs[u == 127 ? 32 : u] << ">";
+				s += '<';
+				s += ascii_nongraphs[u == 127 ? 32 : u];
+				s += '>';
 			} else {
-				oss << utf8.substr(posn, count);
+				s += utf8.substr(posn, count);
 			}
 		} else {
 			if (zx_iswgraph(u)) {
-				oss << utf8.substr(posn, count);
+				s += utf8.substr(posn, count);
 			} else { // Non-graphical Unicode
-				int width = u < 256 ? 2 : 4;
-				oss << "<U+" << std::setw(width) << std::uppercase << std::hex
-				   << static_cast<unsigned int>(u) << ">";
+				AppendUnicodeEscape(s, u, u < 256 ? 2 : 4);
 			}
 		}
 	}
 
-	return oss.str();
+	return s;
 }
 
 } // namespace ZXing

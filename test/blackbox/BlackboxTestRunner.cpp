@@ -385,7 +385,6 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 		// Expected failures:
 		// abc-inverted.png (fast) - fast does not try inverted
-		// az-thick.png (pure)
 		runTests("aztec-1", Aztec, 32, {
 			// <fast minPassCount> <slow minPassCount> <rotation> (maxMisreads 0)
 			{ 31, 32, 0   },
@@ -393,7 +392,7 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 			{ 31, 32, 180 },
 			{ 31, 32, 270 },
 			// <pure minPassCount> <pure maxMisReads> <PureTag>
-			{ 30, 0, pure },
+			{ 31, 0, pure },
 		});
 
 		runTests("aztec-2", Aztec, 16, {

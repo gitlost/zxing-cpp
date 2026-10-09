@@ -188,15 +188,24 @@ TEST(PDF417DecoderTest, SampleWithMacroTerminatorOnly)
 }
 
 // Shorthand to decode and return text
-static std::wstring decode(const std::vector<int>& codewords)
+static std::wstring decode(const std::vector<int>& codewords, bool microPDF417 = false)
 {
 	return parse(codewords).text();
 }
 
 // Shorthand to decode and return isValid
-static bool valid(const std::vector<int>& codewords)
+static bool valid(const std::vector<int>& codewords, bool microPDF417 = false)
 {
 	return parse(codewords).isValid();
+}
+
+TEST(PDF417DecoderTest, MicroPDF417Macros)
+{
+	// 916 selects Macro 05 and starts Numeric Compaction. Codeword 11 decodes to "1".
+	EXPECT_EQ(decode({ 3, 916, 11 }, true), L"[)>\u001e05\u001d1\u001e\u0004");
+
+	// 917 selects Macro 06 and starts the Mixed sub-mode of Text Compaction. Codeword 0 decodes to "00".
+	EXPECT_EQ(decode({ 5, 917, 0, 903, 0 }, true), L"[)>\u001e06\u001d00\u001d00\u001e\u0004");
 }
 
 TEST(PDF417DecoderTest, TextCompactionSimple)
@@ -232,6 +241,7 @@ TEST(PDF417DecoderTest, TextCompactionSimple)
 		L"AB{}  C#+  de{}  {}F  12{}  G{}  H");
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(PDF417DecoderTest, TextCompactionShiftByte)
 {
 	// Alpha ShiftByte Alpha
@@ -285,6 +295,7 @@ TEST(PDF417DecoderTest, TextCompactionShiftByte)
 	// Text, Numeric, ShiftByte
 	EXPECT_FALSE(valid({ 13, 1, 63, 125, 902, 17, 110, 836, 811, 223, 913, 255, 775 }));
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(PDF417DecoderTest, ByteCompaction)
 {
@@ -376,6 +387,7 @@ TEST(PDF417DecoderTest, CompactionCombos)
 		L"1234567890123\x7F\x7F\x7F" L"ABCDEFVWXYZ");
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(PDF417DecoderTest, ECISingleText)
 {
 	// ECI 3 "Aé"
@@ -511,6 +523,7 @@ TEST(PDF417DecoderTest, ECIMultipleNumeric)
 		112, 924, 0, 382, 878, 524, 177, 927, 26, 901, 0xCE, 0x98 }),
 		L"12345678901234567890123456789\u3930\u3132\u3334\u3536\u3738\u3930\u3132A\u0100\u0141\u0398");
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(PDF417DecoderTest, ECIInvalid)
 {

@@ -23,6 +23,7 @@ namespace ZXing {
 using namespace ZXing;
 using namespace ZXing::QRCode;
 
+#if ZXING_ENABLE_UNICODE
 TEST(QRDecodedBitStreamParserTest, SimpleByteMode)
 {
 	BitArray ba;
@@ -85,6 +86,7 @@ TEST(QRDecodedBitStreamParserTest, HanziLevel1)
 	auto result = DecodeBitStream(ba.toBytes(), *Version::Model2(1), ErrorCorrectionLevel::Medium).text();
 	EXPECT_EQ(L"\u30a2", result);
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(QRDecodedBitStreamParserTest, SymbologyIdentifier)
 {

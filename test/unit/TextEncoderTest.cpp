@@ -27,6 +27,7 @@ void EnDeCode(CharacterSet cs, const CharT* in, std::string_view out)
 #endif
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(TextEncoderTest, FullCycleEncodeDecode)
 {
 	EnDeCode(CharacterSet::Cp437, u8"\u00C7", "\x80"); // LATIN CAPITAL LETTER C WITH CEDILLA

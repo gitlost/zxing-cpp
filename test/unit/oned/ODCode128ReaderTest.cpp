@@ -127,6 +127,7 @@ TEST(ODCode128ReaderTest, ReaderInit)
 	}
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(ODCode128ReaderTest, ISO8859_1)
 {
 	{
@@ -136,3 +137,4 @@ TEST(ODCode128ReaderTest, ISO8859_1)
 		EXPECT_EQ(result.text(), "a\u00E9\u00A0");
 	}
 }
+#endif // ZXING_ENABLE_UNICODE

@@ -43,7 +43,7 @@ class TestReadWrite(unittest.TestCase):
 		self.assertEqual(res.format, format)
 		self.assertEqual(res.text, text)
 		self.assertEqual(res.bytes, bytes(text, 'utf-8'))
-		self.assertEqual(res.orientation, 0)
+		self.assertEqual(res.rotation, 0)
 		self.assertEqual(res.content_type, CT.Text)
 
 	def test_create_write_read_cycle(self):
@@ -187,6 +187,15 @@ class TestReadWrite(unittest.TestCase):
 			ValueError, "Unsupported number of channels for buffer: 4", zxingcpp.read_barcode,
 			np.zeros((100, 100, 4), np.uint8)
 		)
+
+	def test_image_view(self):
+		format = BF.QRCode
+		text = "ImageView test"
+		img = zxingcpp.create_barcode(text, format).to_image()
+		view = zxingcpp.ImageView(memoryview(img), img.shape[1], img.shape[0], zxingcpp.ImageFormat.Lum)
+
+		res = zxingcpp.read_barcode(view, format)
+		self.check_res(res, format, text)
 
 	def test_image_buffer_protocol(self):
 		"""Test that Image objects support the buffer protocol"""

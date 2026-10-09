@@ -901,6 +901,7 @@ TEST(CreateBarcodeTest, ZintEANUPCAddOn)
 	}
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(CreateBarcodeTest, ZintISO8859_1)
 {
 	{
@@ -1271,6 +1272,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 	}
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(CreateBarcodeTest, ZintBinary)
 {
 	{
@@ -1516,6 +1518,7 @@ TEST(CreateBarcodeTest, ZintGS1)
 #endif
 	}
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(CreateBarcodeTest, CreatorOptions)
 {
@@ -1545,14 +1548,14 @@ TEST(CreateBarcodeTest, CreatorOptions)
 #if defined(ZXING_READERS)
 	bc = CreateBarcodeFromText("12345", {DataMatrix});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(DataMatrix).isPure(true).binarizer(Binarizer::BoolCast));
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif
 #endif // ZXING_ENABLE_DATAMATRIX
 
 #if defined(ZXING_READERS) && ZXING_ENABLE_AZTEC
 	bc = CreateBarcodeFromText("12345", {Aztec});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().formats(Aztec).isPure(true).binarizer(Binarizer::BoolCast));
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif
 
 #if ZXING_ENABLE_QRCODE
@@ -1564,7 +1567,7 @@ TEST(CreateBarcodeTest, CreatorOptions)
 	bc = CreateBarcodeFromText("12345", {QRCode, "dataMask=0"});
 	bc = ReadBarcode(bc.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
 	EXPECT_EQ(bc.extra("dataMask"), "0");
-	EXPECT_EQ(bc.extra("UEC"), "1.0");
+	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif // ZXING_READERS
 }
 

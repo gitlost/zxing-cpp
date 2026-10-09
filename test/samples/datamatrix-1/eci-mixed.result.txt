@@ -1,2 +1,0 @@
-symbologyIdentifier=]d4
-contentType=UnknownECI

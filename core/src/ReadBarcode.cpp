@@ -23,6 +23,10 @@
 #include <memory>
 #include <stdexcept>
 
+#ifdef PRINT_DEBUG
+#include "BitMatrixIO.h"
+#endif
+
 namespace ZXing {
 
 // ==============================================================================
@@ -261,12 +265,12 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 
 	if (opts.isPure()) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
-		auto r = FirstOrDefault(reader.read(*bitmap, 1));
-		if (r.isValid() && r.d->symbol.empty()) {
-			assert(r.format() & (BarcodeFormat::AllLinear | BarcodeFormat::AllD2 | BarcodeFormat::MicroPDF417));
-			r.symbol(bitmap->getBitMatrix()->copy());
+		auto res = reader.read(*bitmap, 1);
+		if (res.isValid() && res.d->symbol.empty()) {
+			assert(res.format() & (BarcodeFormat::AllLinear | BarcodeFormat::AllD2 | BarcodeFormat::MicroPDF417));
+			res.symbol(bitmap->getBitMatrix()->copy());
 		}
-		return {r.setReaderOptions(opts)};
+		return {res.setReaderOptions(opts)};
 	}
 
 	std::unique_ptr<MultiFormatReader> closedReader;
@@ -285,6 +289,10 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 	int maxSymbols = opts.maxNumberOfSymbols() ? opts.maxNumberOfSymbols() : INT_MAX;
 	for (auto&& iv : pyramid.layers) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
+#ifdef PRINT_DEBUG_
+		static int l = 0;
+		SaveAsPBM(*bitmap->getBitMatrix(), "layer-" + std::to_string(l++) + ".pnm");
+#endif
 		for (int close = 0; close <= (closedReader ? 1 : 0); ++close) {
 			if (close) {
 				// if we already inverted the image in the first round, we need to undo that first

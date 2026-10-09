@@ -27,7 +27,8 @@ using namespace ZXing;
 // Shorthand to call Decode()
 static DecoderResult parse(BitMatrix&& bits, bool compact, int nbDatablocks, int nbLayers)
 {
-	return Aztec::Decode({{std::move(bits), {}}, compact, nbDatablocks, nbLayers, false /*readerInit*/, false /*isMirrored*/, 0 /*runeValue*/});
+	return Aztec::Decode({{std::move(bits), {}}, compact, nbDatablocks, nbLayers, false /*readerInit*/, false /*isMirrored*/,
+						 0 /*runeValue*/, std::nullopt /*uec*/});
 }
 
 TEST(AZDecoderTest, AztecResult)
@@ -179,6 +180,7 @@ static void check_si(int line, const DecoderResult& res, const std::string& si, 
 		EXPECT_EQ(ToHex(res.content().bytesECI()), bytesECI) << "line:" << line;
 }
 
+#if ZXING_ENABLE_UNICODE
 TEST(AZDecoderTest, SymbologyIdentifier)
 {
 	// Plain
@@ -242,6 +244,7 @@ TEST(AZDecoderTest, SymbologyIdentifier)
 	// ECI 3 with Structured Append (no ID) with AIM
 	check_si(__LINE__, getData("111011110100010001010000000000001010100010000000000000000011"), "]zB", "AB", 0, 4);
 }
+#endif // ZXING_ENABLE_UNICODE
 
 // Helper taking 5-bit word array to call GetEncodedData()
 static DecoderResult getData(const ByteArray& bytes)

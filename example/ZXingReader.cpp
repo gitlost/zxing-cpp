@@ -460,8 +460,8 @@ int main(int argc, char* argv[])
 				std::cout << "ECIs:         (" << Size(barcode.ECIs()) << ") " << barcode.ECIs() << "\n";
 
 			std::cout << "Position:     " << ToString(barcode.position()) << "\n";
-			if (barcode.orientation())
-				std::cout << "Rotation:     " << barcode.orientation() << " deg\n";
+			if (barcode.rotation())
+				std::cout << "Rotation:     " << barcode.rotation() << " deg\n";
 			if (barcode.isMirrored())
 				std::cout << "IsMirrored:   " << barcode.isMirrored() << "\n";
 			if (barcode.isInverted())

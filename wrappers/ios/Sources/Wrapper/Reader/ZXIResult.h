@@ -14,9 +14,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) NSData *bytes;
 @property(nonatomic, strong) ZXIPosition *position;
 @property(nonatomic) ZXIFormat format;
-@property(nonatomic) NSInteger orientation;
+@property(nonatomic) NSInteger rotation;
+@property(nonatomic) NSInteger orientation DEPRECATED_MSG_ATTRIBUTE("Use rotation instead");
 @property(nonatomic, strong) NSString *ecLevel;
 @property(nonatomic, strong) NSString *symbologyIdentifier;
+@property(nonatomic, strong) NSDictionary<NSString *, id> *extra;
 @property(nonatomic) NSInteger sequenceSize;
 @property(nonatomic) NSInteger sequenceIndex;
 @property(nonatomic, strong) NSString *sequenceId;
@@ -28,9 +30,10 @@ NS_ASSUME_NONNULL_BEGIN
               format:(ZXIFormat)format
                bytes:(NSData *)bytes
             position:(ZXIPosition *)position
-         orientation:(NSInteger)orientation
+            rotation:(NSInteger)rotation
              ecLevel:(NSString *)ecLevel
  symbologyIdentifier:(NSString *)symbologyIdentifier
+               extra:(NSDictionary<NSString *, id> *)extra
         sequenceSize:(NSInteger)sequenceSize
        sequenceIndex:(NSInteger)sequenceIndex
           sequenceId:(NSString *)sequenceId

@@ -539,8 +539,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	if (eci == ECI::Unknown && warning == ZINT_WARN_USES_ECI)
 		eci = ToECI(zint->content_segs[0].eci);
 
-	log_l("create symbol with size: %dx%d", zint->width, zint->rows);
-
 	assert(zint->content_seg_count == 1);
 	const auto& content_seg = zint->content_segs[0];
 	const size_t content_seg_len =
@@ -626,7 +624,6 @@ Barcode CreateBarcode(const void* data, int size, int mode, const CreatorOptions
 	auto res = MatrixBarcode(std::move(decRes), std::move(detRes), opts.format());
 
 	res.zint = std::move(opts.d->zint);
-	res.zintMutex = std::make_unique<std::mutex>();
 
 	// Reset zint for writing
 	zint->show_hrt = 1;

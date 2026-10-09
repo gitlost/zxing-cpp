@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -177,25 +178,26 @@ static unsigned int GetServiceClass(const ByteArray& bytes)
  */
 static ZXing::ECI ParseECIValue(const ByteArray& bytes, int& i)
 {
-	int firstByte = bytes[++i];
+	// use at(): the multi-byte lookahead can otherwise read past the end of bytes for a truncated/malicious stream
+	int firstByte = bytes.at(++i);
 	if ((firstByte & 0x20) == 0) {
 		Diagnostics::fmt("ECI(%d,1)", firstByte);
 		return ZXing::ECI(firstByte);
 	}
 
-	int secondByte = bytes[++i];
+	int secondByte = bytes.at(++i);
 	if ((firstByte & 0x10) == 0) {
 		Diagnostics::fmt("ECI(%d,2)", ((firstByte & 0x0F) << 6) | secondByte);
 		return ZXing::ECI(((firstByte & 0x0F) << 6) | secondByte);
 	}
 
-	int thirdByte = bytes[++i];
+	int thirdByte = bytes.at(++i);
 	if ((firstByte & 0x08) == 0) {
 		Diagnostics::fmt("ECI(%d,3)", ((firstByte & 0x07) << 12) | (secondByte << 6) | thirdByte);
 		return ZXing::ECI(((firstByte & 0x07) << 12) | (secondByte << 6) | thirdByte);
 	}
 
-	int fourthByte = bytes[++i];
+	int fourthByte = bytes.at(++i);
 	Diagnostics::fmt("ECI(%d,4)", ((firstByte & 0x03) << 18) | (secondByte << 12) | (thirdByte << 6) | fourthByte);
 	return ZXing::ECI(((firstByte & 0x03) << 18) | (secondByte << 12) | (thirdByte << 6) | fourthByte);
 }
@@ -260,8 +262,9 @@ static void GetMessage(const ByteArray& bytes, int start, int len, Content& resu
 			break;
 		case NS:
 			Diagnostics::put("NS");
+			// use at(): the 5-byte lookahead can otherwise read past the end of bytes for a truncated/malicious stream
 			result.append(
-				ToString((bytes[i + 1] << 24) + (bytes[i + 2] << 18) + (bytes[i + 3] << 12) + (bytes[i + 4] << 6) + bytes[i + 5], 9));
+				ToString((bytes.at(i + 1) << 24) + (bytes.at(i + 2) << 18) + (bytes.at(i + 3) << 12) + (bytes.at(i + 4) << 6) + bytes.at(i + 5), 9));
 			i += 5;
 			//Diagnostics::fmt("NS %s", sb.substr(sb.size() - 9).c_str());
 			break;
@@ -292,21 +295,25 @@ DecoderResult Decode(ByteArray&& bytes, const int mode)
 	result.defaultCharset = CharacterSet::ISO8859_1;
 	StructuredAppendInfo sai;
 
-	switch (mode) {
-	case 2:
-	case 3: {
-		auto postcode = mode == 2 ? GetPostCode2(bytes) : GetPostCode3(bytes);
-		auto country  = ToString(GetCountry(bytes), 3);
-		auto service  = ToString(GetServiceClass(bytes), 3);
-		Diagnostics::fmt("SCM(%s,%s,%s)", postcode.c_str(), country.c_str(), service.c_str());
-		GetMessage(bytes, 10, 84, result, sai);
-		result.insert(result.bytes.asString().starts_with("[)>\u001E01\u001D") ? 9 : 0, // "[)>" + RS + "01" + GS
-					  postcode + GS + country + GS + service + GS);
-		break;
-	}
-	case 4:
-	case 6: GetMessage(bytes, 1, 93, result, sai); break;
-	case 5: GetMessage(bytes, 1, 77, result, sai); break;
+	try {
+		switch (mode) {
+		case 2:
+		case 3: {
+			auto postcode = mode == 2 ? GetPostCode2(bytes) : GetPostCode3(bytes);
+			auto country  = ToString(GetCountry(bytes), 3);
+			auto service  = ToString(GetServiceClass(bytes), 3);
+			Diagnostics::fmt("SCM(%s,%s,%s)", postcode.c_str(), country.c_str(), service.c_str());
+			GetMessage(bytes, 10, 84, result, sai);
+			result.insert(result.bytes.asString().starts_with("[)>\u001E01\u001D") ? 9 : 0, // "[)>" + RS + "01" + GS
+						  postcode + GS + country + GS + service + GS);
+			break;
+		}
+		case 4:
+		case 6: GetMessage(bytes, 1, 93, result, sai); break;
+		case 5: GetMessage(bytes, 1, 77, result, sai); break;
+		}
+	} catch (std::out_of_range&) { // see GetMessage()/ParseECIValue(): lookahead past a truncated/malicious bit stream
+		return FormatError("Truncated bit stream");
 	}
 
 	return DecoderResult(std::move(result))

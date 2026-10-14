@@ -19,12 +19,12 @@ using namespace ZXing;
 using namespace ZXing::Pdf417;
 
 // Shorthand for Decode()
-static DecoderResult parse(const std::vector<int>& codewords)
+static DecoderResult parse(const std::vector<int>& codewords, bool microPDF417 = false)
 {
 	try {
 		//Diagnostics::setEnabled(true);
 
-		auto result = Decode(codewords);
+		auto result = Decode(codewords, microPDF417);
 
 		#if 0
 		for (std::string value : Diagnostics::get()) {
@@ -190,13 +190,13 @@ TEST(PDF417DecoderTest, SampleWithMacroTerminatorOnly)
 // Shorthand to decode and return text
 static std::wstring decode(const std::vector<int>& codewords, bool microPDF417 = false)
 {
-	return parse(codewords).text();
+	return parse(codewords, microPDF417).text();
 }
 
 // Shorthand to decode and return isValid
 static bool valid(const std::vector<int>& codewords, bool microPDF417 = false)
 {
-	return parse(codewords).isValid();
+	return parse(codewords, microPDF417).isValid();
 }
 
 TEST(PDF417DecoderTest, MicroPDF417Macros)

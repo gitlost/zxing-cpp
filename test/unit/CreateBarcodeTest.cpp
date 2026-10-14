@@ -80,10 +80,10 @@ namespace {
 			EXPECT_EQ(b1.ecLevel(), b2.ecLevel()) << "line:" << line;
 		EXPECT_EQ(b1.version(), b2.version()) << "line:" << line;
 		if (cmpEcLevel || b1.extra("ECLevel").empty())
-			EXPECT_EQ(b1.extra(), remove(b2.extra(), "\"UEC\":1.0,")) << "line:" << line;
+			EXPECT_EQ(b1.extra(), remove(b2.extra(), "\"UEC\":1.00,")) << "line:" << line;
 
 		EXPECT_EQ(b1.ECIs(), b2.ECIs()) << "line:" << line;
-		EXPECT_EQ(b1.orientation(), b2.orientation()) << "line:" << line;
+		EXPECT_EQ(b1.rotation(), b2.rotation()) << "line:" << line;
 		EXPECT_EQ(b1.isMirrored(), b2.isMirrored()) << "line:" << line;
 		EXPECT_EQ(b1.isInverted(), b2.isInverted()) << "line:" << line;
 		EXPECT_EQ(b1.readerInit(), b2.readerInit()) << "line:" << line;
@@ -1271,6 +1271,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 #endif
 	}
 }
+#endif // ZXING_ENABLE_UNICODE
 
 #if ZXING_ENABLE_UNICODE
 TEST(CreateBarcodeTest, ZintBinary)

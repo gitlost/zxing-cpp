@@ -173,6 +173,25 @@ static size_t Utf8CountBytes(std::wstring_view str)
 	return result;
 }
 
+void AppendToUtf8(std::string& utf8, char32_t utf32)
+{
+	if (utf32 <= 0x7F) {
+		utf8.push_back(narrow_cast<char>(utf32));
+	} else if (utf32 <= 0x7FF) {
+		utf8.push_back(narrow_cast<char>(0xC0 | (utf32 >> 6)));
+		utf8.push_back(narrow_cast<char>(0x80 | (utf32 & 0x3F)));
+	} else if (utf32 <= 0xFFFF) {
+		utf8.push_back(narrow_cast<char>(0xE0 | (utf32 >> 12)));
+		utf8.push_back(narrow_cast<char>(0x80 | ((utf32 >> 6) & 0x3F)));
+		utf8.push_back(narrow_cast<char>(0x80 | (utf32 & 0x3F)));
+	} else {
+		utf8.push_back(narrow_cast<char>(0xF0 | (utf32 >> 18)));
+		utf8.push_back(narrow_cast<char>(0x80 | ((utf32 >> 12) & 0x3F)));
+		utf8.push_back(narrow_cast<char>(0x80 | ((utf32 >> 6) & 0x3F)));
+		utf8.push_back(narrow_cast<char>(0x80 | (utf32 & 0x3F)));
+	}
+}
+
 ZXING_EXPORT_TEST_ONLY
 int Utf32ToUtf8(char32_t utf32, char* out)
 {

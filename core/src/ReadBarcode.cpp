@@ -266,11 +266,15 @@ Barcodes ReadBarcodes(const ImageView& _iv, const ReaderOptions& opts)
 	if (opts.isPure()) {
 		auto bitmap = CreateBitmap(opts.binarizer(), iv);
 		auto res = reader.read(*bitmap, 1);
-		if (res.isValid() && res.d->symbol.empty()) {
-			assert(res.format() & (BarcodeFormat::AllLinear | BarcodeFormat::AllD2 | BarcodeFormat::MicroPDF417));
-			res.symbol(bitmap->getBitMatrix()->copy());
+		if (!res.empty()) {
+			auto r = res.front();
+			if (r.isValid() && r.d->symbol.empty()) {
+				assert(r.format() & (BarcodeFormat::AllLinear | BarcodeFormat::AllD2 | BarcodeFormat::MicroPDF417));
+				r.symbol(bitmap->getBitMatrix()->copy());
+			}
+			r.setReaderOptions(opts);
 		}
-		return {res.setReaderOptions(opts)};
+		return res;
 	}
 
 	std::unique_ptr<MultiFormatReader> closedReader;

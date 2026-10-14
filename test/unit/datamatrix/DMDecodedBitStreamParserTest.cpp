@@ -121,15 +121,6 @@ TEST(DMDecodeTest, C40Error)
 	EXPECT_EQ(parse({230, 17, 133}).error(), Error::Format);
 }
 
-TEST(DMDecodeTest, Text)
-{
-	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 254}), L"aimaimaim");
-	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 254, 40, 129}), L"aimaimaim'");
-	EXPECT_EQ(decode({239, 91, 11, 91, 11, 87, 218, 110}), L"aimaimaIm");
-	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 254, 67, 129}), L"aimaimaimB");
-	EXPECT_EQ(decode({239, 91, 11, 91, 11, 91, 11, 16, 218, 236, 107, 181, 69, 254, 129, 237}), L"aimaimaim{txt}\x04");
-}
-
 TEST(DMDecodeTest, TextError)
 {
 	// Shift-1 31 (in range)

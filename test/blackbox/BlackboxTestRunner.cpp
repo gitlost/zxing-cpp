@@ -390,7 +390,7 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					auto it = std::ranges::find_if(found, [&](const auto& barcode) {
 						for (const auto& [key, value] : expected) {
 							if (IsUpper(key.front()) && barcode.extra(key) != value) {
-								// println("    Mismatch for key '{}': expected '{}' but got '{}'", key, value, barcode.extra(key));
+								println("    Mismatch for key '{}': expected '{}' but got '{}'", key, value, barcode.extra(key));
 								return false;
 							}
 						}
@@ -399,7 +399,7 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					if (it == found.end()) {
 						std::string str;
 						for (const auto& [key, value] : expected)
-							str += std::format(" {}=\"{}\"", key, Abbrev(EscapeNonGraphical(value), 30));
+							str += std::format(" {}=\"{}\"", key, Abbrev(EscapeNonGraphical(value), 50));
 						missing[test.imgPath][str](mode, rotation) = true;
 						failed++;
 					} else {

@@ -94,6 +94,7 @@ TEST(TextEncoderTest, Shift_JIS)
 #endif
 	}
 }
+#endif // ZXING_ENABLE_UNICODE
 
 TEST(TextEncoderTest, GBK)
 {

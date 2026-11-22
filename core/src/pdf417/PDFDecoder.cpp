@@ -6,6 +6,7 @@
 
 #include "PDFDecoder.h"
 
+#include "BitSource.h"
 #include "CharacterSet.h"
 #include "DecoderResult.h"
 #include "Diagnostics.h"
@@ -709,6 +710,256 @@ int DecodeMacroBlock(const std::vector<int>& codewords, int codeIndex, PDF417Cus
 	return codeIndex;
 }
 
+const int GF_NUMERIC = 110;
+const int GF_ALPHANUMERIC = 97;
+const int GF_ISOIEC = 105;
+
+void DecodeCompositeEncodingMode10(BitSource &bits, ByteArray &ret)
+{
+	if (bits.available() < 2) {
+		Diagnostics::put("CompMode10Error");
+		throw FormatError();
+	}
+
+	int b = bits.readBits(2);
+	if (b == 3) {
+		// No date data, emit lot no. AI
+		ret.append("10");
+	} else {
+		if (bits.available() < 17) {
+			Diagnostics::put("CompMode10Error2");
+			throw FormatError();
+		}
+		int d = bits.readBits(16);
+		int yy = d / 384;
+		int mm = (d - yy * 384) / 32 + 1;
+		int dd = d % 32;
+
+		if (bits.readBits(1) == 0) {
+			ret.append("11"); // Production date
+		} else {
+			ret.append("17"); // Expiration date
+		}
+		ret.push_back('0' + (yy / 10));
+		ret.push_back('0' + (yy % 10));
+		ret.push_back('0' + (mm / 10));
+		ret.push_back('0' + (mm % 10));
+		ret.push_back('0' + (dd / 10));
+		ret.push_back('0' + (dd % 10));
+
+		if (bits.available() >= 7) {
+			if (bits.available() >= 9 && bits.peekBits(9) == 15) { // Alphanumeric latch & FNC1/Numeric latch
+				// No lot no.
+				(void)bits.readBits(9); // Discard FNC1
+			} else {
+				int b7 = (bits.peekBits(7) - 8);
+				int d1 = b7 / 11;
+				int d2 = b7 - d1 * 11;
+				if (d1 == 10 && d2 == 10) { // 2 FNC1s not allowed
+					Diagnostics::put("CompNumError2");
+					throw FormatError();
+				} else {
+					if (d1 == 10) { // FNC1
+						// No lot no., discard FNC1
+						ret.push_back('0' + d2);
+					} else {
+						ret.append("10"); // Lot no.
+						ret.push_back('0' + d1);
+						ret.push_back(d2 == 10 ? '\x1D' : '0' + d2);
+					}
+					(void)bits.readBits(7); // Consume
+				}
+			}
+		} else {
+			ret.append("10"); // Lot no.
+		}
+	}
+}
+
+ByteArray DecodeComposite(const Content& result)
+{
+	ByteArray ret;
+	BitSource bits(result.bytes);
+
+	int mode = GF_NUMERIC;
+
+	if (bits.available() < 2) {
+		Diagnostics::put("DecodeCompError");
+		throw FormatError();
+	}
+
+	const int b1 = bits.readBits(1);
+	if (b1 != 0) {
+		int b2 = bits.readBits(1);
+		if (b2 == 0) {
+			DecodeCompositeEncodingMode10(bits, ret);
+		} else {
+			//DecodeCompositeEncodingMode11(bits, ret, mode);
+		}
+	}
+
+	bool tail = false;
+	while (bits.available() && !tail) {
+		switch (mode) {
+		case GF_NUMERIC: {
+				if (bits.available() < 4) {
+					tail = true;
+					break;
+				}
+				int b4 = bits.readBits(4);
+				if (b4 == 0) {
+					mode = GF_ALPHANUMERIC;
+					break;
+				}
+				if (bits.available() < 3) {
+					Diagnostics::put("CompNumError1");
+					throw FormatError();
+					break;
+				}
+				int b7 = ((b4 << 3) | bits.readBits(3)) - 8;
+				int d1 = b7 / 11;
+				int d2 = b7 - d1 * 11;
+				if (d1 == 10 && d2 == 10) { // 2 FNC1s not allowed
+					Diagnostics::put("CompNumError2");
+					throw FormatError();
+					break;
+				}
+				ret.push_back(d1 == 10 ? '\x1D' : '0' + d1);
+				ret.push_back(d2 == 10 ? '\x1D' : '0' + d2);
+			}
+			break;
+		case GF_ALPHANUMERIC: {
+				if (bits.available() < 3) {
+					tail = true;
+					break;
+				}
+				int b3 = bits.readBits(3);
+				if (b3 == 0) {
+					mode = GF_NUMERIC;
+					break;
+				}
+				if (b3 & 0x4) {
+					if (bits.available() < 3) {
+						Diagnostics::put("CompAlphNumError1");
+						throw FormatError();
+						break;
+					}
+					int val = ((b3 & 0x3) << 3) | bits.readBits(3);
+					if (val < 26) {
+						ret.push_back('A' + val);
+					} else if (val < 31) {
+						static const char gf_alphanum_puncs[] = "*,-./";
+						ret.push_back(gf_alphanum_puncs[val - 26]);
+					} else {
+						assert(val == 31);
+						/* Ignore Symbol Separator */
+						mode = GF_NUMERIC;
+						break;
+					}
+				} else {
+					if (bits.available() < 2) {
+						Diagnostics::put("CompAlphNumError2");
+						throw FormatError();
+						break;
+					}
+					int val = (b3 << 2) | bits.readBits(2);
+					if (val == 15) {
+						ret.push_back('\x1D');
+						mode = GF_NUMERIC;
+						break;
+					}
+					if (val == 4) {
+						mode = GF_ISOIEC;
+						break;
+					}
+					if (val < 4) {
+						/* Error */
+						Diagnostics::put("CompAlphNumError3");
+						throw FormatError();
+						break;
+					}
+					ret.push_back('0' + val - 5);
+				}
+			}
+			break;
+		case GF_ISOIEC:
+			if (bits.available() < 3) {
+				tail = true;
+				break;
+			}
+			int b3 = bits.readBits(3);
+			if (b3 == 0) {
+				mode = GF_NUMERIC;
+				break;
+			}
+			if (b3 & 4) {
+				if (bits.available() < 4) {
+					Diagnostics::put("CompISOError1");
+					throw FormatError();
+					break;
+				}
+				int b7 = ((b3 & 0x3) << 4) | bits.readBits(4);
+				if (b7 < 52) {
+					if (b7 < 26) {
+						ret.push_back('A' + b7);
+					} else {
+						ret.push_back('a' + b7);
+					}
+				} else {
+					if (bits.available() < 1) {
+						Diagnostics::put("CompISOError2");
+						throw FormatError();
+						break;
+					}
+					int val = (b7 << 1) | bits.readBits(1);
+					if (val > 104 && val < 125) {
+						static const char gf_isoiec_puncs[] = "!\"%&'()*+,-./:;<=>?_ "; /* Note contains space, not in cset82 */
+						ret.push_back(gf_isoiec_puncs[val - 104]);
+					} else if (val == 125) {
+						/* Ignore Symbol Separator */
+						mode = GF_NUMERIC;
+						break;
+					} else {
+						/* Error */
+						Diagnostics::put("CompISOError3");
+						throw FormatError();
+						break;
+					}
+				}
+			} else {
+				if (bits.available() < 2) {
+					break;
+				}
+				int val = (b3 << 2) | bits.readBits(2);
+				if (val == 15) {
+					ret.push_back('\x1D');
+					mode = GF_NUMERIC;
+					break;
+				}
+				if (val == 4) {
+					mode = GF_ALPHANUMERIC;
+					break;
+				}
+				if (val < 4) {
+					/* Error */
+					Diagnostics::put("CompISOError5");
+					throw FormatError();
+					break;
+				}
+				ret.push_back('0' + val - 5);
+			}
+			break;
+		}
+	}
+	if (tail) {
+		int num = bits.available();
+		int val = bits.readBits(num);
+		Diagnostics::fmt("DecodeCompTail: %d (%d bits)", val, num);
+	}
+
+	return ret;
+}
+
 DecoderResult Decode(const std::vector<int>& codewords, bool microPDF417)
 {
 	Diagnostics::fmt("  Codewords:  (%d)", Size(codewords)); Diagnostics::dump(codewords, "\n");
@@ -722,6 +973,7 @@ DecoderResult Decode(const std::vector<int>& codewords, bool microPDF417)
 
 	bool readerInit = false;
 	bool macro = false;
+	bool composite = false;
 	auto customData = std::make_shared<PDF417CustomData>();
 
 	Diagnostics::put("  Decode:     ");
@@ -779,6 +1031,7 @@ DecoderResult Decode(const std::vector<int>& codewords, bool microPDF417)
 					throw FormatError();
 				}
 				// TODO: handle else case
+				composite = true;
 				break;
 			case LINKAGE_OTHER:
 				// Allowed to treat as invalid by ISO/IEC 24723:2010 5.4.1.5 and 5.4.6.1 when in Basic Channel Mode
@@ -832,6 +1085,17 @@ DecoderResult Decode(const std::vector<int>& codewords, bool microPDF417)
 	if (result.empty() && customData->segmentIndex == -1) {
 		Diagnostics::put("SEGIDXError");
 		return FormatError();
+	}
+
+	if (composite) {
+		try {
+			result.bytes = DecodeComposite(result);
+		} catch (std::exception& e) {
+			return FormatError(e.what());
+		} catch (Error e) {
+			return e;
+		}
+		result.symbology = {'e', '0', 0, AIFlag::GS1};
 	}
 
 	StructuredAppendInfo sai;

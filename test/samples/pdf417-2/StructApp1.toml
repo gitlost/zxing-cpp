@@ -1,4 +1,4 @@
-Identifier = "]L2"
+Identifier = "]L1"
 SequenceSize = 3
 SequenceId = "001"
 
@@ -11,7 +11,8 @@ TextPlain = "£¤ 3149.79;DE:"
 SequenceIndex = 1
 
 [[symbol]]
-TextPlain = "444,90 ､;"
+Identifier = "]L2"
+TextPlain = "444,90 ¤;"
 SequenceIndex = 2
 
 [[symbol]]

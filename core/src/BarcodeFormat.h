@@ -76,9 +76,9 @@
 	/* Add new formats here */ \
 	X(CodablockF,       'O', ' ', "xrw  ",  74, 1,                       "Codablock-F") \
 	X(Code16K,          'K', ' ', "xrwG ",  23, 1,                       "Code 16K") \
-	X(DotCode,          'J', ' ', "xrwG ", 115, 1,                       "DotCode") \
-	X(GridMatrix,       'g', ' ', "xrw  ", 142, 1,                       "Grid Matrix") \
-	X(HanXin,           'h', ' ', "xrw  ", 116, 1,                       "Han Xin") \
+	X(DotCode,          'J', 'm', "xrwG ", 115, 1,                       "DotCode") \
+	X(GridMatrix,       'g', 'm', "xrw  ", 142, 1,                       "Grid Matrix") \
+	X(HanXin,           'h', 'm', "xrw  ", 116, 1,                       "Han Xin") \
 // clang-format on
 
 #define ZX_BCF_ID(SYM, VAR) (((uint8_t)(SYM) << 0) | ((uint8_t)(VAR) << 8))

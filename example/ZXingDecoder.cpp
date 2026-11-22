@@ -309,13 +309,13 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions &opts, std::strin
 	return haveFormat && haveBits;
 }
 
-std::ostream& operator<<(std::ostream& os, const Position& points) {
+static std::ostream& operator<<(std::ostream& os, const Position& points) {
 	for (const auto& p : points)
 		os << p.x << "," << p.y << " ";
 	return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
+static std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>& ecis) {
 	bool not_first = false;
 	for (const auto& e : ecis) {
 		if (not_first)
@@ -326,13 +326,18 @@ std::ostream& operator<<(std::ostream& os, const std::vector<std::pair<int,int>>
 	return os;
 }
 
-std::string appendBinIfTextEmpty(const Barcode& barcode)
+static std::string appendBinIfTextEmpty(const Barcode& barcode)
 {
 	std::string text = barcode.text(TextMode::Plain);
 	if (text.empty() && !barcode.bytes().empty()) {
 		text = BytesToUtf8(barcode.bytes(), CharacterSet::BINARY);
 	}
 	return text;
+}
+
+static bool isSquare(const BarcodeFormat format) {
+	return format & (BarcodeFormat::Aztec | BarcodeFormat::QRCode | BarcodeFormat::MicroQRCode
+						| BarcodeFormat::DataMatrix | BarcodeFormat::GridMatrix | BarcodeFormat::HanXin);
 }
 
 int main(int argc, char* argv[])
@@ -361,21 +366,29 @@ int main(int argc, char* argv[])
 
 	assert(opts.formats().size() == 1);
 	auto format = *(opts.formats().data());
+	const int len = static_cast<int>(bitstream.length());
 
 	if (width == 0) {
-		width = static_cast<int>(bitstream.length());
-		if (format & BarcodeFormat::AllMatrix) { 
-			const int w = static_cast<int>(std::sqrt(width));
+		width = len;
+		if (isSquare(format)) {
+			const int w = static_cast<int>(std::sqrt(len));
 			if (w * w == width) {
 				width = w;
 			}
 		}
 	}
-	if (width > 1 && bitstream.length() % width) {
-		std::cerr << "Invalid bitstream - width " << width << " not multiple of length " << bitstream.length() << "\n";
-		std::cerr << bitstream << "\n";
-		PrintUsage(argv[0]);
-		return -1;
+	if (width > 1 && len % width) {
+		if (!isSquare(format)) {
+			std::cerr << "Width " << width << " not multiple of length " << len << "\n";
+			return -1;
+		}
+		const int w = static_cast<int>(std::sqrt(len));
+		if (w * w != len) {
+			std::cerr << "Width " << width << " not multiple or square root of length " << len << "\n";
+			return -1;
+		}
+		std::cerr << "Warning: ignoring width " << width << ", using square root " << w << " of length " << len << " instead\n";
+		width = w;
 	}
 
 	bits = ParseBitMatrix(bitstream, width, height);
@@ -499,26 +512,31 @@ int main(int argc, char* argv[])
 #endif
 
 	std::string text = appendBinIfTextEmpty(result);
-	std::cout << "Text:       \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
-	std::cout << "Bytes:      " << ToHex(result.bytes()) << "\n";
-	std::cout << "Length:     " << text.size() << "\n";
+	std::cout << "Text:         \"" << (angleEscape ? EscapeNonGraphical(text) : text) << "\"\n";
+	std::cout << "Bytes:        " << ToHex(result.bytes()) << "\n";
+	std::cout << "Length:       " << text.size() << "\n";
+
+	if (result.contentType() == ContentType::GS1 || result.contentType() == ContentType::ISO15434)
+		std::cout << "HRI:          \"" << result.text(TextMode::HRI) << "\"\n";
 
 	if (Size(result.ECIs()))
-		std::cout << "ECIs:       (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
+		std::cout << "ECIs:         (" << Size(result.ECIs()) << ") " << result.ECIs() << "\n";
 
-	std::cout << "Format:     " << ToString(result.format()) << "\n"
-			  << "Identifier: " << result.symbologyIdentifier() << "\n"
-			  << "Position:   " << result.position() << "\n";
+	std::cout << "Format:       " << ToString(result.format()) << "\n"
+			  << "Identifier:   " << result.symbologyIdentifier() << "\n"
+			  << "Content Type: " << ToString(result.contentType()) << "\n";
+
+	std::cout << "Position:     " << result.position() << "\n";
 
 	auto printOptional = [](const char* key, const std::string& v) {
 		if (!v.empty())
 			std::cout << key << v << "\n";
 	};
 
-	printOptional("Error:      ", ToString(result.error()));
-	printOptional("EC Level:   ", result.ecLevel());
+	printOptional("Error:        ", ToString(result.error()));
+	printOptional("EC Level:     ", result.ecLevel());
 #ifdef ZXING_EXPERIMENTAL_API
-	printOptional("Extra:      ", result.extra());
+	printOptional("Extra:        ", result.extra());
 #endif
 
 	if (result.isPartOfSequence()) {
@@ -536,7 +554,7 @@ int main(int argc, char* argv[])
 
 #ifdef ZX_DIAGNOSTICS
 	if (opts.enableDiagnostics()) {
-		std::cout << "Diagnostics" << Diagnostics::print(&result.diagnostics());
+		std::cout << "Diagnostics " << Diagnostics::print(&result.diagnostics());
 	}
 #endif
 

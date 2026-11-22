@@ -179,6 +179,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 							result.push_back((num % 10) + '0');
 						} else if (val < 8166) {
 							if (val == 8160) {
+								Diagnostics::put("CHNEND");
 								mode = 0;
 							} else if (val < 8165) {
 								mode = val - 8159; // GM_NUMERAL, GM_LOWER, GM_UPPER, GM_MIXED
@@ -244,6 +245,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 							}
 						} else {
 							if (num == 1018) {
+								Diagnostics::put("NUMEND");
 								mode = 0; /* End of data */
 							} else if (num == 1019) {
 								mode = GM_CHINESE;
@@ -327,6 +329,7 @@ DecoderResult Decode(ByteArray&& codewords, const CharacterSet optionsCharset, c
 							}
 							val = bits.readBits(4);
 							if (val == 0 /*1008*/) {
+								Diagnostics::put("MXDEND");
 								mode = 0; /* End of data */
 								break;
 							}

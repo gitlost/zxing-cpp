@@ -212,7 +212,7 @@ SymbolInfo DetectSymbol(BitMatrixCursor<POINT> topCur, int width, int height)
 {
 	auto pat = topCur.movedBy(height / 2 * topCur.right()).template readPatternFromBlack<Pattern417>(1, width / 3);
 	if (!IsPattern(pat, START_PATTERN)) {
-		printf("!IsPattern(pat, START_PATTERN)\n");
+		//printf("!IsPattern(pat, START_PATTERN)\n");
 		return {};
 	}
 	int colWidth = Reduce(pat);

@@ -28,7 +28,10 @@ std::string ToString(ContentType type)
 template <typename FUNC>
 void Content::ForEachECIBlock(FUNC func) const
 {
-	ECI defaultECI = hasECI ? ECI::ISO8859_1 : ECI::Unknown;
+	ECI defaultECI = hasECI ? optionsCharset != CharacterSet::Unknown
+								? ToECI(optionsCharset)
+								: defaultCharset != CharacterSet::Unknown ? ToECI(defaultCharset) : ECI::ISO8859_1
+							: ECI::Unknown;
 	if (encodings.empty())
 		func(defaultECI, 0, Size(bytes));
 	else if (encodings.front().pos != 0)

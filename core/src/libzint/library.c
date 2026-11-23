@@ -247,7 +247,7 @@ INTERNAL int zint_plot_vector(struct zint_symbol *symbol, int rotate_angle, int 
 
 /* Helper to convert `error_number` based on `warn_level` */
 static int error_warn_level(int error_number, struct zint_symbol *symbol) {
-    if (error_number < ZINT_ERROR && (symbol->warn_level & 0xFF) == WARN_FAIL_ALL) {
+    if (error_number < ZINT_ERROR && (symbol->warn_level & WARN_LEVEL_MASK) == WARN_FAIL_ALL) {
         /* Convert to error equivalent */
         if (error_number == ZINT_WARN_NONCOMPLIANT) {
             error_number = ZINT_ERROR_NONCOMPLIANT;
@@ -1152,6 +1152,9 @@ int ZBarcode_Encode_Segs(struct zint_symbol *symbol, const struct zint_seg segs[
     if (symbol->border_width < 0 || symbol->border_width > 100) {
         return error_tag(ZINT_ERROR_INVALID_OPTION, symbol, 768, "Border width out of range (0 to 100)");
     }
+    if (symbol->warn_level & ~WARN_LEVEL_MASK) {
+        symbol->warn_level = WARN_DEFAULT; /* Silently reset */
+    }
 
     if (symbol->rows >= 200) { /* Check for stacking too many symbols */
         return error_tag(ZINT_ERROR_TOO_LONG, symbol, 770, "Too many stacked symbols (maximum 200)");
@@ -1248,7 +1251,8 @@ int ZBarcode_Encode_Segs(struct zint_symbol *symbol, const struct zint_seg segs[
                     return error_tag(error_number, symbol, -1, NULL);
                 }
                 warn_number = error_number; /* Override any previous warning (errtxt has been overwritten) */
-                symbol->warn_level |= (warn_number << 8); /* Hack to let `zint_composite()` know */
+                /* Hack to let `zint_composite()` know */
+                symbol->warn_level = (symbol->warn_level & WARN_LEVEL_MASK) | (warn_number << 8);
             }
             memcpy(local_segs[0].source, reduced, local_segs[0].length + 1); /* Include terminating NUL */
             /* Set content segs for non-composites (composites set their own content segs) */

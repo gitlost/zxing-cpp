@@ -591,7 +591,7 @@ TEST(CreateBarcodeTest, ZintASCII)
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("1234", cOpts);
 		check(__LINE__, barcode, "]h0", "1234", "31 32 33 34", false, "]h1\\0000261234", "5D 68 30 31 32 33 34", "1234", "Text",
-			  "0x0 22x0 22x22 0x22", "L4", "1" /*version*/, 2 /*dataMask*/);
+			  "0x0 22x0 22x22 0x22", "L4", "1" /*version*/, 1 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
@@ -1217,7 +1217,7 @@ TEST(CreateBarcodeTest, ZintISO8859_1)
 		auto cOpts = CreatorOptions(format);
 		Barcode barcode = CreateBarcodeFromText("1234é", cOpts);
 		check(__LINE__, barcode, "]Q1", "1234é", "31 32 33 34 E9", false, "]Q2\\0000261234é", "5D 51 31 31 32 33 34 E9",
-			  "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 0 /*dataMask*/);
+			  "1234é", "Text", "0x0 20x0 20x20 0x20", "H", "1", 3 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
@@ -1373,7 +1373,7 @@ TEST(CreateBarcodeTest, ZintBinary)
 			  std::string("]Q2\\000899\x00\x5C\x5C\x7E\x7F\xC2\x80\xC2\x81\xC3\x80\xC3\xBF", 23) /*TextMode::ECI - UTF-8*/,
 			  "5D 51 32 5C 30 30 30 38 39 39 00 5C 5C 7E 7F 80 81 C0 FF" /*bytesECI() - binary*/,
 			  "<NUL>\\~<DEL><U+80><U+81>Àÿ" /*TextMode::HRI - UTF-8*/,
-			  "Binary", "0x0 20x0 20x20 0x20", "Q", "1", 3 /*dataMask*/);
+			  "Binary", "0x0 20x0 20x20 0x20", "Q", "1", 1 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);
@@ -1393,7 +1393,7 @@ TEST(CreateBarcodeTest, ZintECI)
 		Barcode barcode = CreateBarcodeFromText("AกC", cOpts); // Will add ECI 13 (ISO/IEC 8859-11 Thai)
 		check(__LINE__, barcode, "]Q2", "AกC", "41 A1 43", true,
 			  "]Q2\\000026AกC", "5D 51 32 5C 30 30 30 30 31 33 41 A1 43" /*ECI 13*/,
-			  "AกC", "Text", "0x0 20x0 20x20 0x20", "H", "1", 4 /*dataMask*/);
+			  "AกC", "Text", "0x0 20x0 20x20 0x20", "H", "1", 3 /*dataMask*/);
 #ifdef ZXING_READERS
 		auto rOpts = ReaderOptions().setFormats(format).setIsPure(true);
 		auto wOpts = WriterOptions().addQuietZones(false);

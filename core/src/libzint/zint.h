@@ -337,11 +337,14 @@ extern "C" {
 /* QR, Han Xin, Grid Matrix specific options (`symbol->option_3`) */
 #define ZINT_FULL_MULTIBYTE     200     /* Enable Kanji/Hanzi compression for Latin-1 & binary data */
 
+/* Han Xin specific options (`symbol->option_3`) */
+#define HX_ALTERNATING_FILLER   0x01
+
 /* Ultracode specific option (`symbol->option_3`) */
 #define ULTRA_COMPRESSION       128     /* Enable Ultracode compression (experimental) */
 
 /* Warning and error conditions (API return values) */
-#define ZINT_WARN_HRT_TRUNCATED     1   /* Human Readable Text was truncated (max 199 bytes) */
+#define ZINT_WARN_HRT_TRUNCATED     1   /* Human Readable Text was truncated (max 255 bytes) */
 #define ZINT_WARN_INVALID_OPTION    2   /* Invalid option given but overridden by Zint */
 #define ZINT_WARN_USES_ECI          3   /* Automatic ECI inserted by Zint */
 #define ZINT_WARN_NONCOMPLIANT      4   /* Symbol created not compliant with standards */
@@ -361,6 +364,7 @@ extern "C" {
 /* Warning level (`symbol->warn_level`) */
 #define WARN_DEFAULT            0  /* Default behaviour */
 #define WARN_FAIL_ALL           2  /* Treat warning as error */
+#define WARN_LEVEL_MASK         2  /* Mask of valid values */
 
 /* Capability flags (ZBarcode_Cap() `cap_flag`) */
 #define ZINT_CAP_HRT                0x0001  /* Prints Human Readable Text? */

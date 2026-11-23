@@ -267,7 +267,7 @@ template <typename T> requires std::is_arithmetic_v<T>
 inline T FromString(std::string_view sv)
 {
 	T val = {};
-#if defined(__APPLE__) || defined(__ANDROID__) || (defined(__GNUC__) && __GNUC__ < 10) // Hack for current non-support of `std::from_chars()` with floats
+#if !defined(__EMSCRIPTEN__) && (defined(__APPLE__) || defined(__ANDROID__) || (defined(__GNUC__) && __GNUC__ < 10)) // Hack for current non-support of `std::from_chars()` with floats
 	if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>) {
 		val = (T)strtod(sv.data(), nullptr); // locale-dependent
 		if (errno == ERANGE)

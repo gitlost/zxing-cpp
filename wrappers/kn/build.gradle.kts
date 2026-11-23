@@ -19,7 +19,7 @@ plugins {
 }
 
 group = "io.github.zxing-cpp"
-version = "3.1.1"
+version = "3.2.0-rc1"
 
 Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() && it.isFile }?.let { load(it.reader()) }
@@ -190,7 +190,6 @@ krossCompile {
                         "CMAKE_INSTALL_PREFIX" to installDirCmake,
                         "ZXING_READERS" to "ON",
                         "ZXING_WRITERS" to "ON",
-                        "ZXING_EXPERIMENTAL_API" to "ON",
                         "ZXING_USE_BUNDLED_ZINT" to "ON",
                         "ZXING_C_API" to "ON",
                     )

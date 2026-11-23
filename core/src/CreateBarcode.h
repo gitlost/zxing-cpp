@@ -61,7 +61,7 @@ public:
 #undef ZX_PROPERTY
 
 #define ZX_RO_PROPERTY(TYPE, NAME) \
-	std::optional<TYPE> NAME() const noexcept;
+	std::optional<TYPE> NAME() const;
 
 	/// EcLevel, e.g. "30%", see also libzint docs for supported values per symbology
 	ZX_RO_PROPERTY(std::string, ecLevel);
@@ -81,6 +81,8 @@ public:
 	ZX_RO_PROPERTY(bool, addQuietZones);
 	ZX_RO_PROPERTY(bool, tryCode39ExtendedMode);
 	ZX_RO_PROPERTY(bool, debug);
+	/// Enable extra escape sequences (see libzint EXTRA_ESCAPE_MODE documentation for details)
+	ZX_RO_PROPERTY(bool, extraEscapeMode);
 
 	/// Specify number of columns (e.g. for DataBarExpStk, PDF417)
 	ZX_RO_PROPERTY(int, columns);

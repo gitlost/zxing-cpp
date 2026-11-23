@@ -33,15 +33,11 @@ namespace ZXing::Test {
 static int failed = 0;
 static int extra = 0;
 static int totalImageLoadTime = 0;
+static double totalUEC = 0;
 
 static std::string Abbrev(std::string_view str, size_t maxLength)
 {
 	return str.size() <= maxLength ? std::string(str) : std::string(str.substr(0, maxLength)) + "...";
-}
-
-static bool isImage(const fs::path& path)
-{
-	return Contains({".webp", ".png", ".jpg", ".pgm", ".gif"}, path.extension());
 }
 
 static int timeSince(std::chrono::steady_clock::time_point startTime)
@@ -64,7 +60,8 @@ static std::vector<fs::path> getImagesInDirectory(const fs::path& directory)
 {
 	std::vector<fs::path> result;
 	for (const auto& entry : fs::directory_iterator(directory))
-		if (fs::is_regular_file(entry.status()) && Contains({".webp", ".png", ".jpg", ".pgm", ".gif"}, entry.path().extension()))
+		if (fs::is_regular_file(entry.status())
+			&& Contains({".webp", ".png", ".jpg", ".jpeg", ".pgm", ".gif"}, entry.path().extension()))
 			result.push_back(entry.path());
 
 	preloadImageCache(result);
@@ -282,6 +279,7 @@ struct Test
 	Test(fs::path imgPath, const Properties& defaults)
 		: imgPath(std::move(imgPath)), props(readTestConfig(this->imgPath, defaults))
 	{
+		opts.tryDownscale(false);
 		if (auto val = prop("formats"))
 			opts.formats(BarcodeFormats(*val));
 		if (auto val = prop("eanAddOnSymbol"))
@@ -292,6 +290,10 @@ struct Test
 			opts.maxNumberOfSymbols(std::stoi(*val));
 		if (auto val = prop("returnErrors"))
 			opts.returnErrors(*val == "true");
+		if (auto val = prop("tryDownscale"))
+			opts.tryDownscale(*val == "true");
+		if (auto val = prop("tryDenoise"))
+			opts.tryDenoise(*val == "true");
 
 		search = parseTestFilter(*prop("find"));
 		if (auto val = prop("search"))
@@ -301,13 +303,10 @@ struct Test
 	void run(TestMode mode)
 	{
 		auto opts = this->opts;
-		opts.tryDownscale(false).downscaleFactor(2).downscaleThreshold(180);
-		opts.tryHarder(mode == TestMode::Slow);
-		opts.tryRotate(mode == TestMode::Slow);
-		opts.tryInvert(mode == TestMode::Slow);
-		opts.isPure(mode == TestMode::Pure);
+		if (mode == TestMode::Fast)
+			opts.tryHarder(false).tryRotate(false).tryInvert(false);
 		if (mode == TestMode::Pure)
-			opts.binarizer(Binarizer::FixedThreshold);
+			opts.binarizer(Binarizer::FixedThreshold).isPure(true);
 		// opts.maxNumberOfSymbols(1);
 
 		for (int rotation : {0, 1, 2, 3}) {
@@ -364,6 +363,10 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 			for (int rotation : {0, 1, 2, 3}) {
 				numFound.at(rotation) += Size(test.found.at(rotation));
 				auto found = test.found.at(rotation);
+				for (auto& barcode : found) {
+					if (!barcode.extra("UEC").empty())
+						totalUEC += std::stod(barcode.extra("UEC"));
+				}
 
 				if (auto val = test.prop("SequenceIndex", Size(test.props) - 1); val == "-1" && !found.empty())
 					found.push_back(MergeStructuredAppendSequence(found));
@@ -377,20 +380,20 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					if (!expectAt(mode, rotation))
 						continue;
 #if !ZXING_ENABLE_UNICODE
-					std::string txt;
+					std::wstring txt;
 					if (expected.contains("TextPlain"))
-						txt = expected.at("TextPlain");
+						txt = FromUtf8(expected.at("TextPlain"));
 					if (expected.contains("TextEscaped"))
-						txt = expected.at("TextEscaped");
-					if (std::ranges::any_of(txt, [](char c) { return static_cast<unsigned char>(c) > 127; }))
+						txt = FromUtf8(expected.at("TextEscaped"));
+					if (std::ranges::any_of(txt, [](wchar_t c) { return static_cast<unsigned int>(c) > 255; }))
 						continue;
 #endif
 
 					// search expected in found, if not in found, report missing
 					auto it = std::ranges::find_if(found, [&](const auto& barcode) {
 						for (const auto& [key, value] : expected) {
-							if (IsUpper(key.front()) && barcode.extra(key) != value) {
-								println("    Mismatch for key '{}': expected '{}' but got '{}'", key, value, barcode.extra(key));
+							if (IsUpper(key.front()) && !value.empty() && barcode.extra(key) != value) {
+								// println("    Mismatch for key '{}': expected '{}' but got '{}'", key, value, barcode.extra(key));
 								return false;
 							}
 						}
@@ -411,7 +414,7 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 					auto str = std::format("{}: \"{}\", Extra: {}", EnumName(barcode.format()),
 										   Abbrev(barcode.text(TextMode::Escaped), 30), barcode.extra());
 #if !ZXING_ENABLE_UNICODE
-					if (str.ends_with("\"\""))
+					if (barcode.text().empty())
 						continue;
 #endif
 					unexpected[test.imgPath][str](mode, rotation) = true;
@@ -419,19 +422,19 @@ static void runBlackBoxTestDirectory(const fs::path& directory)
 			}
 		}
 
-		modeSummaries += std::format("| {}: {:3} {:3} {:3} {:3}  -> {:3}ms ", ToString(mode), numFound[0], numFound[1],
+		modeSummaries += std::format("| {}: {:2} {:2} {:2} {:2}  -> {:3}ms ", ToString(mode), numFound[0], numFound[1],
 									 numFound[2], numFound[3], decodeTime);
 	}
-	std::println("{:25} {:3} images {}", directory.stem().string(), Size(imagePaths), modeSummaries);
+	std::println("{:20} {:3} images {}", directory.stem().string(), Size(imagePaths), modeSummaries);
 
 	auto printMismatches = [&](const std::map<fs::path, std::map<std::string, TestFilter>>& mismatches, std::string_view title) {
 		for (const auto& [imagePath, expected] : mismatches) {
 			for (const auto& [expectedText, found] : expected) {
-				std::print("{:35} ", imagePath.lexically_relative(directory.parent_path()).string());
+				std::print("{:30} ", imagePath.lexically_relative(directory.parent_path()).string());
 				for (const auto mode : {TestMode::Slow, TestMode::Fast, TestMode::Pure}) {
 					std::print(" | {}:", ToString(mode));
 					for (int rotation : {0, 1, 2, 3})
-						std::print(" {:>3}", found(mode, rotation) ? 'X' : ' ');
+						std::print(" {:>2}", found(mode, rotation) ? 'X' : ' ');
 					std::print("          ");
 				}
 				std::println(" | {}: {}", title, expectedText);
@@ -453,6 +456,8 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 										})))
 			directories.push_back(entry.path());
 	std::ranges::sort(directories);
+	if (directories.empty())
+		directories.push_back(testPathPrefix);
 
 	auto startTime = std::chrono::steady_clock::now();
 	for (const auto& directory : directories)
@@ -460,9 +465,10 @@ int runBlackBoxTests(const fs::path& testPathPrefix, const std::set<std::string>
 
 	int totalTime = timeSince(startTime);
 	int decodeTime = totalTime - totalImageLoadTime;
-	std::println("load time:   {} ms.", totalImageLoadTime);
-	std::println("decode time: {} ms.", decodeTime);
-	std::println("total time:  {} ms.", totalTime);
+	std::println("load time:   {} ms", totalImageLoadTime);
+	std::println("decode time: {} ms", decodeTime);
+	std::println("total time:  {} ms", totalTime);
+	std::println("total UEC:   {:.10}", totalUEC);
 	if (failed)
 		std::println("WARNING: {} tests failed.", failed);
 	if (extra)

@@ -1538,6 +1538,12 @@ TEST(CreateBarcodeTest, CreatorOptions)
 #if ZXING_ENABLE_1D
 	bc = CreateBarcodeFromText("(21)123456789", {DataBarExpStk, "columns=1"});
 	EXPECT_GT(bc.symbol().height(), bc.symbol().width());
+
+	bc = CreateBarcodeFromText("123456", {Code128});
+	auto bcEEM = CreateBarcodeFromText("\\^A123456", {Code128, "extraEscapeMode"});
+	EXPECT_EQ(bc.text(), "123456");
+	EXPECT_EQ(bcEEM.text(), "123456");
+	EXPECT_LT(bc.symbol().width(), bcEEM.symbol().width());
 #endif // ZXING_ENABLE_1D
 
 #if ZXING_ENABLE_DATAMATRIX
@@ -1562,6 +1568,8 @@ TEST(CreateBarcodeTest, CreatorOptions)
 #if ZXING_ENABLE_QRCODE
 	bc = CreateBarcodeFromText("12345", {QRCode, "version=5"});
 	EXPECT_EQ(bc.symbol().height(), 37);
+
+	EXPECT_THROW(CreateBarcodeFromText("12345", {QRCode, "dataMask=invalid"}), std::invalid_argument);
 #endif // ZXING_ENABLE_QRCODE
 
 #if defined(ZXING_READERS) && ZXING_ENABLE_QRCODE
@@ -1571,6 +1579,21 @@ TEST(CreateBarcodeTest, CreatorOptions)
 	EXPECT_EQ(bc.extra("UEC"), "1.00");
 #endif // ZXING_READERS
 }
+
+#if defined(ZXING_USE_ZINT) && defined(ZXING_READERS) && ZXING_ENABLE_1D
+TEST(CreateBarcodeTest, CreatorOptionsAfterFailedCreation)
+{
+	CreatorOptions opts(EAN13);
+	EXPECT_THROW(CreateBarcodeFromText("1234567890123", opts), std::invalid_argument);
+
+	opts.format(Code128);
+	auto created = CreateBarcodeFromText("1234567890123", opts);
+	auto decoded = ReadBarcode(created.symbol(), ReaderOptions().isPure(true).binarizer(Binarizer::BoolCast));
+
+	EXPECT_EQ(created.format(), Code128);
+	EXPECT_EQ(decoded.format(), Code128);
+}
+#endif
 
 #if defined(ZXING_READERS) && ZXING_ENABLE_1D
 TEST(CreateBarcodeTest, RandomDataBar)
@@ -1597,3 +1620,12 @@ TEST(CreateBarcodeTest, RandomDataBar)
 	randomTest(DataBarExp);
 }
 #endif // ZXING_READERS
+
+TEST(CreateBarcodeTest, WriteBarcodeToUtf8)
+{
+	auto bc = CreateBarcodeFromText("abcd", {Code128});
+	auto utf8 = WriteBarcodeToUtf8(bc, WriterOptions());
+	EXPECT_EQ(utf8, "          ██ █  █    █  █ ██    █  █    ██ █    █ ██  █    █  ██ ██ ███ ███ ██   ███ █ ██          \n");
+	utf8 = WriteBarcodeToUtf8(bc, WriterOptions().addQuietZones(false));
+	EXPECT_EQ(utf8, "██ █  █    █  █ ██    █  █    ██ █    █ ██  █    █  ██ ██ ███ ███ ██   ███ █ ██\n");
+}

@@ -370,7 +370,7 @@ inline QList<Barcode> ReadBarcodes(const QVideoFrame& frame, const ReaderOptions
 		auto qimg = frame.toImage();
 		if (qimg.format() != QImage::Format_Invalid)
 			return ReadBarcodes(qimg, opts);
-		qWarning() << "failed to convert QVideoFrame to QImage";
+		qWarning() << "Failed to convert QVideoFrame to QImage";
 		return {};
 	}
 }
@@ -465,6 +465,7 @@ public:
 	ZQ_PROPERTY(bool, tryHarder, setTryHarder)
 	ZQ_PROPERTY(bool, tryInvert, setTryInvert)
 	ZQ_PROPERTY(bool, tryDownscale, setTryDownscale)
+	ZQ_PROPERTY(bool, tryDenoise, setTryDenoise)
 	ZQ_PROPERTY(bool, isPure, setIsPure)
 	ZQ_PROPERTY(bool, returnErrors, setReturnErrors)
 

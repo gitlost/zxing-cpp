@@ -65,14 +65,18 @@ TEST(DMDecodeTest, Ascii)
 
 TEST(DMDecodeTest, AsciiError)
 {
-	// ASCII err on invalid code word
+	// ASCII err on invalid codeword
 	EXPECT_EQ(parse({66, 250, 68}).error(), Error::Format);
 
-	// ASCII err on invalid code word at end (currently failing)
+	// ASCII err on invalid codeword at end (currently failing)
 	EXPECT_EQ(parse({66, 67, 68, 250}).error(), Error::Format);
 
 	// ASCII accept extra (illegal) unlatch at end
 	EXPECT_FALSE(parse({66, 67, 68, 254}).error());
+
+	// ECI latch, ECI codeword 0 (invalid), then "a"
+	EXPECT_EQ(parse({241, 0, 98}).error(), Error::Format);
+	EXPECT_EQ(parse({241, 0, 98}).content().bytesECI().asString(), "]d1a");
 }
 
 // Most of the following examples are taken from the DMHighLevelEncodeTest.cpp tests.

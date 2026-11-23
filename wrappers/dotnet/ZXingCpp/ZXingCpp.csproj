@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
 
     <PackageId>ZXingCpp</PackageId>
-    <Version>0.5.3</Version> <!-- contains zxing-cpp version 3.1.1 -->
+    <Version>0.5.4-rc1</Version> <!-- contains zxing-cpp version 3.2.0-rc1 -->
     <Authors>Axel Waggershauser</Authors>
     <Company>zxing-cpp</Company>
     <Description>
@@ -24,6 +24,7 @@
   <ItemGroup>
       <None Include="README.md" Pack="true" PackagePath="README.md"/>
       <None Include="../runtimes/win-x64/native/ZXing.dll" Pack="true" PackagePath="runtimes/win-x64/native/" />
+      <None Include="../runtimes/win-x86/native/ZXing.dll" Pack="true" PackagePath="runtimes/win-x86/native/" />
       <None Include="../runtimes/linux-x64/native/libZXing.so" Pack="true" PackagePath="runtimes/linux-x64/native/" />
       <None Include="../runtimes/osx-x64/native/libZXing.dylib" Pack="true" PackagePath="runtimes/osx-x64/native/" />
       <None Include="../runtimes/win-arm64/native/ZXing.dll" Pack="true" PackagePath="runtimes/win-arm64/native/" />

@@ -23,8 +23,8 @@ class Code128Decoder
 {
 	int codeSet = 0;
 	SymbologyIdentifier _symbologyIdentifier = {'C', '0'}; // ISO/IEC 15417:2007 Annex C Table C.1
-	bool _readerInit = false;
-	bool _prevReaderInit = false;
+	SymbologyIdentifier lastSymbologyIdentifier;
+	bool _readerInit = false, lastReaderInit = false;
 	bool _havePositionFNC1 = false;
 	std::string txt;
 	size_t lastTxtSize = 0;
@@ -42,9 +42,8 @@ public:
 
 	std::string text() const;
 
-	SymbologyIdentifier symbologyIdentifier() const { return _symbologyIdentifier; }
-	bool readerInit() const { return _readerInit; }
-	bool prevReaderInit() const { return _prevReaderInit; }
+	SymbologyIdentifier symbologyIdentifier() const { return lastSymbologyIdentifier; }
+	bool readerInit() const { return lastReaderInit; }
 	bool lastCodeSetC() const;
 };
 

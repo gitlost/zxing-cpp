@@ -2,7 +2,7 @@
 
 # ZXing-C++
 
-ZXing-C++ ("zebra crossing") is an open-source, multi-format linear/matrix barcode image processing library implemented in C++.
+ZXing-C++ / zxing-cpp ("zebra crossing") is an open-source, multi-format linear/matrix barcode image processing library implemented in C++.
 
 It was originally ported from the Java [ZXing library](https://github.com/zxing/zxing) but has been developed further and now includes many improvements in terms of runtime and detection performance. It can both read and write barcodes in a number of formats. Since version 3.0 the default writing backend is provided by the [zint library](https://sourceforge.net/projects/zint/).
 
@@ -64,9 +64,7 @@ You can sponsor this library at [GitHub Sponsors](https://github.com/sponsors/ax
 | [![jknlsn](https://avatars.githubusercontent.com/u/9172090?s=32)](https://github.com/jknlsn) | [Jake Nelson](https://github.com/jknlsn) |
 | [![KURZ](https://avatars.githubusercontent.com/u/25196688?s=32)](https://github.com/kurzdigital) | [KURZ Digital Solutions GmbH & Co. KG](https://github.com/kurzdigital) |
 | [![Moonshine AI](https://avatars.githubusercontent.com/u/98664891?s=32)](https://github.com/moonshine-ai) | [Moonshine AI](https://github.com/moonshine-ai) |
-| [![SAP](https://avatars.githubusercontent.com/u/2531208?s=32)](https://www.sap.com/germany/about/company/innovation/open-source.html) | [SAP (Open Source Program Office)](https://www.sap.com/germany/about/company/innovation/open-source.html) |
 | [![Somco Software](https://avatars.githubusercontent.com/u/41477867?s=32)](https://github.com/somcosoftware) | [Somco Software](https://somcosoftware.com/en) |
-| [![synedra](https://www.synedra.com/favicon.ico)](https://synedra.com/) | [synedra information technologies GmbH](https://synedra.com/) |
 
 Thanks a lot for your contribution!
 
@@ -85,7 +83,7 @@ int main(int argc, char** argv)
 {
     int width, height;
     unsigned char* data;
-    // load your image data from somewhere. ImageFormat::Lum assumes grey scale image data.
+    // load your image data from somewhere. ImageFormat::Lum assumes grey scale pixels.
 
     auto image = ZXing::ImageView(data, width, height, ZXing::ImageFormat::Lum);
     auto options = ZXing::ReaderOptions().formats(ZXing::BarcodeFormat::QRCode);
@@ -111,7 +109,7 @@ A very simple example looks like this:
 
 int main(int argc, char** argv)
 {
-    auto barcode = ZXing::CreateBarcodeFromText("some text", ZXing::BarcodeFormat::QRCode);
+    auto barcode = ZXing::CreateBarcodeFromText("test", ZXing::BarcodeFormat::QRCode);
     auto svg = ZXing::WriteBarcodeToSVG(barcode);
 
     // see also ZXing::WriteBarcodeToImage()
@@ -154,3 +152,7 @@ cmake --build zxing-cpp/build --parallel --config Release
 [mingw](https://github.com/msys2/MINGW-packages/tree/master/mingw-w64-zxing-cpp),
 [homebrew](https://formulae.brew.sh/formula/zxing-cpp) and a bunch of
 [linux distributions](https://repology.org/project/zxing-cpp/versions).]
+
+## Contributing
+
+For information on how to contribute to zxing-cpp, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file.

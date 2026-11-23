@@ -178,7 +178,9 @@ static void addCodeword(struct State& state, bool val, ByteArray& result, std::v
 			}
 			codeword = 0;
 		}
-		result.push_back(codeword);
+		if (state.pattern != 0x1ff) { // Padding
+			result.push_back(codeword);
+		}
 		state.pattern = state.pattern_i = 0;
 		state.count++;
 	}

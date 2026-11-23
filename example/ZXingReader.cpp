@@ -12,9 +12,7 @@
 #include "Diagnostics.h"
 #endif
 #include "GTIN.h"
-#ifdef ZXING_EXPERIMENTAL_API
 #include "JSON.h"
-#endif
 #include "TextDecoder.h"
 #include "Utf.h"
 
@@ -30,6 +28,7 @@
 #include <vector>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STBI_FAILURE_USERMSG // more user friendly error messages
 #include <stb_image.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -68,18 +67,16 @@ static void PrintUsage(const char* exePath)
 			  << "    -single       Stop after the first barcode is detected (faster)\n"
 			  << "    -ispure       Assume the image contains only a 'pure'/perfect code (faster)\n"
 			  << "    -errors       Include results with errors (like checksum error)\n"
+			  << "    -binarizer <local|global|fixed>\n"
+			  << "                  Binarizer to be used for gray to binary conversion\n"
 			  << "    -1            Print main details on one line per file/barcode (implies '-escape')\n"
 			  << "    -escape       Escape non-graphical characters in angle brackets\n"
-			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
-#ifdef ZXING_EXPERIMENTAL_API
 			  << "    -symbol       Print the detected symbol (if available)\n"
 			  << "    -json         Print a complete JSON formatted serialization\n"
 			  << "    -denoise      Use extra denoiseing (closing operation)\n"
-#endif
+			  << "    -bytes        Write (only) the bytes content of the symbol(s) to stdout\n"
 			  << "    -pngout <file name>\n"
 			  << "                  Write a copy of the input image with barcodes outlined by a green line\n"
-			  << "    -binarizer <BINARIZER>\n"
-			  << "                  Use specific binarizer (default LocalAverage)\n"
 			  << "    -mode <plain|eci|hri|escaped>\n"
 			  << "                  Text mode used to render the raw byte content into text\n"
 			  << "    -charset <CHARSET>\n"
@@ -117,10 +114,8 @@ static bool ParseOptions(int argc, char* argv[], ReaderOptions& options, CLI& cl
 			options.tryInvert(false);
 		} else if (is("-noscale")) {
 			options.tryDownscale(false);
-#ifdef ZXING_EXPERIMENTAL_API
 		} else if (is("-denoise")) {
 			options.tryDenoise(true);
-#endif
 		} else if (is("-single")) {
 			options.maxNumberOfSymbols(1);
 		} else if (is("-ispure")) {
@@ -251,9 +246,9 @@ void drawLine(const ImageView& iv, PointI a, PointI b, bool error)
 	int R = RedIndex(iv.format()), G = GreenIndex(iv.format()), B = BlueIndex(iv.format());
 	for (int i = 0; i < steps; ++i) {
 		auto p = PointI(centered(a + i * dir));
-		auto* dst = const_cast<uint8_t*>(iv.data(p.x, p.y));
-		if (dst < iv.data(0, 0) || dst > iv.data(iv.width() - 1, iv.height() - 1))
+		if (p.x < 0 || p.y < 0 || p.x >= iv.width() || p.y >= iv.height())
 			continue;
+		auto* dst = const_cast<uint8_t*>(iv.data(p.x, p.y));
 		dst[R] = error ? 0xff : 0;
 		dst[G] = error ? 0 : 0xff;
 		dst[B] = 0;
@@ -406,13 +401,11 @@ int main(int argc, char* argv[])
 				barcode.setContentDiagnostics();
 			}
 #endif
-#ifdef ZXING_EXPERIMENTAL_API
 			if (cli.json) {
 				if (barcode.format() != BarcodeFormat::None)
 					std::cout << "{\"FilePath\":\"" << filePath << "\"," << barcode.extra("ALL").substr(1) << "\n";
 				continue;
 			}
-#endif
 
 			if (cli.oneLine) {
 				std::cout << filePath << " " << ToString(barcode.format()) << " " << barcode.symbologyIdentifier()
@@ -474,7 +467,6 @@ int main(int argc, char* argv[])
 
 			printOptional("EC Level:     ", barcode.ecLevel());
 			std::string azType;
-#ifdef ZXING_EXPERIMENTAL_API
 			if (barcode.format() == BarcodeFormat::Aztec && !barcode.version().empty()) {
 				if (int version = std::stoi(barcode.version()), height = barcode.symbolMatrix().height();
 						(version == 1 && height % 15 == 0) || (version == 2 && height % 19 == 0)
@@ -483,12 +475,9 @@ int main(int argc, char* argv[])
 				else
 					azType = " (Full)";
 			}
-#endif
 			printOptional("Version:      ", barcode.version() + azType);
 			printOptional("Error:        ", ToString(barcode.error()));
-#ifdef ZXING_EXPERIMENTAL_API
 			printOptional("Extra:        ", barcode.extra());
-#endif
 
 			if (barcode.lineCount())
 				std::cout << "Lines:        " << barcode.lineCount() << "\n";
@@ -519,14 +508,14 @@ int main(int argc, char* argv[])
 			if (options.enableDiagnostics())
 				std::cout << "Diagnostics" << Diagnostics::print(&barcode.diagnostics());
 #endif
-#ifdef ZXING_EXPERIMENTAL_API
 			if (cli.showSymbol && barcode.symbol().data())
 				std::cout << "Symbol:\n" << WriteBarcodeToUtf8(barcode);
-#endif
 		}
 
-		if (cli.filePaths.size() == 1 && !cli.outPath.empty())
+		if (cli.filePaths.size() == 1 && !cli.outPath.empty()){
+			image = image.rotated(-cli.rotate); // rotate back because stbi requires row-major order
 			stbi_write_png(cli.outPath.c_str(), image.width(), image.height(), 3, image.data(), image.rowStride());
+		}
 
 #ifdef NDEBUG
 		if (getenv("MEASURE_PERF")) {

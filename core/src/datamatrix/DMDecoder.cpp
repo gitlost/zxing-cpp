@@ -85,14 +85,22 @@ struct Shift128
 static ECI ParseECIValue(BitSource& bits)
 {
 	int firstByte = bits.readBits(8);
+	if (firstByte == 0 || firstByte > 207)
+		return ECI::Unknown;
+
 	if (firstByte <= 127)
 		return ECI(firstByte - 1);
 
 	int secondByte = bits.readBits(8);
+	if (secondByte == 0 || secondByte >= 255)
+		return ECI::Unknown;
+
 	if (firstByte <= 191)
 		return ECI((firstByte - 128) * 254 + 127 + secondByte - 1);
 
 	int thirdByte = bits.readBits(8);
+	if (thirdByte == 0 || thirdByte >= 255)
+		return ECI::Unknown;
 
 	return ECI((firstByte - 192) * 64516 + 16383 + (secondByte - 1) * 254 + thirdByte - 1);
 }
@@ -171,7 +179,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(BASIC_SET_CHARS[cValue]));
 				} else {
 					Diagnostics::fmt("%sErrorShift0(%d)", modeName, cValue);
-					throw FormatError("invalid value in C40 or Text segment");
+					throw FormatError("Invalid value in C40 or Text segment");
 				}
 				break;
 			case 1:
@@ -179,7 +187,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(cValue));
 				else {
 					Diagnostics::fmt("%sErrorShift1(%d)", modeName, cValue);
-					throw FormatError("invalid value in C40 or Text segment");
+					throw FormatError("Invalid value in C40 or Text segment");
 				}
 				break;
 			case 2:
@@ -190,7 +198,7 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					Diagnostics::put("UpSh");
 				} else {
 					Diagnostics::fmt("%sErrorShift2(%d)", modeName, cValue);
-					throw FormatError("invalid value in C40 or Text segment");
+					throw FormatError("Invalid value in C40 or Text segment");
 				}
 				break;
 			case 3:
@@ -198,12 +206,12 @@ static void DecodeC40OrTextSegment(BitSource& bits, Content& result, Mode mode)
 					result.push_back(upperShift(isC40 ? cValue + 96 : TEXT_SHIFT3_SET_CHARS[cValue]));
 				else {
 					Diagnostics::fmt("%sErrorShift3(%d)", modeName, cValue);
-					throw FormatError("invalid value in C40 or Text segment");
+					throw FormatError("Invalid value in C40 or Text segment");
 				}
 				break;
 			default:
 				Diagnostics::fmt("%sError(Shift)", modeName);
-				throw FormatError("invalid value in C40 or Text segment");
+				throw FormatError("Invalid value in C40 or Text segment");
 			}
 		}
 	}
@@ -221,7 +229,7 @@ static void DecodeAnsiX12Segment(BitSource& bits, Content& result)
 			static const char segChars[4] = {'\r', '*', '>', ' '};
 			if (cValue < 0) {
 				Diagnostics::fmt("X12Error(%d)", cValue);
-				throw FormatError("invalid value in AnsiX12 segment");
+				throw FormatError("Invalid value in AnsiX12 segment");
 			} else if (cValue < 4)
 				result.push_back(segChars[cValue]);
 			else if (cValue < 14) // 0 - 9
@@ -230,7 +238,7 @@ static void DecodeAnsiX12Segment(BitSource& bits, Content& result)
 				result.push_back((char)(cValue + 51));
 			else {
 				Diagnostics::put("X12Error");
-				throw FormatError("invalid value in AnsiX12 segment");
+				throw FormatError("Invalid value in AnsiX12 segment");
 			}
 		}
 	}
@@ -292,7 +300,7 @@ static void DecodeBase256Segment(BitSource& bits, Content& result)
 	// We're seeing NegativeArraySizeException errors from users.
 	if (count < 0) {
 		Diagnostics::put("BASError(NegCount)");
-		throw FormatError("invalid count in Base256 segment");
+		throw FormatError("Invalid count in Base256 segment");
 	}
 	Diagnostics::fmt("Cnt(%d,%d)", count, d1);
 
@@ -341,7 +349,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 		while (!done && bits.available() >= 8) {
 			int oneByte = bits.readBits(8);
 			switch (oneByte) {
-			case 0: Diagnostics::put("ASCError(0)"); setError(FormatError("invalid 0 code word")); break;
+			case 0: Diagnostics::put("ASCError(0)"); setError(FormatError("Invalid 0 code word")); break;
 			case 129: Diagnostics::put("PAD"); done = true; break; // Pad -> we are done, ignore the rest of the bits
 			case 230: DecodeC40OrTextSegment(bits, result, Mode::C40); break;
 			case 231: DecodeBase256Segment(bits, result); break;
@@ -367,7 +375,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 			case 233: // Structured Append
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.6.1
 					Diagnostics::put("SAError");
-					setError(FormatError("structured append tag must be first code word"));
+					setError(FormatError("Structured append tag must be first code word"));
 				}
 				ParseStructuredAppend(bits, sai);
 				firstFNC1Position = 5;
@@ -376,7 +384,7 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 			case 234: // Reader Programming
 				if (!firstCodeword) { // Must be first ISO 16022:2006 5.2.4.9
 					Diagnostics::put("RPError");
-					setError(FormatError("reader programming tag must be first code word"));
+					setError(FormatError("Reader programming tag must be first code word"));
 				}
 				readerInit = true;
 				break;
@@ -397,7 +405,10 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 			case 241: {
 				const auto eci = ParseECIValue(bits);
 				Diagnostics::fmt("ECI(%d)", ToInt(eci));
-				result.switchEncoding(eci);
+				if (eci != ECI::Unknown)
+					result.switchEncoding(eci);
+				else
+					setError(FormatError("Invalid ECI number"));
 				break;
 			}
 			default:
@@ -406,11 +417,11 @@ DecoderResult Decode(ByteArray&& bytes, const bool isDMRE, const CharacterSet op
 				} else if (oneByte <= 229) { // 2-digit data 00-99 (Numeric Value + 130)
 					result.append(ToString(oneByte - 130, 2));
 				} else if (oneByte >= 242) { // Not to be used in ASCII encodation
-					// work around encoders that use unlatch to ASCII as last code word (ask upstream)
+					// work around encoders that use unlatch to ASCII as last codeword (ask upstream)
 					if (oneByte == 254 && bits.available() == 0)
 						break;
 					Diagnostics::fmt("ASCError(%d)", oneByte);
-					setError(FormatError("invalid code word"));
+					setError(FormatError("Invalid codeword"));
 					break;
 				}
 			}
@@ -449,7 +460,7 @@ static DecoderResult DoDecode(const BitMatrix& bits, const CharacterSet optionsC
 	// Read codewords
 	ByteArray codewords = CodewordsFromBitMatrix(bits, *version);
 	if (codewords.empty())
-		return FormatError("Invalid number of code words");
+		return FormatError("Invalid number of codewords");
 
 	//fprintf(stderr, " codewords %d\n", Size(codewords));
 	bool fix259 = false; // see https://github.com/zxing-cpp/zxing-cpp/issues/259

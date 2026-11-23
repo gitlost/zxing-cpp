@@ -38,6 +38,11 @@ func TryDownscale(v bool) ReaderOption {
 	return func(o *C.ZXing_ReaderOptions) { C.ZXing_ReaderOptions_setTryDownscale(o, C.bool(v)) }
 }
 
+// TryDenoise enables denoising.
+func TryDenoise(v bool) ReaderOption {
+	return func(o *C.ZXing_ReaderOptions) { C.ZXing_ReaderOptions_setTryDenoise(o, C.bool(v)) }
+}
+
 // IsPure indicates that the input contains a single perfectly aligned barcode (generated image).
 func IsPure(v bool) ReaderOption {
 	return func(o *C.ZXing_ReaderOptions) { C.ZXing_ReaderOptions_setIsPure(o, C.bool(v)) }
@@ -108,7 +113,7 @@ func readBarcodesFromImageView(iv *ImageView, opts *C.ZXing_ReaderOptions) ([]*B
 	for i := range size {
 		bc := C.ZXing_Barcodes_move(res, C.int(i))
 		if bc == nil {
-			return nil, zxLastError("failed to move barcode")
+			return nil, zxLastError("Failed to move barcode")
 		}
 		out = append(out, &Barcode{ptr: bc})
 	}
@@ -124,7 +129,7 @@ func ReadBarcodes(src any, opts ...ReaderOption) ([]*Barcode, error) {
 	if len(opts) > 0 {
 		ro = C.ZXing_ReaderOptions_new()
 		if ro == nil {
-			panic("failed to create ReaderOptions") // only out of memory should cause this, so panic is reasonable
+			panic("Failed to create ReaderOptions") // only out of memory should cause this, so panic is reasonable
 		}
 		defer C.ZXing_ReaderOptions_delete(ro)
 

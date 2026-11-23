@@ -78,6 +78,8 @@ void Code128Decoder::fnc1(const bool isCodeSetC)
 bool Code128Decoder::decode(int code)
 {
 	lastTxtSize = txt.size();
+	lastSymbologyIdentifier = _symbologyIdentifier;
+	lastReaderInit = _readerInit;
 
 	if (codeSet == CODE_CODE_C) {
 		if (code < 100) {
@@ -99,7 +101,6 @@ bool Code128Decoder::decode(int code)
 			Diagnostics::put("FNC2");
 			break;
 		case CODE_FNC_3:
-			_prevReaderInit = _readerInit; // Could be processing checksum so need to record previous state
 			_readerInit = true; // Can occur anywhere in the symbol (ISO/IEC 15417:2007 4.3.4.2 (c))
 			Diagnostics::put("RInit");
 			break;
@@ -262,11 +263,10 @@ BarcodeData Code128Reader::decodePattern(int rowNumber, PatternView& next, std::
 		Diagnostics::fmt("CSumError(%d)", rawCodes.back());
 		error = ChecksumError();
 	}
-	bool readerInit = checksum == CODE_FNC_3 ? raw2txt.prevReaderInit() : raw2txt.readerInit(); // Allow for bogus CODE_FNC_3
 
 	int xStop = next.pixelsTillEnd();
 	return LinearBarcode(BarcodeFormat::Code128, raw2txt.text(), rowNumber, xStart, xStop, raw2txt.symbologyIdentifier(), error,
-				   JsonProp(BarcodeExtra::ReaderInit, readerInit));
+				   JsonProp(BarcodeExtra::ReaderInit, raw2txt.readerInit()));
 }
 
 } // namespace ZXing::OneD

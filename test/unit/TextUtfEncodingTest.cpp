@@ -31,6 +31,8 @@ TEST(TextUtfEncodingTest, EscapeNonGraphical)
 	EXPECT_EQ(EscapeNonGraphical("\u2007"), "<U+2007>"); // NO-BREAK space (numsp)
 	EXPECT_EQ(EscapeNonGraphical("\uFFEF"), "<U+FFEF>"); // Was NO-BREAK space but now isn't (BOM)
 	EXPECT_EQ(EscapeNonGraphical("\u2000"), "<U+2000>"); // Space char (nqsp)
+	EXPECT_EQ(EscapeNonGraphical("\u2028"), "<U+2028>"); // Line separator
+	EXPECT_EQ(EscapeNonGraphical("\uFFF9"), "<U+FFF9>");
 	EXPECT_EQ(EscapeNonGraphical("\uFFFD"), "\uFFFD");
 	EXPECT_EQ(EscapeNonGraphical("\uFFFF"), "<U+FFFF>");
 }

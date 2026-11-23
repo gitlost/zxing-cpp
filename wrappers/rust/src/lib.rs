@@ -1,6 +1,4 @@
-/*
-* Copyright 2024 Axel Waggershauser
-*/
+// Copyright 2024-2026 Axel Waggershauser
 // SPDX-License-Identifier: Apache-2.0
 
 #![allow(unknown_lints)] // backward compatibility
@@ -22,7 +20,7 @@ mod bindings {
 use bindings::*;
 
 use paste::paste;
-use std::ffi::{c_char, c_int, c_void, CStr, CString, NulError};
+use std::ffi::{CStr, CString, NulError, c_char, c_int, c_void};
 use std::fmt::{Display, Formatter};
 use std::marker::PhantomData;
 use std::mem::transmute;
@@ -407,15 +405,17 @@ impl<'a> ImageView<'a> {
 		row_stride: U,
 		pix_stride: U,
 	) -> Result<Self, Error> {
-		let iv = ZXing_ImageView_new(
-			ptr,
-			Self::try_into_int(width)?,
-			Self::try_into_int(height)?,
-			format as ZXing_ImageFormat,
-			Self::try_into_int(row_stride)?,
-			Self::try_into_int(pix_stride)?,
-		);
-		last_error_if_null_or!(iv, ImageView(Rc::new(ImageViewOwner(iv, PhantomData))))
+		unsafe {
+			let iv = ZXing_ImageView_new(
+				ptr,
+				Self::try_into_int(width)?,
+				Self::try_into_int(height)?,
+				format as ZXing_ImageFormat,
+				Self::try_into_int(row_stride)?,
+				Self::try_into_int(pix_stride)?,
+			);
+			last_error_if_null_or!(iv, ImageView(Rc::new(ImageViewOwner(iv, PhantomData))))
+		}
 	}
 
 	pub fn from_slice<T: TryInto<c_int>>(data: &'a [u8], width: T, height: T, format: ImageFormat) -> Result<Self, Error> {
@@ -625,6 +625,7 @@ impl BarcodeReader {
 	property!(ReaderOptions, TryRotate, bool);
 	property!(ReaderOptions, TryInvert, bool);
 	property!(ReaderOptions, TryDownscale, bool);
+	property!(ReaderOptions, TryDenoise, bool);
 	property!(ReaderOptions, IsPure, bool);
 	property!(ReaderOptions, ValidateOptionalChecksum, bool);
 	property!(ReaderOptions, ReturnErrors, bool);

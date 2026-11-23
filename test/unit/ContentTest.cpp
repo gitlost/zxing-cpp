@@ -96,6 +96,27 @@ TEST(ContentTest, GuessEncoding)
 		EXPECT_EQ(c.guessEncoding(), CharacterSet::Shift_JIS);
 		EXPECT_EQ(c.utf8(), u8"A\u30C6Z");
 	}
+
+	{
+		auto expectEncoding = [](std::string_view bytes, CharacterSet expected) {
+			Content c;
+			c.append(bytes);
+			EXPECT_EQ(c.guessEncoding(), expected);
+		};
+
+		// Short Latin-1 symbol strings should not be mistaken for half-width katakana.
+		expectEncoding("\xAB" "Bonjour" "\xBB", CharacterSet::ISO8859_1);
+		expectEncoding("3 m" "\xB2", CharacterSet::ISO8859_1);
+		expectEncoding("\xB1\xB2", CharacterSet::ISO8859_1);
+
+		// Shift_JIS evidence should still win for a longer kana run and valid double-byte text.
+		expectEncoding("\xC3\xBD\xC4", CharacterSet::Shift_JIS);
+		expectEncoding("\x93\x8C\x8B\x9E\x81\x40\x89\x77", CharacterSet::Shift_JIS);
+		expectEncoding("\x81\xFC", CharacterSet::Shift_JIS);
+		expectEncoding("\x81\x7F", CharacterSet::ISO8859_1);
+		expectEncoding("\x81", CharacterSet::ISO8859_1);
+		expectEncoding("\xF0\x40\xF1\x40\xF2\x40", CharacterSet::ISO8859_1);
+	}
 }
 #endif // defined(ZXING_READERS) || defined(ZXING_USE_ZINT)
 
@@ -150,6 +171,43 @@ TEST(ContentTest, ECI)
 		c.utf8Cache.push_back("Täßt");
 #endif
 		EXPECT_EQ(c.bytesECI().asString(), std::string_view("]d4\\000003C:\\\\Test\\000026Täßt"));
+	}
+
+	{ // binary only
+		Content c;
+		c.symbology = {'Q', '1', 1};
+		c.defaultCharset = CharacterSet::BINARY;
+		c.switchEncoding(CharacterSet::Unknown);
+		c.append("A\xE9\\");
+#ifndef ZXING_READERS
+		c.utf8Cache = {"A\xC3\xA9\\"};
+#endif
+		EXPECT_EQ(c.text(TextMode::ECI), "]Q2\\000899A\xC3\xA9\\\\");
+	}
+
+	{ // binary fallback
+		Content c;
+		c.symbology = {'Q', '1', 1};
+		c.defaultCharset = CharacterSet::BINARY;
+		c.switchEncoding(CharacterSet::ASCII);
+		c.append("9876543210");
+		c.switchEncoding(CharacterSet::Unknown);
+		c.append("ab\\");
+#ifndef ZXING_READERS
+		c.utf8Cache = {"9876543210", "ab\\"};
+#endif
+		EXPECT_EQ(c.text(TextMode::ECI), "]Q2\\0000269876543210\\000899ab\\\\");
+	}
+
+	{ // explicit ECI
+		Content c;
+		c.symbology = {'Q', '1', 1};
+		c.switchEncoding(static_cast<ECI>(898));
+		c.append("ab");
+#ifndef ZXING_READERS
+		c.utf8Cache = {"ab"};
+#endif
+		EXPECT_EQ(c.text(TextMode::ECI), "]Q2\\000898ab");
 	}
 }
 #endif // defined(ZXING_READERS) || defined(ZXING_USE_ZINT)

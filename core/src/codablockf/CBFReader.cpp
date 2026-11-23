@@ -67,7 +67,6 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 {
 	PointI tl, tr, br, bl;
 	std::vector<std::vector <int>> rows;
-	bool usePrevReaderInit = false;
 	bool readerInit = false;
 	AIFlag aiFlag = AIFlag::None;
 	int k1 = 0, k2 = 0;
@@ -124,7 +123,6 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 		}
 
 		if (rows.empty()) {
-			usePrevReaderInit = checksum == CODE_FNC_3;
 			// TODO: calc top boundary size
 			tl = PointI(xStart, rowNumber - topBoundarySize);
 			tr = PointI(xEnd, rowNumber - topBoundarySize);
@@ -198,7 +196,7 @@ BarcodeData DetectSymbol(const BinaryBitmap& image)
 		}
 		if (i == 0) {
 			aiFlag = rowText.symbologyIdentifier().aiFlag;
-			readerInit = usePrevReaderInit ? rowText.prevReaderInit() : rowText.readerInit();
+			readerInit = rowText.readerInit();
 		}
 		text += rowText.text();
 		lastCodeSetC = rowText.lastCodeSetC();

@@ -99,11 +99,8 @@ TEST(AZDecoderTest, DecodeTooManyErrors)
 
 	DecoderResult result = parse(std::move(bits), true, 16, 4);
 	EXPECT_EQ(result.error(), Error::Checksum);
-}
 
-TEST(AZDecoderTest, DecodeTooManyErrors2)
-{
-	auto bits = ParseBitMatrix(
+	bits = ParseBitMatrix(
 		". X X . . X . X X . . . X . . X X X . . . X X . X X . \n"
 		"X X . X X . . X . . . X X . . . X X . X X X . X . X X \n"
 		". . . . X . . . X X X . X X . X X X X . X X . . X . . \n"
@@ -133,7 +130,7 @@ TEST(AZDecoderTest, DecodeTooManyErrors2)
 		"X X . . . X X . . X . X . . . . X X . X . . X . X . X \n"
 		, 'X', true);
 
-	DecoderResult result = parse(std::move(bits), true, 16, 4);
+	result = parse(std::move(bits), true, 16, 4);
 	EXPECT_EQ(result.error(), Error::Checksum);
 }
 
@@ -163,6 +160,22 @@ TEST(AZDecoderTest, InitialGS)
 		EXPECT_EQ(data.symbologyIdentifier(), "]z1");
 		EXPECT_EQ(data.content().text(TextMode::Hex), "55 10 94 E2 E7 14 FF");
 	}
+}
+
+TEST(AZDecoderTest, InvalidECIDigit)
+{
+	// P/S, FLG(1), ECI digit nibble, 'A'
+	// Valid digit nibbles are 2..11 ('0'..'9')
+	for (auto digit : {"0000", "0001", "1100", "1111"}) {
+		auto data = getData(std::string("00000" "00000" "001") + digit + "00010");
+		EXPECT_FALSE(data.isValid()) << digit;
+		EXPECT_EQ(data.error(), Error::Format) << digit;
+	}
+
+	// ECI 3 (value 5 = nibble 0101) is accepted
+	auto data = getData("00000" "00000" "001" "0101" "00010");
+	EXPECT_TRUE(data.isValid());
+	EXPECT_EQ(data.content().bytesECI(), ByteArray("]z3\\000003A"));
 }
 
 // Shorthand to check SymbologyIdentifier result
